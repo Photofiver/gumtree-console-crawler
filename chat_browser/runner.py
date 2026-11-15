@@ -14,7 +14,7 @@ from urllib.parse import unquote, urlsplit
 MAX_STEPS = 12
 MAX_TEXT = 14000
 # No arbitrary form submission, checkbox changes, or modifying commands.
-ACTIONS = {"click", "fill", "press", "wait", "screenshot", "extract"}
+ACTIONS = {"click", "click_text", "fill", "press", "wait", "screenshot", "extract", "inspect"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
@@ -122,10 +122,10 @@ def parse_task(body: str) -> dict:
             raise ValueError(f"Unsupported action at step {i + 1}")
         if set(step) - {"action", "selector", "value", "ms"}:
             raise ValueError("Unsupported step property")
-        if step["action"] in {"click", "fill", "press", "select", "check", "uncheck", "extract"}:
+        if step["action"] in {"click", "fill", "press", "extract"}:
             if not isinstance(step.get("selector"), str) or not 1 <= len(step["selector"]) <= 300:
                 raise ValueError("A nonempty selector is required")
-        if step["action"] in {"fill", "press", "select"}:
+        if step["action"] in {"fill", "press", "click_text"}:
             if not isinstance(step.get("value"), str) or len(step["value"]) > 1000:
                 raise ValueError("A string value up to 1000 characters is required")
         if step["action"] == "wait":
@@ -165,8 +165,35 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                 action = step["action"]
                 selector = step.get("selector", "")
                 item = {"step": i, "action": action}
-                if action == "click":
-                    element = page.locator(selector).first
+                if action in {"click", "click_text"}:
+                    if action == "click_text":
+                        target = step["value"].strip()
+                        if not target or MUTATING_WORDS.search(target):
+                            raise ValueError("Unsafe or empty click_text target")
+                        # Search by visible/accessibility label, not brittle href/CSS.
+                        # Only follow the first element confirmed safe by our guards.
+                        candidates = (
+                            page.get_by_role("link", name=re.compile(re.escape(target), re.I)),
+                            page.get_by_role("button", name=re.compile(re.escape(target), re.I)),
+                            page.get_by_role("tab", name=re.compile(re.escape(target), re.I)),
+                        )
+                        element = None
+                        for matching in candidates:
+                            for j in range(min(matching.count(), 20)):
+                                item_locator = matching.nth(j)
+                                if is_safe_click(inspect_element(item_locator)):
+                                    element = item_locator
+                                    break
+                            if element is not None:
+                                break
+                        if element is None:
+                            found = page.locator("a[href]").all_inner_texts()[:25]
+                            raise ValueError(f"No safe link/button matching {target!r}; found links: {found!r}")
+                    else:
+                        element = page.locator(selector).first
+                        if element.count() == 0:
+                            found = page.locator("a[href]").all_inner_texts()[:25]
+                            raise ValueError(f"Selector did not match {selector!r}; found links: {found!r}")
                     if not is_safe_click(inspect_element(element)):
                         raise ValueError("Only safe navigation links and buttons may be clicked")
                     element.click()
@@ -180,6 +207,13 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                     if step["value"] != "Enter" or not is_search_field(inspect_element(element)):
                         raise ValueError("Only Enter in search fields is allowed")
                     element.press("Enter")
+                elif action == "inspect":
+                    item["links"] = page.locator("a[href]").evaluate_all(
+                        "els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))"
+                    )
+                    item["buttons"] = page.get_by_role("button").evaluate_all(
+                        "els => els.slice(0, 30).map(x => (x.innerText || x.getAttribute('aria-label') || x.title || '').trim().slice(0, 100))"
+                    )
                 elif action == "wait":
                     page.wait_for_timeout(step["ms"])
                 elif action == "screenshot":
@@ -193,6 +227,14 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
             text = page.locator("body").inner_text(timeout=12000)[:MAX_TEXT]
             links = page.locator("a[href]").evaluate_all("els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))")
             final_url = page.url
+            if (
+                ("error page" in title.lower() and ("ebay" in title.lower()))
+                or "something went wrong on our end" in text.lower()
+                or ("access denied" in title.lower())
+                or ("unusual traffic" in text.lower() and "automated" in text.lower())
+            ):
+                return {"ok": False, "error": "Website returned an error or access-blocking page",
+                        "title": title, "url": final_url, "text": text[:2000], "actions": action_results}
             return {"ok": True, "title": title, "url": final_url, "text": text, "links": links, "actions": action_results, "screenshots": screenshots}
         finally:
             context.close()
