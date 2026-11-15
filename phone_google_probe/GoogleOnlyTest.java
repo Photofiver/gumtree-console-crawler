@@ -106,13 +106,84 @@ public class GoogleOnlyTest {
                     report.put("externalLinkCount",count);
                 } catch(Exception e) {report.put("status","PARSE_ERROR");report.put("error",e.toString());}
             }
+            if ("POSSIBLE_RESULTS".equals(report.optString("status"))) {
+                JSONArray found = report.optJSONArray("resultLinks");
+                String wikipediaLink = "";
+                for (int i = 0; found != null && i < found.length(); i++) {
+                    JSONObject candidate = found.optJSONObject(i);
+                    if (candidate != null && candidate.optString("text")
+                            .toLowerCase(Locale.ROOT).contains("wikipedia")) {
+                        wikipediaLink = candidate.optString("url");
+                        break;
+                    }
+                }
+                report.put("selectedLink", wikipediaLink);
+                if (!wikipediaLink.startsWith("https://")) {
+                    report.put("clickStatus", "WIKIPEDIA_RESULT_LINK_MISSING");
+                } else {
+                    CountDownLatch opened = new CountDownLatch(1);
+                    AtomicReference<String> finalUrl = new AtomicReference<>("");
+                    AtomicReference<String> openedText = new AtomicReference<>("");
+                    AtomicReference<String> navigationError = new AtomicReference<>("");
+                    final String target = wikipediaLink;
+                    scenario.onActivity(activity -> {
+                        try {
+                            Field field = MainActivity.class.getDeclaredField("browser");
+                            field.setAccessible(true);
+                            WebView view = (WebView) field.get(activity);
+                            view.setWebViewClient(new WebViewClient() {
+                                @Override public void onPageFinished(WebView webView, String url) {
+                                    finalUrl.set(url);
+                                    if (url.contains("wikipedia.org/")) {
+                                        webView.evaluateJavascript(
+                                            "document.body ? document.body.innerText.slice(0,1000) : ''",
+                                            value -> {
+                                                try {
+                                                    openedText.set(new JSONArray("[" + value + "]").getString(0));
+                                                } catch (Exception e) {
+                                                    navigationError.set("Text read failed: " + e);
+                                                }
+                                                opened.countDown();
+                                            });
+                                    }
+                                }
+                                @Override public void onReceivedError(WebView webView,
+                                        WebResourceRequest req, WebResourceError error) {
+                                    if (req.isForMainFrame()) {
+                                        finalUrl.set(req.getUrl().toString());
+                                        navigationError.set(error.getDescription().toString());
+                                        opened.countDown();
+                                    }
+                                }
+                            });
+                            view.loadUrl(target);
+                        } catch (Exception e) {
+                            navigationError.set(e.toString());
+                            opened.countDown();
+                        }
+                    });
+                    boolean gotResult = opened.await(30, TimeUnit.SECONDS);
+                    report.put("clickedFinalUrl", finalUrl.get());
+                    report.put("clickedTextSample", openedText.get().substring(
+                        0, Math.min(500, openedText.get().length())));
+                    report.put("clickStatus", !gotResult ? "NAVIGATION_TIMEOUT"
+                        : !navigationError.get().isEmpty() ? "NAVIGATION_ERROR"
+                        : finalUrl.get().contains("wikipedia.org/")
+                                && openedText.get().toLowerCase(Locale.ROOT).contains("belfast")
+                                ? "OPENED_WIKIPEDIA" : "UNEXPECTED_DESTINATION");
+                    if (!navigationError.get().isEmpty())
+                        report.put("clickError", navigationError.get());
+                }
+            } else {
+                report.put("clickStatus", "SEARCH_RESULTS_NOT_CONFIRMED");
+            }
             Log.i("GOOGLE_SINGLE_PROBE","FINAL "+report.toString());
             System.out.println("GOOGLE_SINGLE_PROBE_FINAL "+report.toString());
             try(FileOutputStream f=new FileOutputStream(output.get())){
                 f.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
-            assertEquals("Google must return two usable result links: " + report,
-                "POSSIBLE_RESULTS", report.optString("status"));
+            assertEquals("Google result must open real Wikipedia page: " + report,
+                "OPENED_WIKIPEDIA", report.optString("clickStatus"));
         }
     }
 }
