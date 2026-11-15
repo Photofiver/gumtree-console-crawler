@@ -1,6 +1,8 @@
 package com.photofiver.phonebrowser;
 
 import android.os.SystemClock;
+import android.os.ParcelFileDescriptor;
+import androidx.test.platform.app.InstrumentationRegistry;
 import android.view.MotionEvent;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -60,6 +62,35 @@ public class BrowserInteractionTest {
             up.recycle();
         });
         Thread.sleep(500);
+    }
+
+
+    // Public network navigation, without cookies, accounts or logged-in sessions.
+    private static String remotePage(ActivityScenario<MainActivity> scenario, String url) throws Exception {
+        CountDownLatch loaded = new CountDownLatch(1);
+        AtomicReference<String> outcome = new AtomicReference<>("TIMEOUT");
+        scenario.onActivity(activity -> {
+            WebView view = browser(activity);
+            view.setWebViewClient(new WebViewClient() {
+                @Override public void onPageFinished(WebView v, String finalUrl) {
+                    if (!finalUrl.contains("example.com/")) {
+                        outcome.set(finalUrl);
+                        loaded.countDown();
+                    }
+                }
+                @Override public void onReceivedError(WebView v,
+                        android.webkit.WebResourceRequest request,
+                        android.webkit.WebResourceError error) {
+                    if (request.isForMainFrame()) {
+                        outcome.set("NETWORK_ERROR:" + error.getDescription());
+                        loaded.countDown();
+                    }
+                }
+            });
+            view.loadUrl(url);
+        });
+        loaded.await(19, TimeUnit.SECONDS);
+        return outcome.get();
     }
 
     @Test public void testRealTouchMenuFormLinkBackAndScroll() throws Exception {
@@ -141,15 +172,110 @@ public class BrowserInteractionTest {
             String y=js(scenario,"String(window.scrollY)");
             report.put("scroll", Double.parseDouble(y)>40?"PASS":"FAIL");
             report.put("scrollY",y);
+
+            // Check injected Android keyboard events rather than JavaScript value setting.
+            CountDownLatch keyboardLoaded = new CountDownLatch(1);
+            scenario.onActivity(activity -> {
+                WebView view = browser(activity);
+                view.setFocusableInTouchMode(true);
+                view.requestFocusFromTouch();
+                view.setWebViewClient(new WebViewClient() {
+                    @Override public void onPageFinished(WebView v,String url) {
+                        if (url.contains("example.org/keyboard")) keyboardLoaded.countDown();
+                    }
+                });
+                view.loadDataWithBaseURL("https://example.org/keyboard",
+                    "<html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
+                    + "</head><body><input id='kb' type='text' style='height:60px;width:250px'>"
+                    + "</body></html>", "text/html","UTF-8",null);
+            });
+            boolean kbLoaded = keyboardLoaded.await(7,TimeUnit.SECONDS);
+            report.put("keyboardPageLoaded", kbLoaded);
+            if (kbLoaded) {
+                tap(scenario,"#kb");
+                String focused = js(scenario,
+                    "document.querySelector('#kb').focus();document.activeElement.id");
+                report.put("keyboardFocus",focused);
+                try {
+                    InstrumentationRegistry.getInstrumentation().waitForIdleSync();
+                    InstrumentationRegistry.getInstrumentation().sendStringSync("Belfast");
+                    Thread.sleep(600);
+                    String keys = js(scenario,"document.querySelector('#kb').value");
+                    report.put("instrumentationKeyboard",
+                        "Belfast".equals(keys) ? "PASS" : "FAIL");
+                    report.put("instrumentationEntered",keys);
+                } catch(Exception e) {
+                    report.put("instrumentationKeyboard","ERROR");
+                    report.put("instrumentationError",e.toString());
+                }
+                // ADB 'input text' simulates external/system key events, not a real hardware keyboard.
+                if (!"PASS".equals(report.optString("instrumentationKeyboard"))) {
+                    js(scenario,"document.querySelector('#kb').value='';"
+                        + "document.querySelector('#kb').focus();'focused'");
+                    try {
+                        ParcelFileDescriptor cmd = InstrumentationRegistry
+                            .getInstrumentation().getUiAutomation()
+                            .executeShellCommand("input text Belfast");
+                        if (cmd != null) cmd.close();
+                        Thread.sleep(1100);
+                        String keys = js(scenario,"document.querySelector('#kb').value");
+                        report.put("adbKeyboard","Belfast".equals(keys)?"PASS":"FAIL");
+                        report.put("adbEntered",keys);
+                    } catch(Exception e) {
+                        report.put("adbKeyboard","ERROR");
+                        report.put("adbError",e.toString());
+                    }
+                } else report.put("adbKeyboard","SKIPPED_ALREADY_PASSED");
+            }
+
+            String wikiUrl = remotePage(scenario,"https://en.wikipedia.org/wiki/Belfast");
+            report.put("wikipediaFinalUrl",wikiUrl);
+            String wikiText = wikiUrl.startsWith("https://en.wikipedia.org/wiki/Belfast")
+                ? js(scenario,"document.body?document.body.innerText.slice(0,1800):''") : "";
+            report.put("wikipediaLoad",
+                wikiUrl.contains("wikipedia.org/wiki/Belfast")
+                  && wikiText.toLowerCase(java.util.Locale.ROOT).contains("belfast") ? "PASS":"FAIL");
+            report.put("wikipediaAnchors",wikiUrl.contains("wikipedia.org")
+                ? js(scenario,"String(document.querySelectorAll('a[href]').length)") : "0");
+
+            String googleUrl = remotePage(scenario,
+                "https://www.google.com/search?q=Belfast+Northern+Ireland&udm=14");
+            report.put("googleFinalUrl",googleUrl);
+            if (googleUrl.contains("google.com/search")) {
+                JSONObject page = new JSONObject(js(scenario,PageSnapshotScript.javascript()));
+                JSONArray links = page.optJSONArray("links");
+                int count = links == null ? 0 : links.length();
+                report.put("googleLinkCount",count);
+                report.put("googleLiveSearch",
+                    count >= 2 && page.optString("text").toLowerCase(
+                        java.util.Locale.ROOT).contains("belfast") ? "PASS":"FAIL");
+                String siteField=js(scenario,
+                    "(()=>{let e=document.querySelector('textarea[name=q],input[name=q]');"
+                    + "return e?e.tagName.toLowerCase():'NOT_FOUND'})()");
+                report.put("googleSearchField",siteField);
+                if (!"NOT_FOUND".equals(siteField)) {
+                    String result=js(scenario, SafeFormScript.fill(
+                        "textarea[name=q],input[name=q]", "Belfast museums"));
+                    report.put("googleRealFieldFill",
+                        "FILLED".equals(result)?"PASS":"FAIL");
+                    report.put("googleRealFieldResult",result);
+                } else report.put("googleRealFieldFill","FIELD_NOT_FOUND");
+            } else {
+                report.put("googleLiveSearch","FAIL");
+                report.put("googleRealFieldFill","NOT_TESTED");
+            }
             saved=reportFile.get();
             try(FileOutputStream stream=new FileOutputStream(saved)){
                 stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
         }
         System.out.println("INTERACTION_TEST_RESULT " + report);
-        for(String action:new String[]{"menuTap","fillAction","buttonFormSubmit","implicitTextField","searchFormAction","linkTap","back","scroll"}) {
+        for(String action:new String[]{"menuTap","fillAction","buttonFormSubmit","implicitTextField","searchFormAction","linkTap","back","scroll","wikipediaLoad","googleLiveSearch"}) {
             assertEquals("Interaction failed: " + action + " " + report,
                 "PASS",report.optString(action));
         }
+        assertTrue("Neither Android keyboard injection method typed text: " + report,
+            "PASS".equals(report.optString("instrumentationKeyboard"))
+                || "PASS".equals(report.optString("adbKeyboard")));
     }
 }
