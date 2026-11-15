@@ -74,6 +74,33 @@ class RunnerTests(unittest.TestCase):
         self.assertFalse(is_search_field({"tag": "textarea", "type": "", "label": "Search"}))
 
 
+    def test_readonly_click_text_action(self):
+        with patch("chat_browser.runner.require_public_url", return_value="https://example.com"):
+            task = parse_task(json.dumps({
+                "url": "https://example.com", "steps": [
+                    {"action": "click_text", "value": "Northern Ireland"},
+                    {"action": "inspect"}
+                ]}))
+            self.assertEqual(task["steps"][0]["value"], "Northern Ireland")
+            self.assertEqual(task["steps"][1]["action"], "inspect")
+
+    def test_click_text_requires_label(self):
+        with patch("chat_browser.runner.require_public_url", return_value="https://example.com"):
+            with self.assertRaises(ValueError):
+                parse_task(json.dumps({"url": "https://example.com", "steps": [
+                    {"action": "click_text", "value": ""}
+                ]}))
+
+    def test_form_actions_still_forbidden(self):
+        with patch("chat_browser.runner.require_public_url", return_value="https://example.com"):
+            for action in ("select", "check", "uncheck", "submit"):
+                with self.assertRaises(ValueError):
+                    parse_task(json.dumps({"url": "https://example.com", "steps": [
+                        {"action": action, "selector": "form"}
+                    ]}))
+
+
+
 
 if __name__ == "__main__":
     unittest.main()
