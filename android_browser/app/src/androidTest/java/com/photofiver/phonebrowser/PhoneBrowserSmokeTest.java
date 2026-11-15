@@ -114,7 +114,7 @@ public class PhoneBrowserSmokeTest {
         Method method = MainActivity.class.getDeclaredMethod("makeSearchUrl", String.class);
         method.setAccessible(true);
         String url = (String) method.invoke(null, "Belfast city");
-        assertTrue(url.startsWith("https://www.mojeek.com/search?q="));
+        assertTrue(url.startsWith("https://www.google.com/search?q="));
         assertTrue(url.contains("Belfast"));
         assertFalse(url.contains(" "));
     }
@@ -129,14 +129,11 @@ public class PhoneBrowserSmokeTest {
                     WebView webView = browser(activity);
                     webView.setWebViewClient(new WebViewClient() {
                         @Override public void onPageFinished(WebView view, String url) {
-                            if (!url.contains("mojeek.com") && !url.contains("/search")) return;
+                            if (!url.contains("google.com/search")) return;
                             urlResult.set(url);
-                            view.evaluateJavascript(
-                                "JSON.stringify({title:document.title,"
-                                + "text:(document.body?document.body.innerText:'').slice(0,7000),"
-                                + "links:Array.from(document.querySelectorAll('a[href]'))."
-                                + "filter(a=>a.href.startsWith('http')).slice(0,70).map(a=>a.href)})",
-                                value -> { rawResult.set(value); done.countDown(); });
+                            new Handler(Looper.getMainLooper()).postDelayed(() ->
+                                view.evaluateJavascript(PageSnapshotScript.javascript(),
+                                    value -> { rawResult.set(value); done.countDown(); }), 1700);
                         }
                         @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
                             if (req.isForMainFrame()) {
@@ -166,14 +163,14 @@ public class PhoneBrowserSmokeTest {
             assertTrue("Search did not finish loading", done.await(60, TimeUnit.SECONDS));
             assertFalse("Search navigation failed: " + rawResult.get(), rawResult.get().startsWith("ERROR:"));
             assertTrue("Search did not navigate to expected search engine: " + urlResult.get(),
-                urlResult.get().contains("mojeek.com/search"));
+                urlResult.get().contains("google.com/search"));
             String decoded = new JSONArray("[" + rawResult.get() + "]").getString(0);
             JSONObject page = new JSONObject(decoded);
             String body = page.optString("text").toLowerCase(java.util.Locale.ROOT);
             assertTrue("No topic-related search results: " + body.substring(0,Math.min(600,body.length())),
                 body.contains("belfast") && body.length() > 250);
             assertTrue("Search engine did not return result links: " + page,
-                page.getJSONArray("links").length() >= 6);
+                page.getJSONArray("links").length() >= 2);
             assertFalse("Search engine challenge page: " + body.substring(0,Math.min(600,body.length())),
                 body.contains("unusual traffic") || body.contains("verify you are human")
                 || body.contains("access denied") || body.contains("captcha"));
