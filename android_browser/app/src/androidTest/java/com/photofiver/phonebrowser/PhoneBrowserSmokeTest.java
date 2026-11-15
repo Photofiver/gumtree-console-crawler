@@ -6,6 +6,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceError;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import org.junit.Test;
@@ -108,4 +110,74 @@ public class PhoneBrowserSmokeTest {
             assertTrue("No readable webpage content: " + output.get(), output.get().length() >= 30);
         }
     }
+    @Test public void searchQueryBuildsSafeUrl() throws Exception {
+        Method method = MainActivity.class.getDeclaredMethod("makeSearchUrl", String.class);
+        method.setAccessible(true);
+        String url = (String) method.invoke(null, "Belfast city");
+        assertTrue(url.startsWith("https://www.mojeek.com/search?q="));
+        assertTrue(url.contains("Belfast"));
+        assertFalse(url.contains(" "));
+    }
+
+    @Test public void searchActionLoadsRealSearchResults() throws Exception {
+        CountDownLatch done = new CountDownLatch(1);
+        AtomicReference<String> urlResult = new AtomicReference<>("");
+        AtomicReference<String> rawResult = new AtomicReference<>("");
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            scenario.onActivity(activity -> {
+                try {
+                    WebView webView = browser(activity);
+                    webView.setWebViewClient(new WebViewClient() {
+                        @Override public void onPageFinished(WebView view, String url) {
+                            if (!url.contains("mojeek.com") && !url.contains("/search")) return;
+                            urlResult.set(url);
+                            view.evaluateJavascript(
+                                "JSON.stringify({title:document.title,"
+                                + "text:(document.body?document.body.innerText:'').slice(0,7000),"
+                                + "links:Array.from(document.querySelectorAll('a[href]'))."
+                                + "filter(a=>a.href.startsWith('http')).slice(0,70).map(a=>a.href)})",
+                                value -> { rawResult.set(value); done.countDown(); });
+                        }
+                        @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
+                            if (req.isForMainFrame()) {
+                                rawResult.set("ERROR: " + error.getDescription());
+                                done.countDown();
+                            }
+                        }
+                    });
+                    Field busy = MainActivity.class.getDeclaredField("busy");
+                    Field navigating = MainActivity.class.getDeclaredField("navigating");
+                    Field steps = MainActivity.class.getDeclaredField("steps");
+                    Field index = MainActivity.class.getDeclaredField("stepIndex");
+                    for (Field field : new Field[]{busy, navigating, steps, index}) field.setAccessible(true);
+                    busy.set(activity, true);
+                    navigating.set(activity, false);
+                    index.set(activity, 0);
+                    steps.set(activity, new JSONArray().put(
+                        new JSONObject().put("action","search").put("value","Belfast Northern Ireland")));
+                    Method next = MainActivity.class.getDeclaredMethod("nextStep");
+                    next.setAccessible(true);
+                    next.invoke(activity);
+                } catch (Exception e) {
+                    rawResult.set("ERROR: " + e.getMessage());
+                    done.countDown();
+                }
+            });
+            assertTrue("Search did not finish loading", done.await(60, TimeUnit.SECONDS));
+            assertFalse("Search navigation failed: " + rawResult.get(), rawResult.get().startsWith("ERROR:"));
+            assertTrue("Search did not navigate to expected search engine: " + urlResult.get(),
+                urlResult.get().contains("mojeek.com/search"));
+            String decoded = new JSONArray("[" + rawResult.get() + "]").getString(0);
+            JSONObject page = new JSONObject(decoded);
+            String body = page.optString("text").toLowerCase(java.util.Locale.ROOT);
+            assertTrue("No topic-related search results: " + body.substring(0,Math.min(600,body.length())),
+                body.contains("belfast") && body.length() > 250);
+            assertTrue("Search engine did not return result links: " + page,
+                page.getJSONArray("links").length() >= 6);
+            assertFalse("Search engine challenge page: " + body.substring(0,Math.min(600,body.length())),
+                body.contains("unusual traffic") || body.contains("verify you are human")
+                || body.contains("access denied") || body.contains("captcha"));
+        }
+    }
+
 }
