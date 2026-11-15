@@ -1,0 +1,55 @@
+name: Chat browser
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: chat-browser-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  browser:
+    if: ${{ startsWith(github.event.issue.title, '[browser]') && github.event.issue.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Test browser task parser
+        run: python -m unittest discover -s chat_browser -p 'test_*.py'
+      - name: Install browser
+        run: |
+          python -m pip install --disable-pip-version-check 'playwright>=1.50,<2'
+          python -m playwright install --with-deps chromium
+      - name: Run browser task
+        run: python chat_browser/runner.py --event "$GITHUB_EVENT_PATH" --result browser-result.json --screenshot browser-screenshot.png
+      - name: Post result in issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body;
+            if (fs.existsSync('browser-result.json')) {
+              const result = JSON.parse(fs.readFileSync('browser-result.json', 'utf8'));
+              const details = JSON.stringify(result, null, 2);
+              body = (result.ok ? 'Browser task completed.' : 'Browser task failed.') + '\n\n```json\n' + details.slice(0, 58000) + '\n```';
+            } else {
+              body = 'Browser could not start. Check the workflow run logs.';
+            }
+            await github.rest.issues.createComment({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body});
+      - name: Save screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: chat-browser-screenshot-${{ github.event.issue.number }}
+          path: browser-screenshot.png
+          if-no-files-found: ignore
+          retention-days: 1
