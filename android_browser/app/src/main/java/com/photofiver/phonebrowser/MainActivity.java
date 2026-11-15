@@ -156,7 +156,10 @@ public class MainActivity extends Activity {
                     || host.endsWith(".local") || host.endsWith(".internal")
                     || host.endsWith(".localhost")) return false;
             if (host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")
-                    || host.contains(":") || DANGEROUS.matcher(uri.getRawPath() == null ? "" : uri.getRawPath()).find())
+                    || host.contains(":") || DANGEROUS.matcher(
+                            (uri.getRawPath() == null ? "" : uri.getRawPath())
+                            + "?" + (uri.getRawQuery() == null ? "" : uri.getRawQuery())
+                    ).find())
                 return false;
             return true;
         } catch (Exception e) { return false; }
