@@ -35,6 +35,28 @@ Read-only actions: `click` (CSS selector), `click_text` (search visible safe lin
 - The module now returns these as explicit failures instead of claiming success; this **does not enable eBay access**.
 - eBay's official Browse API can retrieve live item summaries but requires developer credentials, and is not configured in this public repository. Never put secrets in GitHub Issues.
 
+## Compatibility improvements from open-source projects (Nov 2026)
+
+The runner takes ideas from public docs of Obscura (snapshot + wait + network diagnostics), Browsentic (semantic/accessible elements), and Playwright (role-based, auto-waiting locators). The current read-only runner supports:
+- `snapshot` — show headings, links, buttons and search fields, including same-origin or cross-origin frames, without submitting anything
+- `click_text` — find safe navigation controls by their accessible label, including iframe controls
+- `wait_for` — wait for JavaScript-loaded content to appear without a blind delay (max 12 seconds)
+- `scroll` — move down up to 1600 pixels to reveal lazy-loaded content
+- `inspect` — lightweight frame-by-frame link and button inventory
+
+```json
+{"url":"https://simple.wikipedia.org/wiki/Belfast","steps":[{"action":"snapshot"},{"action":"click_text","value":"Northern Ireland"}]}
+```
+
+Important architectural lesson: Obscura is a replacement engine with browser fingerprint tooling, but Github Actions still sends traffic from a datacenter. Browsentic runs in a user's genuine browser; Agent for Android runs a WebView on the phone; Android Remote Control MCP controls the phone through a local service. Those are **different execution locations** and do not grant this GitHub-hosted runner the user's network/browser identity. None guarantees access to every website.
+
+References:
+- https://github.com/h4ckf0r0day/obscura
+- https://github.com/imshaikot/browsentic
+- https://github.com/Past-da-king/agent
+- https://github.com/danielealbano/android-remote-control-mcp
+- https://playwright.dev/docs/locators
+
 ## Important limits
 
 - This controls a **remote** GitHub browser, **not the physical Android phone**.
