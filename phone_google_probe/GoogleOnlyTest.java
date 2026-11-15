@@ -113,7 +113,8 @@ public class GoogleOnlyTest {
                 String wikipediaLink = "";
                 for (int i = 0; found != null && i < found.length(); i++) {
                     JSONObject candidate = found.optJSONObject(i);
-                    if (candidate != null && candidate.optString("text")
+                    if (candidate != null && (candidate.optString("source") + " "
+                            + candidate.optString("text"))
                             .toLowerCase(Locale.ROOT).contains("wikipedia")) {
                         wikipediaLink = candidate.optString("url");
                         break;

@@ -48,8 +48,8 @@ final class PageSnapshotScript {
                 const title = ((heading && heading.innerText) || rawText).trim().slice(0,160);
                 if (!title) continue;
                 used.add(url);
-                entries.push({text:title, url, type:isRedirect?'google-redirect':'direct',
-                    verifiedResult:!!heading});
+                entries.push({text:title, source:rawText.slice(0,230), url,
+                    type:isRedirect?'google-redirect':'direct', verifiedResult:!!heading});
               }
               // The first entries correspond to result titles, not global site navigation.
               entries.sort((a,b) => Number(b.verifiedResult)-Number(a.verifiedResult));

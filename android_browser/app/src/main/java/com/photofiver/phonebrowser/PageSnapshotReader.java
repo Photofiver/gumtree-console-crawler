@@ -31,7 +31,7 @@ final class PageSnapshotReader {
                 // Stop as soon as at least three results remain stable across two reads.
                 // When Google serves a different layout, return diagnostics at deadline.
                 if (google && SystemClock.uptimeMillis() < deadline
-                        && (count < 3 || count != previousCount)) {
+                        && count < 7 && (count < 3 || count != previousCount)) {
                     handler.postDelayed(() -> attempt(view, handler, callback,
                             start, deadline, count, calls + 1), RETRY_MS);
                     return;
