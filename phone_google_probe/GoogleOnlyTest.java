@@ -29,7 +29,7 @@ import static org.junit.Assert.*;
 @RunWith(AndroidJUnit4.class)
 public class GoogleOnlyTest {
     @Test public void testGoogleBelfast() throws Exception {
-        final String queryUrl = "https://www.google.com/search?q=Belfast+Northern+Ireland";
+        final String queryUrl = "https://www.google.com/search?q=Belfast+Northern+Ireland&udm=14";
         CountDownLatch completed = new CountDownLatch(1);
         AtomicReference<String> raw = new AtomicReference<>("");
         AtomicReference<String> loadedUrl = new AtomicReference<>("");
