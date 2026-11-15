@@ -2,6 +2,8 @@ package com.photofiver.phonebrowser;
 
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.os.Handler;
+import android.os.Looper;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceError;
 import androidx.test.core.app.ActivityScenario;
@@ -51,18 +53,27 @@ public class PhoneBrowserSmokeTest {
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
                 WebView webView = browser(activity);
-                webView.setWebViewClient(new WebViewClient() {
-                    @Override public void onPageFinished(WebView view, String url) {
-                        if (url.startsWith("https://example.org/")) {
-                            view.evaluateJavascript("document.getElementById('result').textContent",
-                                    value -> { output.set(value); done.countDown(); });
-                        }
-                    }
-                });
                 webView.loadDataWithBaseURL("https://example.org/",
                     "<html><body><span id='result'>before</span><script>"
                     + "document.getElementById('result').textContent='hello-from-js';"
                     + "</script></body></html>", "text/html", "UTF-8", null);
+                Handler handler = new Handler(Looper.getMainLooper());
+                Runnable check = new Runnable() {
+                    int attempts = 0;
+                    @Override public void run() {
+                        webView.evaluateJavascript(
+                            "(document.getElementById('result') || {}).textContent || ''",
+                            value -> {
+                                if ("\"hello-from-js\"".equals(value)) {
+                                    output.set(value);
+                                    done.countDown();
+                                } else if (attempts++ < 35) {
+                                    handler.postDelayed(this, 450);
+                                }
+                            });
+                    }
+                };
+                handler.postDelayed(check, 500);
             });
             assertTrue("WebView JavaScript timed out", done.await(25, TimeUnit.SECONDS));
             assertEquals("\"hello-from-js\"", output.get());
