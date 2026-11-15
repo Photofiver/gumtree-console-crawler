@@ -47,12 +47,7 @@ public class GoogleOnlyTest {
                             loadedUrl.set(url);
                             new Handler(Looper.getMainLooper()).postDelayed(() ->
                                 view.evaluateJavascript(
-                                    "(()=>JSON.stringify({url:location.href,title:document.title,"
-                                    + "text:(document.body?document.body.innerText:'').slice(0,8000),"
-                                    + "links:[...document.querySelectorAll('a[href]')].slice(0,180)"
-                                    + ".filter(a=>{try{return new URL(a.href).hostname !== location.hostname"
-                                    + " && (a.innerText || '').trim().length > 4;}catch(e){return false}})"
-                                    + ".slice(0,15).map(a=>({title:(a.innerText||'').trim().slice(0,100),url:a.href.slice(0,300)}))}))()",
+                                    PageSnapshotScript.javascript(),
                                     value -> { raw.set(value); completed.countDown(); })
                                 , 1200);
                         }
@@ -93,6 +88,7 @@ public class GoogleOnlyTest {
                     report.put("title",data.optString("title"));
                     report.put("textSample",t.substring(0,Math.min(t.length(),2000)));
                     report.put("resultLinks",links);
+                    report.put("linkDiagnostics",data.optJSONArray("linkDiagnostics"));
                     report.put("externalLinkCount",count);
                 } catch(Exception e) {report.put("status","PARSE_ERROR");report.put("error",e.toString());}
             }
@@ -101,7 +97,8 @@ public class GoogleOnlyTest {
             try(FileOutputStream f=new FileOutputStream(output.get())){
                 f.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
-            assertNotEquals("Test did not finish", "TIMEOUT", report.optString("status"));
+            assertEquals("Google must return two usable result links: " + report,
+                "POSSIBLE_RESULTS", report.optString("status"));
         }
     }
 }
