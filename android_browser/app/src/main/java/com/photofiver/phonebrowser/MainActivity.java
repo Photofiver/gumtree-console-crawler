@@ -208,6 +208,7 @@ public class MainActivity extends Activity {
                     }
                 }
                 final int recent = newest;
+                final int selectedIssue = chosenNum;
                 final JSONObject command = chosen;
                 ui.post(() -> {
                     if (!listening) return;
@@ -216,7 +217,7 @@ public class MainActivity extends Activity {
                         lastSeen = recent; // Do not replay old commands.
                         show("Connected. Waiting for NEW [phone-browser] GitHub issues...");
                     } else if (command != null) {
-                        lastSeen = chosenNum;
+                        lastSeen = selectedIssue;
                         beginTask(command);
                     }
                     ui.postDelayed(this::poll, 12000);
