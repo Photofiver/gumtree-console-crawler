@@ -21,7 +21,7 @@ An Android WebView that opens public pages **on the phone**, not on GitHub-hoste
 }
 ```
 
-Supported actions are **snapshot** (page text/links), **extract** (CSS selector), **click_text** (follows ordinary HTTPS hyperlinks only, never triggers onclick JavaScript), **scroll** (0–1600px), and **wait** (0–5000ms), max 10 steps. The app blocks HTTP/credentials/private IP literals and many dangerous link paths. It never issues website POST actions by user command.
+To search the public web, use `{"url":"https://example.com/","steps":[{"action":"search","value":"Belfast Northern Ireland"},{"action":"snapshot"}]}`. Search availability may differ by network; a loaded search-engine page is not proof of actual search results.\n\nSupported actions are **search** (text query through Mojeek, public search results), **snapshot** (page text/links), **extract** (CSS selector), **click_text** (follows ordinary HTTPS hyperlinks only, never triggers onclick JavaScript), **scroll** (0–1600px), and **wait** (0–5000ms), max 10 steps. The app blocks HTTP/credentials/private IP literals and many dangerous link paths. It never issues website POST actions by user command.
 
 ## Important limitations and safety
 
