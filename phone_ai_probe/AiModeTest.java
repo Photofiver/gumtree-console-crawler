@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class AiModeTest {
-    private static final String QUESTION = "Napisz kompletny kod w Pythonie 3.11 wykrywający sygnały SHORT na podstawie RSI(14) na interwale 5 minut.\n\nWarunki:\n1. Sygnał występuje wyłącznie wtedy, gdy RSI poprzedniej zamkniętej świecy było poniżej 89, a aktualnej zamkniętej świecy wynosi co najmniej 89.\n2. Nigdy nie używaj niezakończonych świec.\n3. Każdy sygnał można wygenerować tylko raz.\n4. Obsługuj jednocześnie 200 kryptowalut.\n5. Nie korzystaj z dodatkowych bibliotek.\n\nPodaj kompletny działający kod, automatyczne testy i ich oczekiwane wyniki. Uwzględnij brakujące świece, duplikaty danych i RSI równe dokładnie 89. Nie modyfikuj żadnego istniejącego repozytorium.";
+    private static final String QUESTION = "Find exactly ONE real YouTube video, preferably a newer video presented by an ordinary person or mechanic, showing or audibly demonstrating a 2006 Toyota Corolla's ABS activating unexpectedly when braking at very low speed, pedal pulsing and a springy buzzing/grinding sound. Give the exact YouTube watch URL, video title, channel, and exact minute:second where the ABS symptom is actually shown or described. Check the video's transcript or captions if you have access: quote up to 10 words at that timestamp and say explicitly whether you saw its transcript or only search snippets. Do not substitute another car, another model year or a generic ABS explainer. Do NOT guess a timestamp or a URL. If you cannot verify all requirements, say NO VERIFIED MATCH and explain which details you cannot verify.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
@@ -31,7 +31,7 @@ public class AiModeTest {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    @Test public void testGoogleAiModeRsiPythonCode() throws Exception {
+    @Test public void testGoogleAiModeYoutubeTranscriptAccuracy() throws Exception {
         JSONObject report = new JSONObject();
         report.put("question", QUESTION);
         report.put("method", "Google AI Mode direct URL via Android WebView on GitHub Actions, without Google login");
@@ -63,7 +63,7 @@ public class AiModeTest {
             });
             report.put("pageFinished", pageLoaded.await(24, TimeUnit.SECONDS));
             report.put("loadUrl", loaded.get());
-            Thread.sleep(27000);
+            Thread.sleep(18000);
             CountDownLatch snapReady = new CountDownLatch(1);
             AtomicReference<String> raw = new AtomicReference<>("null");
             String js = "(()=>JSON.stringify({"
@@ -89,16 +89,16 @@ public class AiModeTest {
                 String text = snapshot.optString("text");
                 report.put("aiResponseReady", text.contains("AI Mode response is ready"));
                 report.put("responseCharacters",text.length());
-                report.put("hasPythonDef",text.contains("def "));
-                report.put("hasPythonTest",text.contains("unittest") || text.contains("assert "));
-                report.put("containsDVA", text.contains("DVA"));
-                report.put("mentionsMOT", text.toLowerCase().contains("mot"));
+                report.put("mentionsYoutube",text.toLowerCase().contains("youtube"));
+                report.put("mentionsTranscript",text.toLowerCase().contains("transcript") || text.toLowerCase().contains("captions"));
+                report.put("mentions2006", text.contains("2006"));
+                report.put("mentionsTimestamp",text.matches("(?s).*\\\\b\\\\d{1,2}:\\\\d{2}\\\\b.*"));
             } catch (Exception error) { report.put("parseError", error.toString()); }
             try (FileOutputStream stream = new FileOutputStream(output[0])) {
                 stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
         }
-        System.out.println("GOOGLE_AI_RSI_CODE_REPORT " + report.toString());
+        System.out.println("GOOGLE_AI_YOUTUBE_REPORT " + report.toString());
         assertNotNull(output[0]);
     }
 }
