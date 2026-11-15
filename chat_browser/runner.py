@@ -9,11 +9,74 @@ import re
 import socket
 import sys
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import unquote, urlsplit
 
 MAX_STEPS = 12
 MAX_TEXT = 14000
-ACTIONS = {"click", "fill", "press", "select", "check", "uncheck", "wait", "screenshot", "extract"}
+# No arbitrary form submission, checkbox changes, or modifying commands.
+ACTIONS = {"click", "fill", "press", "wait", "screenshot", "extract"}
+MUTATING_WORDS = re.compile(
+    r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
+    r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
+    r"transfer|withdraw|deposit|trade|sell|order|subscribe|"
+    r"usu[nń]|skasuj|kasuj|anuluj|kup|zap[lł]a[cć]|sprzedaj|wyloguj)(?![a-z])",
+    re.I,
+)
+SAFE_BUTTON_WORDS = re.compile(
+    r"^(?:search|find|next|previous|back|more|show|hide|read|view|open|"
+    r"expand|collapse|load|filter|sort|details|learn|see|menu|close|"
+    r"refresh|retry|page|tab|go to|continue reading|"
+    r"szukaj|wyszukaj|dalej|nast[eę]pn|poprzedni|wstecz|wi[eę]cej|"
+    r"poka[zż]|zobacz|czytaj|otw[oó]rz|rozwi[nń]|zwi[nń]|"
+    r"filtr|sortuj|szczeg[oó][lł]y|od[sś]wie[zż]|zamknij)\b",
+    re.I,
+)
+SEARCH_FIELD_WORDS = re.compile(r"(?:search|find|query|wyszuk|szukaj)", re.I)
+
+
+def is_safe_browsing_url(url: str) -> bool:
+    """Conservative denylist for GET navigation that might change data."""
+    try:
+        parsed = urlsplit(url)
+        target = unquote(parsed.path + "?" + parsed.query)
+        return not MUTATING_WORDS.search(target)
+    except (ValueError, TypeError):
+        return False
+
+
+def is_safe_click(info: dict) -> bool:
+    """Links to public reading pages or clearly navigational UI buttons only."""
+    label = str(info.get("label", "")).strip()
+    if MUTATING_WORDS.search(label):
+        return False
+    tag = info.get("tag")
+    href = info.get("href", "")
+    if tag == "a" and href:
+        return href.startswith(("http://", "https://")) and is_safe_browsing_url(href)
+    if tag == "button" or info.get("role") in {"button", "tab"}:
+        return bool(SAFE_BUTTON_WORDS.search(label))
+    return False
+
+
+def is_search_field(info: dict) -> bool:
+    if info.get("tag") != "input" or info.get("type") not in {"search", "text", ""}:
+        return False
+    if info.get("type") == "search":
+        return True
+    return bool(SEARCH_FIELD_WORDS.search(str(info.get("label", ""))))
+
+
+def inspect_element(locator) -> dict:
+    """This fixed read-only DOM inspection does not execute page-provided code."""
+    return locator.evaluate("""el => ({
+        tag: el.tagName.toLowerCase(),
+        type: (el.getAttribute('type') || '').toLowerCase(),
+        role: (el.getAttribute('role') || '').toLowerCase(),
+        label: [el.getAttribute('aria-label'), el.getAttribute('title'),
+                el.getAttribute('placeholder'), el.getAttribute('name'),
+                el.textContent].filter(Boolean).join(' ').trim().slice(0, 240),
+        href: el.href || ''
+    })""")
 
 
 class UnsafeTarget(ValueError):
@@ -81,10 +144,17 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
         context = browser.new_context(accept_downloads=False, permissions=[], viewport={"width": 1280, "height": 800})
         page = context.new_page()
         page.set_default_timeout(10000)
-        # Validate all browser requests, including redirects, to block access to private networks.
+        # All browser traffic is read-only: block POST/PUT/PATCH/DELETE and
+        # suspicious GET destinations, including redirects and JS requests.
+        # A GET-only browser cannot guarantee that every third-party website
+        # is side-effect-free, but it greatly reduces the mutation surface.
         def route_request(route):
             try:
+                if route.request.method.upper() not in {"GET", "HEAD"}:
+                    raise UnsafeTarget("State-changing HTTP method blocked")
                 require_public_url(route.request.url)
+                if not is_safe_browsing_url(route.request.url):
+                    raise UnsafeTarget("Potentially state-changing URL blocked")
                 route.continue_()
             except (ValueError, UnsafeTarget):
                 route.abort()
@@ -96,17 +166,20 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                 selector = step.get("selector", "")
                 item = {"step": i, "action": action}
                 if action == "click":
-                    page.locator(selector).first.click()
+                    element = page.locator(selector).first
+                    if not is_safe_click(inspect_element(element)):
+                        raise ValueError("Only safe navigation links and buttons may be clicked")
+                    element.click()
                 elif action == "fill":
-                    page.locator(selector).first.fill(step["value"])
+                    element = page.locator(selector).first
+                    if not is_search_field(inspect_element(element)):
+                        raise ValueError("Only search fields may be filled")
+                    element.fill(step["value"])
                 elif action == "press":
-                    page.locator(selector).first.press(step["value"])
-                elif action == "select":
-                    page.locator(selector).first.select_option(step["value"])
-                elif action == "check":
-                    page.locator(selector).first.check()
-                elif action == "uncheck":
-                    page.locator(selector).first.uncheck()
+                    element = page.locator(selector).first
+                    if step["value"] != "Enter" or not is_search_field(inspect_element(element)):
+                        raise ValueError("Only Enter in search fields is allowed")
+                    element.press("Enter")
                 elif action == "wait":
                     page.wait_for_timeout(step["ms"])
                 elif action == "screenshot":
