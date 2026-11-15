@@ -15,13 +15,13 @@ Example issue body:
 {"url":"https://example.com","steps":[{"action":"extract","selector":"h1"}]}
 ```
 
-Read-only actions: `click` (ordinary links and explicitly safe navigation buttons), `fill` (search fields only), `press` (Enter in search fields only), `wait`, `screenshot`, `extract` (at most 12 steps). `select`, `check`, `uncheck` and form-editing are disabled.
+Read-only actions: `click` (CSS selector), `click_text` (search visible safe links/buttons by label), `inspect` (list available links/buttons), `fill` (search fields only), `press` (Enter in search fields only), `wait`, `screenshot`, `extract` (at most 12 steps). `select`, `check`, `uncheck` and form-editing are disabled.
 
 ## Read-only safety mode
 
 - HTTP methods other than **GET/HEAD** are blocked, including POST, PUT, PATCH and DELETE.
 - Known destructive URL patterns (delete, remove, logout, withdraw, pay, order, etc.) are blocked even for GET.
-- Only links and buttons clearly used for browsing (search, more, next, open, filter, etc.) may be clicked.
+- Only links and buttons clearly used for browsing (search, more, next, open, filter, etc.) may be clicked. Use `click_text` if a site's CSS paths have changed; use `inspect` to discover links. The runner reports site error pages explicitly rather than claiming the task succeeded.
 - Only search boxes can receive text. Sending forms, changing account settings and changing checkboxes are not supported.
 - Every run uses a disposable browser session with downloads disabled.
 - **No program can promise that GET navigation on an untrusted site is always side-effect-free.** Some websites incorrectly perform changes through GET endpoints or JavaScript, and the browser can still make ordinary read requests to servers. Only use this module to read public content.
