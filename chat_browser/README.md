@@ -27,6 +27,14 @@ Read-only actions: `click` (CSS selector), `click_text` (search visible safe lin
 - **No program can promise that GET navigation on an untrusted site is always side-effect-free.** Some websites incorrectly perform changes through GET endpoints or JavaScript, and the browser can still make ordinary read requests to servers. Only use this module to read public content.
 - On all sites use sensible frequency and comply with site terms. No private logins.
 
+## eBay UK compatibility
+
+- Tested both `ebay.co.uk/sch/i.html` and direct item URLs from GitHub Actions: eBay returns **"Error Page | eBay"**, not listings.
+- Google search from the same runner shows an **unusual automated traffic** challenge.
+- The Open RSS eBay feed requires a free email token, so it does not satisfy no-registration usage.
+- The module now returns these as explicit failures instead of claiming success; this **does not enable eBay access**.
+- eBay's official Browse API can retrieve live item summaries but requires developer credentials, and is not configured in this public repository. Never put secrets in GitHub Issues.
+
 ## Important limits
 
 - This controls a **remote** GitHub browser, **not the physical Android phone**.
