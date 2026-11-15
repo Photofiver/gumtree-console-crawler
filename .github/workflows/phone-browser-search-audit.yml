@@ -1,10 +1,6 @@
 name: Audit 20 search engines on Android
 
 on:
-  push:
-    paths:
-      - 'android_browser/**'
-      - '.github/workflows/phone-browser-search-audit.yml'
   workflow_dispatch:
 
 permissions:
