@@ -8,7 +8,7 @@ final class PageSnapshotScript {
         return """
             (() => {
               const google = /(^|\\.)google\\.[a-z.]+$/i.test(location.hostname);
-              const anchors = Array.from(document.querySelectorAll('a[href],a[data-url],a[data-href]'));
+              const anchors = Array.from(document.querySelectorAll('a[href],a[data-url],a[data-href],[role=link][data-url]'));
               function destination(a) {
                 const candidates = [a.getAttribute('data-url'), a.getAttribute('data-href'),
                     a.getAttribute('href'), a.href].filter(Boolean);
@@ -42,11 +42,14 @@ final class PageSnapshotScript {
                     || a.getAttribute('aria-label') || '').trim().slice(0,110);
                 if (!url || !title || used.has(url)) continue;
                 const dest = new URL(url);
+                const isGoogleRedirect = google && /(^|\\.)google\\.[a-z.]+$/i.test(dest.hostname)
+                    && /^\\/(goto|url)$/.test(dest.pathname);
                 if (google && /(^|\\.)google\\.[a-z.]+$/i.test(dest.hostname)
-                    && !heading) continue; // Ignore internal Google navigation.
+                    && !isGoogleRedirect) continue; // Ignore internal Google navigation.
                 used.add(url);
-                found.push({text:title, url:url.slice(0,450)});
-                if (found.length >= 25) break;
+                found.push({text:title, url:url.slice(0,900),
+                    type:isGoogleRedirect?'google-redirect':'direct'});
+                if (found.length >= 12) break;
               }
               const diagnostics = [];
               if (google && found.length < 2) {
