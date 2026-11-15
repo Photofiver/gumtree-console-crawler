@@ -33,6 +33,19 @@ SAFE_BUTTON_WORDS = re.compile(
 )
 SEARCH_FIELD_WORDS = re.compile(r"(?:search|find|query|wyszuk|szukaj)", re.I)
 
+def classify_page_failure(title: str, url: str, body: str) -> str | None:
+    """Report website access failures as failures, never as valid search results."""
+    t, u, b = title.lower(), url.lower(), body.lower()
+    if "ebay" in t and ("error page" in t or "something went wrong on our end" in b):
+        return "eBay returned an error page. Automated access to this page is unavailable."
+    if "google.com/sorry" in u or ("unusual traffic from your computer network" in b):
+        return "Google challenged the datacenter browser due to automated traffic."
+    if "openrss.org" in u and "you'll need a token to use it" in b:
+        return "Open RSS needs a token/email for this eBay feed; not available anonymously."
+    if "access denied" in t or "pardon our interruption" in b:
+        return "The website denied browser access."
+    return None
+
 
 def is_safe_browsing_url(url: str) -> bool:
     """Conservative denylist for GET navigation that might change data."""
@@ -227,14 +240,10 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
             text = page.locator("body").inner_text(timeout=12000)[:MAX_TEXT]
             links = page.locator("a[href]").evaluate_all("els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))")
             final_url = page.url
-            if (
-                ("error page" in title.lower() and ("ebay" in title.lower()))
-                or "something went wrong on our end" in text.lower()
-                or ("access denied" in title.lower())
-                or ("unusual traffic" in text.lower() and "automated" in text.lower())
-            ):
-                return {"ok": False, "error": "Website returned an error or access-blocking page",
-                        "title": title, "url": final_url, "text": text[:2000], "actions": action_results}
+            issue = classify_page_failure(title, final_url, text)
+            if issue:
+                return {"ok": False, "error": issue, "title": title,
+                        "url": final_url, "text": text[:2000], "actions": action_results}
             return {"ok": True, "title": title, "url": final_url, "text": text, "links": links, "actions": action_results, "screenshots": screenshots}
         finally:
             context.close()
