@@ -49,7 +49,7 @@ jobs:
             adb install -r android_browser/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             set +e
             timeout -k 5s 80s adb shell am instrument -w -r -e class com.photofiver.phonebrowser.GoogleOnlyTest com.photofiver.phonebrowser.test/androidx.test.runner.AndroidJUnitRunner | tee google-test-instrumentation.txt
-            echo "INSTRUMENT_EXIT=${PIPESTATUS[0]}"
+            echo "Google test completed; collecting saved Google result"
             set -e
             adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/google-only.json google-only.json || true
             adb logcat -d -s GOOGLE_SINGLE_PROBE:I '*:S' > google-test-logcat.txt || true
