@@ -1,6 +1,7 @@
 package com.photofiver.phonebrowser;
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -120,6 +121,7 @@ public class MainActivity extends Activity {
         start.setOnClickListener(v -> {
             if (listening) {
                 listening = false;
+                stopService(new Intent(this, BrowserKeepAliveService.class));
                 token = "";
                 tokenInput.setText("");
                 show("Stopped.");
@@ -130,6 +132,8 @@ public class MainActivity extends Activity {
                     return;
                 }
                 listening = true;
+                try { startForegroundService(new Intent(this, BrowserKeepAliveService.class)); }
+                catch (Exception e) { show("Background service unavailable: " + e.getMessage()); }
                 initialized = false;
                 lastSeen = 0;
                 show("Connecting to GitHub (the app must remain running)...");
@@ -380,6 +384,7 @@ public class MainActivity extends Activity {
 
     @Override protected void onDestroy() {
         listening = false;
+        stopService(new Intent(this, BrowserKeepAliveService.class));
         io.shutdownNow();
         if (browser != null) browser.destroy();
         super.onDestroy();
