@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class AiModeTest {
-    private static final String QUESTION = "Can you actually open and read the FULL time-coded YouTube captions/transcript for this exact video: https://www.youtube.com/watch?v=aircAruvnKk (3Blue1Brown, But what is a neural network)? Do NOT answer from memory or search snippets. If you have accessed the full transcript, give TWO verbatim short excerpts of 5 to 10 words each, one near 06:00 and the other near 12:00, and the exact caption timestamps, plus how you accessed the transcript. If you cannot verify direct transcript access, state NO VERIFIED TRANSCRIPT and explain whether only search results, video description or snippets were available. Do not invent quotes or timestamps.";
+    private static final String QUESTION = "For this exact YouTube video https://www.youtube.com/watch?v=28hijLgO9nU, identify its real title and duration. Can you access its actual time-coded subtitles/transcript? If yes, quote TWO short verbatim fragments (5-10 words each) with precise timecodes, one approximately 00:30 and one approximately 01:30 (if video shorter choose halfway and last quarter), and explain specifically how the transcript was obtained. Do not guess from title, summaries, search results, descriptions, other videos or previous knowledge. If direct transcript access is unverified, say NO VERIFIED TRANSCRIPT, and distinguish retrieved web snippets from full transcript. Respond concisely.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
