@@ -25,9 +25,9 @@ Supported actions are **snapshot** (page text/links), **extract** (CSS selector)
 
 ## Important limitations and safety
 
-- **Keep the app running.** Android can pause/kill background activities; commands are processed only when the app can run. No background service is installed by this prototype.
+- **Keep the app running.** Starting listening creates an Android foreground service with an ongoing notification so switching to ChatGPT should keep the app process active. Android can still stop or restrict it (especially after force-stop, battery management, or service time limits); it is not guaranteed to run indefinitely. Stop listening when finished.
 - The phone browser is a new WebView, **not your existing Chrome profile**; cookies, logins, extensions, bookmarks, and sessions are not shared. Using the phone's network may avoid some datacenter-IP restrictions, **but there is no guarantee of access to eBay or every site**.
-- This is **not inherently safe on every site**. A third-party website can send its own HTTP requests via JavaScript; GET navigation can also have side effects on improperly implemented sites. Never open authenticated or private sessions with this prototype.
+- The foreground service is for a short, user-initiated browsing session, not permanent monitoring. Android 15+ limits some service types to a daily runtime budget.\n- This is **not inherently safe on every site**. A third-party website can send its own HTTP requests via JavaScript; GET navigation can also have side effects on improperly implemented sites. Never open authenticated or private sessions with this prototype.
 - **All commands and page extracts are PUBLIC** GitHub issue content. Never use it for confidential, personal, financial, or login pages.
 - The token has **Issues read/write** only, and is used only for GitHub API calls. Prefer a short expiration and revoke when finished.
 - Only issues actually created by the repository owner `Photofiver` are accepted, and **old issues are not replayed** on startup. Open a new issue after the phone shows `Connected`.
