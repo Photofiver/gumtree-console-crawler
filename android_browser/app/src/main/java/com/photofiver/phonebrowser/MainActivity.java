@@ -251,8 +251,19 @@ public class MainActivity extends Activity {
                 String action = step.getString("action");
                 if (!action.equals("snapshot") && !action.equals("extract")
                         && !action.equals("scroll") && !action.equals("wait")
-                        && !action.equals("click_text") && !action.equals("search"))
+                        && !action.equals("click_text") && !action.equals("search")
+                        && !action.equals("fill") && !action.equals("submit_search"))
                     throw new IllegalArgumentException("Unsupported action: " + action);
+                if (action.equals("fill") || action.equals("submit_search")) {
+                    String selector = step.optString("selector");
+                    if (selector.isEmpty() || selector.length() > 180)
+                        throw new IllegalArgumentException("Form selector must have 1-180 characters");
+                    if (action.equals("fill")) {
+                        String value = step.optString("value");
+                        if (value.isEmpty() || value.length() > 200)
+                            throw new IllegalArgumentException("Field text must have 1-200 characters");
+                    }
+                }
                 if (action.equals("wait") && (step.optInt("ms", -1) < 0 || step.optInt("ms") > 5000))
                     throw new IllegalArgumentException("Wait must be 0-5000ms");
                 if (action.equals("scroll") && (step.optInt("px", -1) < 0 || step.optInt("px") > 1600))
@@ -323,6 +334,36 @@ public class MainActivity extends Activity {
                 browser.evaluateJavascript(js, raw -> {
                     actions.put("extract " + selector + ": " + decodeJs(raw));
                     nextStep();
+                });
+            } else if (action.equals("fill")) {
+                String selector = step.getString("selector");
+                browser.evaluateJavascript(SafeFormScript.fill(selector, step.getString("value")), raw -> {
+                    String result = decodeJs(raw);
+                    if (!"FILLED".equals(result)) {
+                        fail("Could not fill " + selector + ": " + result);
+                        return;
+                    }
+                    actions.put("Filled public text field: " + selector);
+                    nextStep();
+                });
+            } else if (action.equals("submit_search")) {
+                String selector = step.getString("selector");
+                navigating = true;
+                browser.evaluateJavascript(SafeFormScript.submitSearch(selector), raw -> {
+                    String result = decodeJs(raw);
+                    if (!"SUBMITTED".equals(result)) {
+                        navigating = false;
+                        fail("Search form rejected " + selector + ": " + result);
+                        return;
+                    }
+                    actions.put("Submitted safe GET search form: " + selector);
+                    // The form may update in-page (without a navigation).
+                    ui.postDelayed(() -> {
+                        if (busy && navigating) {
+                            navigating = false;
+                            nextStep();
+                        }
+                    }, 1700);
                 });
             } else if (action.equals("click_text")) {
                 String target = step.optString("value").trim();
