@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class AiModeTest {
-    private static final String QUESTION = "Find exactly ONE real YouTube video, preferably a newer video presented by an ordinary person or mechanic, showing or audibly demonstrating a 2006 Toyota Corolla's ABS activating unexpectedly when braking at very low speed, pedal pulsing and a springy buzzing/grinding sound. Give the exact YouTube watch URL, video title, channel, and exact minute:second where the ABS symptom is actually shown or described. Check the video's transcript or captions if you have access: quote up to 10 words at that timestamp and say explicitly whether you saw its transcript or only search snippets. Do not substitute another car, another model year or a generic ABS explainer. Do NOT guess a timestamp or a URL. If you cannot verify all requirements, say NO VERIFIED MATCH and explain which details you cannot verify.";
+    private static final String QUESTION = "Ile minut ma 2,5 godziny? Podaj sama liczbe minut.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
