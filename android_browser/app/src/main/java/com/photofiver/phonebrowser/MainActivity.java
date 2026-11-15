@@ -278,7 +278,7 @@ public class MainActivity extends Activity {
         if (query.isEmpty() || query.length() > 160 || query.contains("\\n") || query.contains("\\r")) {
             throw new IllegalArgumentException("Search query must be between 1 and 160 characters");
         }
-        String url = "https://www.google.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = "https://www.google.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8) + "&udm=14";
         if (!safeUrl(url)) throw new IllegalArgumentException("Unsafe search query");
         return url;
     }
@@ -370,9 +370,15 @@ public class MainActivity extends Activity {
                         || text.contains("unusual traffic from your computer network")
                         || text.contains("captcha") && text.contains("robot")
                         || title.contains("access denied");
-                JSONObject out = new JSONObject().put("ok", !blocked)
+                boolean googleSearch = page.optString("url").startsWith("https://www.google.com/search?");
+                boolean missingLinks = googleSearch
+                        && page.optJSONArray("links") != null
+                        && page.optJSONArray("links").length() == 0;
+                JSONObject out = new JSONObject().put("ok", !blocked && !missingLinks)
                         .put("page", page).put("actions", actions);
                 if (blocked) out.put("error", "Website returned a block/error page");
+                else if (missingLinks)
+                    out.put("error", "Google showed search text but no usable result links");
                 report(out);
             } catch (Exception e) { fail("Result error: " + e.getMessage()); }
         });
