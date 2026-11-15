@@ -6,7 +6,6 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
-import androidx.test.platform.app.InstrumentationRegistry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -65,10 +64,11 @@ public class BrowserInteractionTest {
 
     @Test public void testRealTouchMenuFormLinkBackAndScroll() throws Exception {
         JSONObject report = new JSONObject();
-        report.put("kind","WebView native touch test; does not assert GitHub command support");
+        report.put("kind","Native WebView touch plus production SafeFormScript fill and GET submit");
         report.put("menuTap","NOT_TESTED");
-        report.put("textInput","NOT_TESTED");
-        report.put("formSubmit","NOT_TESTED");
+        report.put("fillAction","NOT_TESTED");
+        report.put("buttonFormSubmit","NOT_TESTED");
+        report.put("searchFormAction","NOT_TESTED");
         report.put("linkTap","NOT_TESTED");
         report.put("back","NOT_TESTED");
         report.put("scroll","NOT_TESTED");
@@ -108,20 +108,21 @@ public class BrowserInteractionTest {
             String menu=js(scenario,"String(document.querySelector('#panel').hidden)");
             report.put("menuTap", "false".equals(menu) ? "PASS" : "FAIL");
 
-            tap(scenario,"#query");
-            try {
-                InstrumentationRegistry.getInstrumentation().sendStringSync("Belfast");
-            } catch (Exception e) {
-                report.put("keyboardError",e.toString());
-            }
+            // Fill through the same SafeFormScript used by GitHub-controlled app commands.
+            String fillResult=js(scenario,SafeFormScript.fill("#query","Belfast"));
             String entered=js(scenario,"document.querySelector('#query').value");
-            report.put("textInput", "Belfast".equals(entered) ? "PASS" : "FAIL");
+            report.put("fillAction", "FILLED".equals(fillResult) && "Belfast".equals(entered) ? "PASS" : "FAIL");
             report.put("entered",entered);
+            report.put("nativeKeyboardTyping","NOT_VERIFIED");
 
             tap(scenario,"#submit");
             String answer=js(scenario,"document.querySelector('#answer').innerText");
-            report.put("formSubmit","SEARCHED: Belfast".equals(answer)?"PASS":"FAIL");
+            report.put("buttonFormSubmit","SEARCHED: Belfast".equals(answer)?"PASS":"FAIL");
             report.put("formResponse",answer);
+
+            String searchSubmit=js(scenario,SafeFormScript.submitSearch("#form"));
+            report.put("searchFormAction","SUBMITTED".equals(searchSubmit)?"PASS":"FAIL");
+            report.put("searchFormResult",searchSubmit);
 
             tap(scenario,"#next");
             String hash=js(scenario,"location.hash");
@@ -143,7 +144,7 @@ public class BrowserInteractionTest {
             }
         }
         System.out.println("INTERACTION_TEST_RESULT " + report);
-        for(String action:new String[]{"menuTap","textInput","formSubmit","linkTap","back","scroll"}) {
+        for(String action:new String[]{"menuTap","fillAction","buttonFormSubmit","searchFormAction","linkTap","back","scroll"}) {
             assertEquals("Interaction failed: " + action + " " + report,
                 "PASS",report.optString(action));
         }
