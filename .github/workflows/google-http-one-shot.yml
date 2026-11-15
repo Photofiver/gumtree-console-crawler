@@ -1,0 +1,92 @@
+name: Google HTTP one-shot
+
+on:
+  push:
+    paths:
+      - '.github/workflows/google-http-one-shot.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  google-http:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check Google search once without Android
+        shell: bash
+        run: |
+          set +e
+          curl --location --silent --show-error --compressed --connect-timeout 10 --max-time 20 \
+            --user-agent 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36' \
+            --header 'Accept-Language: en-GB,en;q=0.9' \
+            --output google-response.html \
+            --write-out '%{http_code}\n%{url_effective}\n' \
+            'https://www.google.com/search?q=Belfast+Northern+Ireland&num=10' > google-meta.txt
+          code=$?
+          set -e
+          echo "curl_exit_code=$code"
+          python3 - <<'PY'
+          import html
+          import json
+          import re
+          from html.parser import HTMLParser
+          from pathlib import Path
+          from urllib.parse import urlparse,parse_qs
+          class Parsed(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.title=False
+                  self.title_text=[]
+                  self.links=[]
+                  self.current=None
+                  self.text=[]
+                  self.skip=0
+              def handle_starttag(self, tag, attrs):
+                  attrs=dict(attrs)
+                  if tag=='title': self.title=True
+                  if tag in ('style','script','noscript'): self.skip+=1
+                  if tag=='a': self.current=[attrs.get('href',''),[]]
+              def handle_data(self,data):
+                  if self.title: self.title_text.append(data)
+                  if not self.skip and data.strip(): self.text.append(data.strip())
+                  if self.current is not None: self.current[1].append(data.strip())
+              def handle_endtag(self,tag):
+                  if tag=='title': self.title=False
+                  if tag in ('style','script','noscript'): self.skip=max(0,self.skip-1)
+                  if tag=='a' and self.current is not None:
+                      href,label=self.current
+                      self.links.append((href,' '.join(label).strip()))
+                      self.current=None
+          meta=Path('google-meta.txt').read_text(errors='replace').splitlines()
+          status=meta[0] if meta else 'unknown'
+          end_url=meta[1] if len(meta)>1 else ''
+          document=Path('google-response.html').read_text(encoding='utf-8',errors='replace') if Path('google-response.html').exists() else ''
+          p=Parsed()
+          p.feed(document)
+          links=[]
+          for href,label in p.links:
+              if href.startswith('/url?'): href=parse_qs(urlparse(href).query).get('q',[href])[0]
+              if href.startswith('https://') and not re.search(r'https://(?:[^/]*\\.)?(google|gstatic|youtube)\\.',href) and label:
+                  links.append({'title':label[:120],'url':href[:250]})
+          plain=' '.join(p.text)
+          low=plain.lower()
+          block=any(x in low for x in ('unusual traffic','automated queries','verify you are human','captcha','detected unusual traffic','access denied'))
+          blocked_url=('/sorry/' in end_url)
+          if block or blocked_url: result='BLOCKED'
+          elif status!='200': result='HTTP_ERROR'
+          elif 'belfast' in low and len(links)>=2: result='CANDIDATE_SEARCH_RESULTS'
+          else: result='NOT_CONFIRMED'
+          output={'search_engine':'Google','query':'Belfast Northern Ireland','http_status':status,'final_url':end_url,'result':result,'title':' '.join(p.title_text)[:300],'visible_text_sample':plain[:900],'outbound_links':links[:8],'html_bytes':len(document.encode('utf-8'))}
+          Path('google-http-result.json').write_text(json.dumps(output,ensure_ascii=False,indent=2))
+          print(json.dumps(output,ensure_ascii=False,indent=2))
+          PY
+      - name: Save result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: google-http-one-shot-result
+          path: google-http-result.json
+          if-no-files-found: warn
+          retention-days: 7
