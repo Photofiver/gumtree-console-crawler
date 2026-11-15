@@ -44,7 +44,7 @@ def parse_task(body: str) -> dict:
     if not isinstance(body, str) or len(body) > 12000:
         raise ValueError("Task must be plain text shorter than 12000 characters")
     body = body.strip()
-    match = re.fullmatch(r"```(?:json)?\\s*\\n(.*?)\\n```", body, re.I | re.S)
+    match = re.fullmatch(r"```(?:json)?\s*\n(.*?)\n```", body, re.I | re.S)
     if match:
         body = match.group(1)
     task = json.loads(body)
@@ -91,7 +91,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
         context.route("**/*", route_request)
         try:
             page.goto(task["url"], wait_until="domcontentloaded", timeout=30000)
-            for i, step in enumerate(task["steps"], 1):
+            for i, step in enumerate(task.get("steps", []), 1):
                 action = step["action"]
                 selector = step.get("selector", "")
                 item = {"step": i, "action": action}
