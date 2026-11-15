@@ -14,7 +14,7 @@ from urllib.parse import unquote, urlsplit
 MAX_STEPS = 12
 MAX_TEXT = 14000
 # No arbitrary form submission, checkbox changes, or modifying commands.
-ACTIONS = {"click", "click_text", "fill", "press", "wait", "screenshot", "extract", "inspect"}
+ACTIONS = {"click", "click_text", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
@@ -133,17 +133,21 @@ def parse_task(body: str) -> dict:
     for i, step in enumerate(steps):
         if not isinstance(step, dict) or step.get("action") not in ACTIONS:
             raise ValueError(f"Unsupported action at step {i + 1}")
-        if set(step) - {"action", "selector", "value", "ms"}:
+        if set(step) - {"action", "selector", "value", "ms", "px"}:
             raise ValueError("Unsupported step property")
-        if step["action"] in {"click", "fill", "press", "extract"}:
+        if step["action"] in {"click", "fill", "press", "extract", "wait_for"}:
             if not isinstance(step.get("selector"), str) or not 1 <= len(step["selector"]) <= 300:
                 raise ValueError("A nonempty selector is required")
         if step["action"] in {"fill", "press", "click_text"}:
             if not isinstance(step.get("value"), str) or len(step["value"]) > 1000 or (step["action"] == "click_text" and not step["value"].strip()):
                 raise ValueError("A string value up to 1000 characters is required")
-        if step["action"] == "wait":
-            if not isinstance(step.get("ms"), int) or not 0 <= step["ms"] <= 5000:
-                raise ValueError("Wait must be between 0 and 5000 milliseconds")
+        if step["action"] in {"wait", "wait_for"}:
+            ms = step.get("ms", 10000 if step["action"] == "wait_for" else None)
+            if type(ms) is not int or not 0 <= ms <= (12000 if step["action"] == "wait_for" else 5000):
+                raise ValueError("Invalid wait duration")
+        if step["action"] == "scroll":
+            if type(step.get("px", 650)) is not int or not 0 <= step.get("px", 650) <= 1600:
+                raise ValueError("Scrolling is restricted to 0–1600 pixels down")
     return task
 
 
@@ -154,7 +158,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
     action_results = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-        context = browser.new_context(accept_downloads=False, permissions=[], viewport={"width": 1280, "height": 800})
+        context = browser.new_context(accept_downloads=False, permissions=[], service_workers="block", viewport={"width": 1280, "height": 800})
         page = context.new_page()
         page.set_default_timeout(10000)
         # All browser traffic is read-only: block POST/PUT/PATCH/DELETE and
@@ -185,17 +189,19 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                             raise ValueError("Unsafe or empty click_text target")
                         # Search by visible/accessibility label, not brittle href/CSS.
                         # Only follow the first element confirmed safe by our guards.
-                        candidates = (
-                            page.get_by_role("link", name=re.compile(re.escape(target), re.I)),
-                            page.get_by_role("button", name=re.compile(re.escape(target), re.I)),
-                            page.get_by_role("tab", name=re.compile(re.escape(target), re.I)),
-                        )
                         element = None
-                        for matching in candidates:
-                            for j in range(min(matching.count(), 20)):
-                                item_locator = matching.nth(j)
-                                if is_safe_click(inspect_element(item_locator)):
-                                    element = item_locator
+                        # Search the accessibility tree, including embedded frames.
+                        for frame in page.frames[:8]:
+                            for role in ("link", "button", "tab"):
+                                matching = frame.get_by_role(
+                                    role, name=re.compile(re.escape(target), re.I)
+                                )
+                                for j in range(min(matching.count(), 20)):
+                                    candidate = matching.nth(j)
+                                    if is_safe_click(inspect_element(candidate)):
+                                        element = candidate
+                                        break
+                                if element is not None:
                                     break
                             if element is not None:
                                 break
@@ -220,13 +226,29 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                     if step["value"] != "Enter" or not is_search_field(inspect_element(element)):
                         raise ValueError("Only Enter in search fields is allowed")
                     element.press("Enter")
-                elif action == "inspect":
-                    item["links"] = page.locator("a[href]").evaluate_all(
-                        "els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))"
-                    )
-                    item["buttons"] = page.get_by_role("button").evaluate_all(
-                        "els => els.slice(0, 30).map(x => (x.innerText || x.getAttribute('aria-label') || x.title || '').trim().slice(0, 100))"
-                    )
+                elif action in {"inspect", "snapshot"}:
+                    item["frames"] = []
+                    for frame in page.frames[:8]:
+                        info = {
+                            "url": frame.url.split("?")[0],
+                            "links": frame.locator("a[href]").evaluate_all(
+                                "els => els.slice(0, 30).map(x => ({text: (x.innerText || '').trim().slice(0, 90), url: x.href}))"
+                            ),
+                            "buttons": frame.get_by_role("button").evaluate_all(
+                                "els => els.slice(0, 20).map(x => (x.innerText || x.getAttribute('aria-label') || x.title || '').trim().slice(0, 90))"
+                            ),
+                        }
+                        if action == "snapshot":
+                            info["headings"] = frame.get_by_role("heading").all_inner_texts()[:12]
+                            info["inputs"] = frame.locator("input").evaluate_all(
+                                "els => els.slice(0, 12).map(x => ({type: x.type, name: x.name, placeholder: x.placeholder}))"
+                            )
+                        item["frames"].append(info)
+                elif action == "wait_for":
+                    page.locator(selector).first.wait_for(state="visible", timeout=step.get("ms", 10000))
+                elif action == "scroll":
+                    page.mouse.wheel(0, step.get("px", 650))
+                    page.wait_for_timeout(250)
                 elif action == "wait":
                     page.wait_for_timeout(step["ms"])
                 elif action == "screenshot":
