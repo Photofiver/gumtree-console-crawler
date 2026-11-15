@@ -120,6 +120,9 @@ public class BrowserInteractionTest {
             report.put("buttonFormSubmit","SEARCHED: Belfast".equals(answer)?"PASS":"FAIL");
             report.put("formResponse",answer);
 
+            report.put("implicitTextField",
+                "PASS".equals(js(scenario,"document.querySelector('#query').hasAttribute('type')?'FAIL':'PASS'"))
+                    ? "PASS" : "FAIL");
             String searchSubmit=js(scenario,SafeFormScript.submitSearch("#form"));
             report.put("searchFormAction","SUBMITTED".equals(searchSubmit)?"PASS":"FAIL");
             report.put("searchFormResult",searchSubmit);
@@ -144,7 +147,7 @@ public class BrowserInteractionTest {
             }
         }
         System.out.println("INTERACTION_TEST_RESULT " + report);
-        for(String action:new String[]{"menuTap","fillAction","buttonFormSubmit","searchFormAction","linkTap","back","scroll"}) {
+        for(String action:new String[]{"menuTap","fillAction","buttonFormSubmit","implicitTextField","searchFormAction","linkTap","back","scroll"}) {
             assertEquals("Interaction failed: " + action + " " + report,
                 "PASS",report.optString(action));
         }
