@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
@@ -250,7 +251,7 @@ public class MainActivity extends Activity {
                 String action = step.getString("action");
                 if (!action.equals("snapshot") && !action.equals("extract")
                         && !action.equals("scroll") && !action.equals("wait")
-                        && !action.equals("click_text"))
+                        && !action.equals("click_text") && !action.equals("search"))
                     throw new IllegalArgumentException("Unsupported action: " + action);
                 if (action.equals("wait") && (step.optInt("ms", -1) < 0 || step.optInt("ms") > 5000))
                     throw new IllegalArgumentException("Wait must be 0-5000ms");
@@ -258,6 +259,7 @@ public class MainActivity extends Activity {
                     throw new IllegalArgumentException("Scroll must be 0-1600px");
                 if (action.equals("click_text") && step.optString("value").trim().isEmpty())
                     throw new IllegalArgumentException("Click target missing");
+                if (action.equals("search")) makeSearchUrl(step.optString("value"));
             }
             busy = true;
             navigating = true;
@@ -268,6 +270,17 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             fail("Invalid task: " + e.getMessage());
         }
+    }
+
+    private static String makeSearchUrl(String value) {
+        if (value == null) throw new IllegalArgumentException("Search query missing");
+        String query = value.trim();
+        if (query.isEmpty() || query.length() > 160 || query.contains("\\n") || query.contains("\\r")) {
+            throw new IllegalArgumentException("Search query must be between 1 and 160 characters");
+        }
+        String url = "https://www.mojeek.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        if (!safeUrl(url)) throw new IllegalArgumentException("Unsafe search query");
+        return url;
     }
 
     private static String jsString(String value) {
@@ -285,7 +298,12 @@ public class MainActivity extends Activity {
         try {
             JSONObject step = steps.getJSONObject(stepIndex++);
             String action = step.getString("action");
-            if (action.equals("wait")) {
+            if (action.equals("search")) {
+                String url = makeSearchUrl(step.getString("value"));
+                actions.put("Searched: " + step.getString("value"));
+                navigating = true;
+                browser.loadUrl(url);
+            } else if (action.equals("wait")) {
                 ui.postDelayed(this::nextStep, step.optInt("ms", 800));
             } else if (action.equals("scroll")) {
                 int px = step.optInt("px", 600);
@@ -353,7 +371,9 @@ public class MainActivity extends Activity {
                 boolean blocked = title.contains("error page | ebay")
                         || text.contains("something went wrong on our end")
                         || page.optString("url").contains("google.com/sorry/")
-                        || text.contains("unusual traffic from your computer network");
+                        || text.contains("unusual traffic from your computer network")
+                        || text.contains("captcha") && text.contains("robot")
+                        || title.contains("access denied");
                 JSONObject out = new JSONObject().put("ok", !blocked)
                         .put("page", page).put("actions", actions);
                 if (blocked) out.put("error", "Website returned a block/error page");
