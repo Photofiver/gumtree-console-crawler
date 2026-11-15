@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class AiModeTest {
-    private static final String QUESTION = "Czy w listopadzie 2026 roku DVA oferuje oficjalne powiadomienia o zwolnionych terminach MOT w Mallusk? Jeśli nie, jak można znaleźć wcześniejszy termin? Podaj konkretne, działające rozwiązania i linki do oficjalnych źródeł. Nie wymyślaj usług, które nie istnieją.";
+    private static final String QUESTION = "Napisz kompletny kod w Pythonie 3.11 wykrywający sygnały SHORT na podstawie RSI(14) na interwale 5 minut.\n\nWarunki:\n1. Sygnał występuje wyłącznie wtedy, gdy RSI poprzedniej zamkniętej świecy było poniżej 89, a aktualnej zamkniętej świecy wynosi co najmniej 89.\n2. Nigdy nie używaj niezakończonych świec.\n3. Każdy sygnał można wygenerować tylko raz.\n4. Obsługuj jednocześnie 200 kryptowalut.\n5. Nie korzystaj z dodatkowych bibliotek.\n\nPodaj kompletny działający kod, automatyczne testy i ich oczekiwane wyniki. Uwzględnij brakujące świece, duplikaty danych i RSI równe dokładnie 89. Nie modyfikuj żadnego istniejącego repozytorium.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
@@ -31,7 +31,7 @@ public class AiModeTest {
         } catch (Exception e) { throw new RuntimeException(e); }
     }
 
-    @Test public void testGoogleAiModeMotQuestion() throws Exception {
+    @Test public void testGoogleAiModeRsiPythonCode() throws Exception {
         JSONObject report = new JSONObject();
         report.put("question", QUESTION);
         report.put("method", "Google AI Mode direct URL via Android WebView on GitHub Actions, without Google login");
@@ -63,12 +63,12 @@ public class AiModeTest {
             });
             report.put("pageFinished", pageLoaded.await(24, TimeUnit.SECONDS));
             report.put("loadUrl", loaded.get());
-            Thread.sleep(12500);
+            Thread.sleep(27000);
             CountDownLatch snapReady = new CountDownLatch(1);
             AtomicReference<String> raw = new AtomicReference<>("null");
             String js = "(()=>JSON.stringify({"
                     + "url:location.href,title:document.title,"
-                    + "text:(document.body?document.body.innerText:'').slice(0,15000),"
+                    + "text:(document.body?document.body.innerText:'').slice(0,85000),"
                     + "sourceLinks:[...document.querySelectorAll('a[href]')].filter(a=>"
                     + "{try{let u=new URL(a.href);return !u.hostname.endsWith('google.com')"
                     + " && /^https?:$/.test(u.protocol)}catch(e){return false}}).slice(0,45)"
@@ -88,6 +88,9 @@ public class AiModeTest {
                 report.put("page", snapshot);
                 String text = snapshot.optString("text");
                 report.put("aiResponseReady", text.contains("AI Mode response is ready"));
+                report.put("responseCharacters",text.length());
+                report.put("hasPythonDef",text.contains("def "));
+                report.put("hasPythonTest",text.contains("unittest") || text.contains("assert "));
                 report.put("containsDVA", text.contains("DVA"));
                 report.put("mentionsMOT", text.toLowerCase().contains("mot"));
             } catch (Exception error) { report.put("parseError", error.toString()); }
@@ -95,7 +98,7 @@ public class AiModeTest {
                 stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
             }
         }
-        System.out.println("GOOGLE_AI_MOT_REPORT " + report.toString());
+        System.out.println("GOOGLE_AI_RSI_CODE_REPORT " + report.toString());
         assertNotNull(output[0]);
     }
 }
