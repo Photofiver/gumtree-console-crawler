@@ -2,7 +2,7 @@ import json
 import unittest
 from unittest.mock import patch
 from chat_browser.runner import (parse_task, require_public_url,
-    is_safe_browsing_url, is_safe_click, is_search_field)
+    is_safe_browsing_url, is_safe_click, is_search_field, classify_page_failure)
 
 
 class RunnerTests(unittest.TestCase):
@@ -99,6 +99,26 @@ class RunnerTests(unittest.TestCase):
                         {"action": action, "selector": "form"}
                     ]}))
 
+
+
+    def test_ebay_failure_is_not_success(self):
+        msg = classify_page_failure("Error Page | eBay", "https://www.ebay.co.uk/itm/123",
+                                    "SORRY Something went wrong on our end")
+        self.assertIn("unavailable", msg)
+
+    def test_google_challenge_detected(self):
+        msg = classify_page_failure("About", "https://www.google.com/sorry/index?q=1",
+                                    "Our systems have detected unusual traffic")
+        self.assertIn("challenged", msg)
+
+    def test_token_wall_detected(self):
+        msg = classify_page_failure("We need your help", "https://openrss.org/www.ebay.co.uk/sch/i.html",
+                                    "you'll need a token to use it.")
+        self.assertIn("token", msg)
+
+    def test_normal_page_no_false_block(self):
+        self.assertIsNone(classify_page_failure("Example Domain", "https://example.com",
+                                               "Example content on a public page."))
 
 
 
