@@ -33,7 +33,7 @@ final class SafeFormScript {
             + "if(!f||f.tagName!=='FORM')return 'FORM_NOT_FOUND';"
             + "if((f.getAttribute('method')||'get').toLowerCase()!=='get')return 'POST_FORM_BLOCKED';"
             + "if(f.querySelector('input[type=password],input[type=file]'))return 'SENSITIVE_FORM_BLOCKED';"
-            + "if(!f.querySelector('input[type=search],input[type=text],textarea'))return 'NOT_A_SEARCH_FORM';"
+            + "if(!f.querySelector('input[type=search],input[type=text],input:not([type]),textarea'))return 'NOT_A_SEARCH_FORM';"
             + "if([...f.querySelectorAll('input,textarea')].some(e=>"
             + "/password|passcode|otp|secret|token|card|pin|bank|account|security|email|phone/i.test("
             + "[e.name,e.id,e.autocomplete].join(' '))))return 'SENSITIVE_FORM_BLOCKED';"
