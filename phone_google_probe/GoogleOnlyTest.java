@@ -47,7 +47,20 @@ public class GoogleOnlyTest {
                             loadedUrl.set(url);
                             new Handler(Looper.getMainLooper()).postDelayed(() ->
                                 view.evaluateJavascript(
-                                    PageSnapshotScript.javascript(),
+                                    "(()=>{const page=JSON.parse(" + PageSnapshotScript.javascript() + ");"
+                                    + "const heads=[...document.querySelectorAll('h1,h2,h3,[role=heading]')].slice(0,12);"
+                                    + "const inspect=e=>{let a=e;let out=[];for(let i=0;a&&i<5;i++,a=a.parentElement){"
+                                    + "out.push({tag:a.tagName,text:(a.innerText||'').slice(0,90),"
+                                    + "attrs:[...a.attributes].filter(v=>/href|url|role|data-|jsaction/.test(v.name))"
+                                    + ".slice(0,10).map(v=>[v.name,v.value.slice(0,170)])});}return out;};"
+                                    + "const needle=/Belfast|Wikipedia|Tripadvisor|Ireland.com/i;"
+                                    + "const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);"
+                                    + "let n,samples=[],seen=0;while((n=walk.nextNode())&&seen++<18000){"
+                                    + "if(needle.test((n.textContent||'').trim())&&(n.textContent||'').trim().length<160){"
+                                    + "samples.push(inspect(n.parentElement));if(samples.length>=10)break;}}"
+                                    + "page.domDebug={anchors:document.querySelectorAll('a[href]').length,"
+                                    + "headings:heads.map(e=>inspect(e)),samples:samples};"
+                                    + "return JSON.stringify(page)})()",
                                     value -> { raw.set(value); completed.countDown(); })
                                 , 1200);
                         }
@@ -89,6 +102,7 @@ public class GoogleOnlyTest {
                     report.put("textSample",t.substring(0,Math.min(t.length(),2000)));
                     report.put("resultLinks",links);
                     report.put("linkDiagnostics",data.optJSONArray("linkDiagnostics"));
+                    report.put("domDebug",data.optJSONObject("domDebug"));
                     report.put("externalLinkCount",count);
                 } catch(Exception e) {report.put("status","PARSE_ERROR");report.put("error",e.toString());}
             }
