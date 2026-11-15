@@ -178,18 +178,18 @@ public class SequentialSearchAuditTest {
     @Test public void auditTwentySearchEnginesInOrder() throws Exception {
         JSONArray results = new JSONArray();
         try(ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
-            for (String[] e: ENGINES) {
-                JSONObject outcome = probe(scenario, e[0],e[1]);
-                results.put(outcome);
-                Log.i("PHONE_SEARCH_AUDIT", "Completed "+results.length()+"/20");
-                // Cool down briefly between separate engines.
-                Thread.sleep(700);
-            }
             AtomicReference<File> output = new AtomicReference<>();
             scenario.onActivity(activity ->
                 output.set(new File(activity.getExternalFilesDir(null), "search-audit.json")));
-            try (FileOutputStream out = new FileOutputStream(output.get())) {
-                out.write(results.toString(2).getBytes(StandardCharsets.UTF_8));
+            for (String[] e: ENGINES) {
+                JSONObject outcome = probe(scenario, e[0],e[1]);
+                results.put(outcome);
+                // Write after EACH engine so a later hang cannot erase earlier evidence.
+                try (FileOutputStream out = new FileOutputStream(output.get())) {
+                    out.write(results.toString(2).getBytes(StandardCharsets.UTF_8));
+                }
+                Log.i("PHONE_SEARCH_AUDIT", "Completed "+results.length()+"/20");
+                Thread.sleep(700);
             }
         }
         assertEquals(20, results.length());
