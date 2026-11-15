@@ -150,7 +150,7 @@ public class SequentialSearchAuditTest {
             }
         });
 
-        boolean finished = done.await(14, TimeUnit.SECONDS);
+        boolean finished = done.await(9, TimeUnit.SECONDS);
         JSONObject item;
         if (!finished || raw.get().startsWith("LOAD_ERROR") ||
                 raw.get().startsWith("LAUNCH_ERROR") || raw.get().isEmpty()) {
