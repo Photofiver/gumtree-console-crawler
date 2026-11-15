@@ -278,7 +278,7 @@ public class MainActivity extends Activity {
         if (query.isEmpty() || query.length() > 160 || query.contains("\\n") || query.contains("\\r")) {
             throw new IllegalArgumentException("Search query must be between 1 and 160 characters");
         }
-        String url = "https://www.mojeek.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
+        String url = "https://www.google.com/search?q=" + URLEncoder.encode(query, StandardCharsets.UTF_8);
         if (!safeUrl(url)) throw new IllegalArgumentException("Unsafe search query");
         return url;
     }
@@ -353,11 +353,7 @@ public class MainActivity extends Activity {
     private interface PageConsumer { void ready(JSONObject page); }
 
     private void readSnapshot(PageConsumer callback) {
-        String js = "(()=>JSON.stringify({title:document.title,url:location.href,"
-                + "text:(document.body?document.body.innerText:'').slice(0,6500),"
-                + "links:[...document.querySelectorAll('a[href]')].slice(0,35).map("
-                + "a=>({text:(a.innerText||'').trim().slice(0,80),url:a.href}))}))()";
-        browser.evaluateJavascript(js, raw -> {
+        browser.evaluateJavascript(PageSnapshotScript.javascript(), raw -> {
             try { callback.ready(new JSONObject(decodeJs(raw))); }
             catch (Exception e) { fail("Could not read this page: " + e.getMessage()); }
         });
