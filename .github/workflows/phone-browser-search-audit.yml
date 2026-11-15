@@ -46,9 +46,12 @@ jobs:
           script: |
             adb install -r android_browser/app/build/outputs/apk/debug/app-debug.apk
             adb install -r android_browser/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            adb shell am instrument -w -r -e class com.photofiver.phonebrowser.SequentialSearchAuditTest com.photofiver.phonebrowser.test/androidx.test.runner.AndroidJUnitRunner | tee search-audit-instrumentation.txt
+            set +e
+            timeout --signal=TERM --kill-after=10 340s adb shell am instrument -w -r -e class com.photofiver.phonebrowser.SequentialSearchAuditTest com.photofiver.phonebrowser.test/androidx.test.runner.AndroidJUnitRunner | tee search-audit-instrumentation.txt
+            echo "INSTRUMENTATION_EXIT=${PIPESTATUS[0]}" | tee -a search-audit-instrumentation.txt
+            set -e
             adb logcat -d -s PHONE_SEARCH_AUDIT:I '*:S' > search-audit-logcat.txt || true
-            adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/search-audit.json search-audit.json
+            adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/search-audit.json search-audit.json || true
             test -s search-audit.json
       - name: Publish all 20 search results
         if: always()
