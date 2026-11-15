@@ -121,6 +121,25 @@ class RunnerTests(unittest.TestCase):
                                                "Example content on a public page."))
 
 
+    def test_snapshot_and_scroll_steps(self):
+        with patch("chat_browser.runner.require_public_url", return_value="https://example.com"):
+            task = parse_task(json.dumps({"url": "https://example.com", "steps": [
+                {"action": "snapshot"}, {"action": "scroll", "px": 800},
+                {"action": "wait_for", "selector": "div.result", "ms": 9000}
+            ]}))
+            self.assertEqual(len(task["steps"]), 3)
+
+    def test_rejects_long_wait_and_scroll(self):
+        with patch("chat_browser.runner.require_public_url", return_value="https://example.com"):
+            for step in [
+                {"action": "wait_for", "selector": "div", "ms": 99999},
+                {"action": "scroll", "px": -200},
+                {"action": "scroll", "px": 9999}
+            ]:
+                with self.assertRaises(ValueError):
+                    parse_task(json.dumps({"url": "https://example.com", "steps": [step]}))
+
+
 
 if __name__ == "__main__":
     unittest.main()
