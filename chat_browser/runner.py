@@ -126,7 +126,7 @@ def parse_task(body: str) -> dict:
             if not isinstance(step.get("selector"), str) or not 1 <= len(step["selector"]) <= 300:
                 raise ValueError("A nonempty selector is required")
         if step["action"] in {"fill", "press", "click_text"}:
-            if not isinstance(step.get("value"), str) or len(step["value"]) > 1000:
+            if not isinstance(step.get("value"), str) or len(step["value"]) > 1000 or (step["action"] == "click_text" and not step["value"].strip()):
                 raise ValueError("A string value up to 1000 characters is required")
         if step["action"] == "wait":
             if not isinstance(step.get("ms"), int) or not 0 <= step["ms"] <= 5000:
