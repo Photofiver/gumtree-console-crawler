@@ -24,6 +24,7 @@ import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
@@ -34,6 +35,7 @@ public class GoogleOnlyTest {
         AtomicReference<String> raw = new AtomicReference<>("");
         AtomicReference<String> loadedUrl = new AtomicReference<>("");
         AtomicReference<File> output = new AtomicReference<>();
+        AtomicBoolean started = new AtomicBoolean(false);
         try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
             scenario.onActivity(activity -> {
                 try {
@@ -45,24 +47,19 @@ public class GoogleOnlyTest {
                         @Override public void onPageFinished(WebView view, String url) {
                             if (url.startsWith("https://example.com/")) return;
                             loadedUrl.set(url);
+                            if (!started.compareAndSet(false, true)) return;
                             new Handler(Looper.getMainLooper()).postDelayed(() ->
-                                view.evaluateJavascript(
-                                    "(()=>{const page=JSON.parse(" + PageSnapshotScript.javascript() + ");"
-                                    + "const heads=[...document.querySelectorAll('h1,h2,h3,[role=heading]')].slice(0,12);"
-                                    + "const inspect=e=>{let a=e;let out=[];for(let i=0;a&&i<5;i++,a=a.parentElement){"
-                                    + "out.push({tag:a.tagName,text:(a.innerText||'').slice(0,90),"
-                                    + "attrs:[...a.attributes].filter(v=>/href|url|role|data-|jsaction/.test(v.name))"
-                                    + ".slice(0,10).map(v=>[v.name,v.value.slice(0,170)])});}return out;};"
-                                    + "const needle=/Belfast|Wikipedia|Tripadvisor|Ireland.com/i;"
-                                    + "const walk=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);"
-                                    + "let n,samples=[],seen=0;while((n=walk.nextNode())&&seen++<18000){"
-                                    + "if(needle.test((n.textContent||'').trim())&&(n.textContent||'').trim().length<160){"
-                                    + "samples.push(inspect(n.parentElement));if(samples.length>=10)break;}}"
-                                    + "page.domDebug={anchors:document.querySelectorAll('a[href]').length,"
-                                    + "headings:heads.map(e=>inspect(e)),samples:samples};"
-                                    + "return JSON.stringify(page)})()",
-                                    value -> { raw.set(value); completed.countDown(); })
-                                , 1200);
+                                PageSnapshotReader.read(view, new Handler(Looper.getMainLooper()),
+                                    new PageSnapshotReader.Result() {
+                                        @Override public void ready(JSONObject page) {
+                                            raw.set(JSONObject.quote(page.toString()));
+                                            completed.countDown();
+                                        }
+                                        @Override public void error(Exception e) {
+                                            raw.set("APP_ERROR:" + e);
+                                            completed.countDown();
+                                        }
+                                    }), 250);
                         }
                         @Override public void onReceivedError(WebView view, WebResourceRequest req, WebResourceError error) {
                             if (req.isForMainFrame()) {
@@ -104,6 +101,11 @@ public class GoogleOnlyTest {
                     report.put("linkDiagnostics",data.optJSONArray("linkDiagnostics"));
                     report.put("domDebug",data.optJSONObject("domDebug"));
                     report.put("externalLinkCount",count);
+                    report.put("totalResultLinks",data.optInt("totalResultLinks"));
+                    report.put("resultHeadingCount",data.optInt("resultHeadingCount"));
+                    report.put("anchorCount",data.optInt("anchorCount"));
+                    report.put("snapshotAttempts",data.optInt("snapshotAttempts"));
+                    report.put("extraWaitMs",data.optInt("extraWaitMs"));
                 } catch(Exception e) {report.put("status","PARSE_ERROR");report.put("error",e.toString());}
             }
             if ("POSSIBLE_RESULTS".equals(report.optString("status"))) {

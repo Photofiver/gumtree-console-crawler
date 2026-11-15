@@ -394,9 +394,11 @@ public class MainActivity extends Activity {
     private interface PageConsumer { void ready(JSONObject page); }
 
     private void readSnapshot(PageConsumer callback) {
-        browser.evaluateJavascript(PageSnapshotScript.javascript(), raw -> {
-            try { callback.ready(new JSONObject(decodeJs(raw))); }
-            catch (Exception e) { fail("Could not read this page: " + e.getMessage()); }
+        PageSnapshotReader.read(browser, ui, new PageSnapshotReader.Result() {
+            @Override public void ready(JSONObject page) { callback.ready(page); }
+            @Override public void error(Exception e) {
+                fail("Could not read this page: " + e.getMessage());
+            }
         });
     }
 
