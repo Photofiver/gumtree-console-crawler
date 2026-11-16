@@ -1,4 +1,5 @@
 name: Check TikTok publishing access (no upload)
+# Fresh OAuth access check for requested WAN 2.2 video, no Opera
 on:
   push:
     paths:
