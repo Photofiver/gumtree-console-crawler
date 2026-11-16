@@ -15,6 +15,8 @@ import sys
 import urllib.error
 import urllib.request
 
+from buffer_tiktok.captions import make_caption
+
 ROOT = Path(__file__).resolve().parent.parent
 RECEIPTS = ROOT / "buffer_tiktok" / "attempts.json"
 REPO = "Photofiver/gumtree-console-crawler"
@@ -164,7 +166,8 @@ def main():
     source, sha = available[0]
     finished = ready_video(source)
     url = "https://raw.githubusercontent.com/" + REPO + "/main/" + str(finished.relative_to(ROOT))
-    caption = "Nowy film wygenerowany przez AI. #AI #AIGenerated #kot #cat"
+    caption = make_caption(source)
+    print("New video-specific caption:", caption, flush=True)
     attempts[sha] = {
         "source": str(source.relative_to(ROOT)),
         "ready_url": url,
