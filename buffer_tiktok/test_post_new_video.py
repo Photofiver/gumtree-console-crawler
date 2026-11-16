@@ -47,5 +47,33 @@ class BufferTiktokSafetyTests(unittest.TestCase):
                 self.assertIsNone(pub.main())
                 gql.assert_not_called()
 
+    def test_coffee_caption_mentions_topic_and_discloses_ai(self):
+        from pathlib import Path
+        from buffer_tiktok.captions import make_caption
+        text = make_caption(Path("social_videos/new-coffee-cat.mp4"))
+        self.assertIn("coffee", text.lower())
+        self.assertIn("#AIGenerated", text)
+        self.assertIn("?", text)
+        self.assertLess(len(text), 2200)
+
+    def test_custom_caption_adds_disclosure(self):
+        import tempfile, json
+        from pathlib import Path
+        from buffer_tiktok.captions import make_caption
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "new-special-cat.mp4"
+            source.with_suffix(".json").write_text(
+                json.dumps({"caption": "The secret life of cats! #Cats"}), encoding="utf-8")
+            text = make_caption(source)
+            self.assertIn("#AIGenerated", text)
+            self.assertIn("The secret life", text)
+
+    def test_neutral_fallback_does_not_invent_scene(self):
+        from pathlib import Path
+        from buffer_tiktok.captions import make_caption
+        text = make_caption(Path("social_videos/new-special-2026.mp4"))
+        self.assertTrue("AI cat" in text or "imaginary cat" in text)
+        self.assertIn("#AIGenerated", text)
+
 if __name__ == "__main__":
     unittest.main()
