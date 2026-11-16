@@ -1,0 +1,54 @@
+name: TikTok original AI funny cat with Polish voice
+on:
+  push:
+    paths:
+      - 'cat_short/**'
+      - '.github/workflows/cat-short-ai.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  create-cat-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install AI generator client and offline Polish neural speech
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python3 -m pip install --upgrade gradio_client piper-tts
+          python3 -m piper.download_voices pl_PL-gosia-medium
+      - name: Generate original 5 second talking office cat
+        run: timeout 420s python3 cat_short/generate_cat.py
+      - name: Verify output before sharing
+        if: success()
+        run: |
+          test -s cat-boss-ai-polish.mp4
+          cat cat-boss-report.json
+          ffprobe -v error -show_entries stream=codec_type,codec_name -of json cat-boss-ai-polish.mp4
+      - name: Publish video direct MP4 URL
+        if: success()
+        run: |
+          mkdir -p social_videos
+          cp cat-boss-ai-polish.mp4 social_videos/cat-boss-ai-polish.mp4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social_videos/cat-boss-ai-polish.mp4
+          git commit -m "Publish original AI cat short with Polish neural narration"
+          git push origin HEAD:main
+      - name: Keep verification report and output if available
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cat-short-ai-test-results
+          path: |
+            cat-boss-ai-polish.mp4
+            cat-boss-report.json
+          if-no-files-found: warn
+          retention-days: 7
