@@ -1,0 +1,41 @@
+name: Replace robotic voice with neural Polish voice (original AI film)
+on:
+  push:
+    paths:
+      - 'original_ai_video/replace_with_neural_polish.py'
+      - '.github/workflows/ai-film-natural-polish-voice.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  natural-voice:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install fully local neural Polish voice and sound verification
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python3 -m pip install --upgrade piper-tts
+      - name: Generate natural-sounding Polish narration and encode MP4
+        run: timeout 400s python3 original_ai_video/replace_with_neural_polish.py
+      - name: Validate actual film and report
+        if: success()
+        run: |
+          test -s ai-robot-neural-human-voice-pl.mp4
+          ffprobe -v error -show_entries stream=codec_type,codec_name -of json ai-robot-neural-human-voice-pl.mp4
+          cat neural-voice-report.json
+      - name: Upload human-like voice film
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-ai-film-neural-polish-voice
+          path: |
+            ai-robot-neural-human-voice-pl.mp4
+            neural-voice-report.json
+          if-no-files-found: warn
+          retention-days: 7
