@@ -1,0 +1,35 @@
+name: Generate original AI short WITH model-created sound
+on:
+  push:
+    paths:
+      - 'original_ai_video/make_video_with_sound.py'
+      - '.github/workflows/original-ai-video-with-sound.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free AI model client
+        run: python3 -m pip install --user --upgrade gradio_client
+      - name: Generate genuinely original AI visual and audio
+        run: timeout 330s python3 original_ai_video/make_video_with_sound.py
+      - name: Inspect output file and sound verification
+        if: success()
+        run: |
+          test -s generated-ai-film-with-sound.mp4
+          ffprobe -v error -show_entries stream=codec_type,codec_name -of json generated-ai-film-with-sound.mp4
+          cat sound_video_report.json
+      - name: Upload final film and audio verification
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-ai-film-with-sound
+          path: |
+            generated-ai-film-with-sound.mp4
+            sound_video_report.json
+          if-no-files-found: warn
+          retention-days: 7
