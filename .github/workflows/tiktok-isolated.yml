@@ -1,0 +1,68 @@
+name: TikTok isolated preflight and approved publish
+on:
+  push:
+    paths:
+      - '.github/workflows/tiktok-isolated.yml'
+      - 'tiktok_publisher/**'
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        options: [preflight, publish, status]
+        default: preflight
+        description: 'Publish requires per-video consent; status never republishes'
+      video_path:
+        type: string
+        default: social_videos/photorealistic-talking-cat-ai.mp4
+        description: 'MP4 path in this repository'
+      caption:
+        type: string
+        description: 'Approved caption including hashtags'
+      post_settings:
+        type: string
+        default: '{}'
+        description: 'Explicit privacy, interaction, commercial and music consent settings as JSON'
+      consent:
+        type: string
+        description: 'PUBLISH @photofiver.photof followed by approved video SHA256'
+      publish_id:
+        type: string
+        description: 'Existing receipt for status check; never re-run a publish job'
+permissions:
+  contents: read
+concurrency:
+  group: tiktok-photofiver-isolated
+  cancel-in-progress: false
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Test safety gates without network
+        run: python3 -m unittest discover -s tiktok_publisher -p 'test_*.py' -v
+      - name: Verify account and actual API permission; publish only with explicit approval
+        env:
+          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'preflight' }}
+          VIDEO_PATH: ${{ inputs.video_path || 'social_videos/photorealistic-talking-cat-ai.mp4' }}
+          CAPTION: ${{ inputs.caption }}
+          POST_SETTINGS: ${{ inputs.post_settings }}
+          CONSENT: ${{ inputs.consent }}
+          PUBLISH_ID: ${{ inputs.publish_id }}
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_TOKEN: ${{ secrets.TIKTOK_TOKEN }}
+          TIKTOK_OAUTH_ACCESS_TOKEN: ${{ secrets.TIKTOK_OAUTH_ACCESS_TOKEN }}
+          TIKTOK_API_ACCESS_TOKEN: ${{ secrets.TIKTOK_API_ACCESS_TOKEN }}
+          APP_READY: ${{ vars.TIKTOK_API_READY }}
+          VERIFIED_URL_PREFIX: ${{ vars.TIKTOK_VERIFIED_URL_PREFIX }}
+        run: python3 tiktok_publisher/publish.py
+      - name: Save sanitized result and publication receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tiktok-result.json
+          if-no-files-found: warn
+          retention-days: 30
