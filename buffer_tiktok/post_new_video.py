@@ -15,7 +15,10 @@ import sys
 import urllib.error
 import urllib.request
 
-from buffer_tiktok.captions import make_caption
+if __package__:
+    from .captions import make_caption
+else:
+    from captions import make_caption
 
 ROOT = Path(__file__).resolve().parent.parent
 RECEIPTS = ROOT / "buffer_tiktok" / "attempts.json"
