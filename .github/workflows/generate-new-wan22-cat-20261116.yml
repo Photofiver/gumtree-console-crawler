@@ -1,0 +1,66 @@
+name: Generate NEW photorealistic AI cat via alternate WAN 2.2
+on:
+  push:
+    paths:
+      - '.github/workflows/generate-new-wan22-cat-20261116.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  make-new-ai-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install client and video tools
+        run: |
+          python -m pip install --upgrade gradio_client
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+      - name: Generate ORIGINAL AI moving cat via Wan 2.2 (not existing footage or slides)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p social_videos
+          python - <<'PY'
+          from gradio_client import Client
+          import os, shutil, subprocess, json, time
+          from pathlib import Path
+          p="A single highly photorealistic British shorthair ginger cat sits alone at a small kitchen table, holding a tiny white porcelain coffee cup between its paws, actually lifts the cup to its lips and takes a sip, then blinks with a charming deadpan expression. One continuous steady cinematic camera shot, detailed natural cat fur, morning sunlight, absolutely realistic motion, funny but believable, subject exactly in center frame, no text, no logos, no cartoons, no humans."
+          print("ALTERNATE AI MODEL mastaP/wan22-remix-sfw-t2v",flush=True)
+          cli=Client("mastaP/wan22-remix-sfw-t2v")
+          result=cli.predict(p, api_name="/generate_video")
+          print("Model returned type:",type(result).__name__,flush=True)
+          obj=result[0] if isinstance(result,(tuple,list)) else result
+          if isinstance(obj,dict):
+              obj=obj.get("video") or obj.get("path") or obj.get("name")
+          if not isinstance(obj,str) or not os.path.isfile(obj): raise RuntimeError("AI model did not return a local video file")
+          target="social_videos/new-photorealistic-ai-cat-wan22-20261116.mp4"
+          subprocess.run(["ffmpeg","-hide_banner","-loglevel","error","-y","-i",obj,"-vf","crop='min(iw,ih*9/16)':ih:(iw-ow)/2:0,scale=720:1280:flags=lanczos,fps=16","-c:v","libx264","-crf","22","-pix_fmt","yuv420p","-movflags","+faststart",target],check=True)
+          raw=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_streams","-show_format","-of","json",target]))
+          video=next(s for s in raw["streams"] if s["codec_type"]=="video")
+          duration=float(raw["format"]["duration"])
+          if duration < 0.8 or int(video["width"]) != 720 or int(video["height"]) != 1280: raise RuntimeError("Invalid output format")
+          if os.path.getsize(target)<10000: raise RuntimeError("Video unexpectedly small")
+          print("NEW_AI_CAT_SUCCESS",json.dumps({"path":target,"model":"Wan 2.2 Remix","duration":duration,"width":video["width"],"height":video["height"],"bytes":os.path.getsize(target)}),flush=True)
+          PY
+      - name: Save ONLY newly generated AI video in separate social repository
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add social_videos/new-photorealistic-ai-cat-wan22-20261116.mp4
+          git commit -m 'Generate new original photorealistic WAN 2.2 AI cat video'
+          for n in 1 2 3; do
+            if git push; then exit 0; fi
+            git pull --rebase origin main
+          done
+          exit 1
+      - name: Preserve diagnostics if rendering fails
+        if: failure()
+        run: echo 'No successful AI generation: inspect generation step log; do not present old video as new'
