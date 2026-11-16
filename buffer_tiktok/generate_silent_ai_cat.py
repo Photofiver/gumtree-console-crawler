@@ -247,6 +247,7 @@ def obtain_generated_video(prompt: str, seed: int):
     failures = []
     # Previously demonstrated working public Hugging Face Spaces. They may
     # refuse requests when anonymous GPU quotas or queue capacity are used up.
+    # LTX API accepts a signed 31-bit seed, while our deterministic hash may be 32-bit.
     for model in ("mastaP/wan22-remix-sfw-t2v", "Lightricks/LTX-2.5"):
         try:
             print("AI_VIDEO_ATTEMPT", model, flush=True)
@@ -255,7 +256,7 @@ def obtain_generated_video(prompt: str, seed: int):
                 result = client.predict(prompt, api_name="/generate_video")
             else:
                 result = client.predict(
-                    prompt, None, 512, 896, 5.0, seed,
+                    prompt, None, 512, 896, 5.0, seed & 0x7fffffff,
                     "conv", False, False, False, api_name="/run")
             path = take_video_from_result(result)
             if path.stat().st_size < 25000:
