@@ -1,0 +1,81 @@
+name: Cat drinking coffee silent AI video and TikTok direct check
+on:
+  push:
+    paths:
+      - 'cat_short/generate_cat_drinking_coffee.py'
+      - '.github/workflows/cat-drinks-coffee-tiktok.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: cat-coffee-one-shot
+  cancel-in-progress: false
+jobs:
+  create-coffee-cat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies for native original video generation
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python3 -m pip install --upgrade gradio_client
+      - name: Generate real moving cat sipping coffee, with no voice
+        run: timeout 530s python3 cat_short/generate_cat_drinking_coffee.py
+      - name: Validate MP4 output and report
+        run: |
+          test -s social_videos/ai-cat-sipping-coffee-silent.mp4
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('cat_short/coffee-cat-report.json').read_text())
+          assert j['success'] and j['silent_no_audio'] and j['original_ai_motion'], j
+          print('VIDEO SUCCESS', j['duration_s'], j['width'], j['height'], j['bytes'])
+          PY
+          ffprobe -v error -show_entries format=duration,size:stream=codec_type,width,height -of json social_videos/ai-cat-sipping-coffee-silent.mp4
+      - name: Make the approved original cat clip publicly accessible from GitHub
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social_videos/ai-cat-sipping-coffee-silent.mp4
+          if ! git diff --cached --quiet; then
+            git commit -m "Save original silent cat drinking coffee MP4"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Check direct TikTok posting authorization (no third-party scheduler)
+        id: tiktok
+        if: always()
+        env:
+          TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+          TIKTOK_OAUTH_ACCESS_TOKEN: ${{ secrets.TIKTOK_OAUTH_ACCESS_TOKEN }}
+          TIKTOK_API_ACCESS_TOKEN: ${{ secrets.TIKTOK_API_ACCESS_TOKEN }}
+          TIKTOK_TOKEN: ${{ secrets.TIKTOK_TOKEN }}
+        run: python3 autopost_tiktok/direct_preflight.py
+      - name: Publish eligibility summary
+        if: always()
+        run: |
+          echo 'Target account: @photofiver.photof (personal TikTok)' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Video: real AI motion, no speech, no audio; GitHub MP4 is committed only after verification.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Direct TikTok check used the official creator_info endpoint. Posting requires valid OAuth, a TikTok-approved app, user preview and express content consent.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Never report TikTok published unless an official post ID/status confirms it.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save video and truthful generation/upload eligibility reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coffee-drinking-cat-ai-and-tiktok-check
+          path: |
+            social_videos/ai-cat-sipping-coffee-silent.mp4
+            cat_short/coffee-cat-report.json
+            autopost_tiktok/preflight-status.json
+          if-no-files-found: warn
+          retention-days: 14
