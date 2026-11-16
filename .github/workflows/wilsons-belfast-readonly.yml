@@ -1,0 +1,54 @@
+name: Wilsons Belfast read-only lot audit
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    if: ${{ startsWith(github.event.issue.title, '[wilsons-scan]') && github.event.issue.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated browser
+        run: |
+          python -m pip install --disable-pip-version-check 'playwright>=1.50,<2'
+          python -m playwright install --with-deps chromium
+      - name: Scan all pages of current Belfast catalogs
+        run: python wilsons_scan/read_only_scan.py
+      - name: Post scan results to requesting issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            if (!fs.existsSync('wilsons-belfast-scan.json')) {
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:"Scan failed before producing a report. Check workflow logs."});
+            } else {
+              const report = JSON.parse(fs.readFileSync('wilsons-belfast-scan.json','utf8'));
+              const all = report.belfast_lots;
+              const summary = "Read-only Wilsons scan, " + report.scanned_at_utc + ": " + all.length + " Belfast lots of " + report.lots.length + " visited. Auction status:\n" + report.auctions.map(a => "- " + a.name + ": " + a.lots_found + " on " + a.pages + " page(s), errors: " + (a.errors.join("; ")||"none")).join("\n");
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:summary});
+              const chunkSize=80;
+              for(let i=0;i<all.length;i+=chunkSize){
+                const part=all.slice(i,i+chunkSize);
+                const body="Belfast lots "+(i+1)+"–"+(i+part.length)+" of "+all.length+"\n\n"+part.map(x=>"LOT "+x.lot+" | "+x.auction+" | "+x.title+" | bid £"+(x.current_bid_gbp===null?"?":x.current_bid_gbp)+" | premium "+(x.premium_pct===null?"not specified":x.premium_pct+"%")+" | "+x.location+" | "+x.auction_url).join("\n");
+                await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:body.slice(0,57000)});
+              }
+            }
+      - name: Save full catalogue
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wilsons-belfast-lots
+          path: wilsons-belfast-scan.json
+          if-no-files-found: warn
+          retention-days: 7
