@@ -110,7 +110,6 @@ def main():
     if not key or not channel_id:
         print("DISABLED: Buffer account/API key or connected TikTok channel ID is missing.")
         return
-    verify_tiktok_channel(key, channel_id)
     state = load_receipts()
     attempts = state.setdefault("attempts", {})
     now = dt.datetime.now(dt.timezone.utc)
@@ -131,6 +130,15 @@ def main():
     if not available:
         print("NO NEW AI VIDEO: existing clips will never be reposted.")
         return
+    last = state.get("buffer_channel_last_verified_utc")
+    try:
+        verification_age = (now - dt.datetime.fromisoformat(last)).total_seconds()
+    except (TypeError, ValueError):
+        verification_age = 9999999
+    # Cache a verified TikTok channel for up to 24 hours to respect Buffer Free API limits.
+    if not 0 <= verification_age < 86400:
+        verify_tiktok_channel(key, channel_id)
+        state["buffer_channel_last_verified_utc"] = now.isoformat()
     source, sha = available[0]
     finished = ready_video(source)
     url = "https://raw.githubusercontent.com/" + REPO + "/main/" + str(finished.relative_to(ROOT))
