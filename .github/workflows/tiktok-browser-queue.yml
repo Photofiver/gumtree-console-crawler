@@ -1,0 +1,40 @@
+name: TikTok browser queue check (does not publish)
+on:
+  push:
+    paths:
+      - 'tiktok_browser/queue.json'
+      - '.github/workflows/tiktok-browser-queue.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Validate queue without TikTok connection or publication
+        run: |
+          python3 - <<'PY'
+          import json, re, os
+          from pathlib import PurePosixPath, Path
+          q=json.loads(Path('tiktok_browser/queue.json').read_text())
+          assert q['version']==1 and q['account']=='photofiver.photof'
+          assert q['transport']=='chatgpt-work-cloud-browser'
+          assert isinstance(q['jobs'],list)
+          seen=set()
+          for j in q['jobs']:
+              assert re.fullmatch(r'[A-Za-z0-9_-]{1,80}',j['id']) and j['id'] not in seen
+              seen.add(j['id'])
+              p=PurePosixPath(j['video_path'])
+              assert not p.is_absolute() and '..' not in p.parts
+              assert str(p).startswith('social_videos/') and p.suffix.lower()=='.mp4'
+              assert re.fullmatch(r'[0-9a-f]{40}',j['source_commit'])
+              assert isinstance(j['caption'],str) and len(j['caption'].encode('utf-16-le'))//2<=2200
+              assert j['status'] in ('awaiting_user_approval','ready_for_browser','published','blocked')
+          summary=f"Queue valid: {len(q['jobs'])} jobs. No upload or publication performed. ChatGPT must use the existing Work browser during an active conversation; this workflow cannot launch it."
+          print(summary)
+          with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as out: out.write(summary+'\n')
+          PY
