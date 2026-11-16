@@ -34,6 +34,16 @@
     .card .label {font-size:12px;color:#b0b8ca;font-weight:500}
     .value {margin:7px 0 3px;font-size:clamp(25px,4vw,36px);line-height:1.18;font-weight:800;letter-spacing:-1px;font-variant-numeric:tabular-nums}
     .hint {font-size:11px;color:var(--dim)}
+    .countdown-panel {margin:0 0 14px;background:linear-gradient(110deg,#3d203b,#272444 75%);padding:14px 15px;border-radius:13px;border:1px solid #584366}
+    .countdown-caption {font-size:12px;color:#d4bfd4}
+    .countdown-number {font-size:clamp(29px,5vw,41px);font-weight:800;letter-spacing:1px;font-variant-numeric:tabular-nums;margin:3px 0 1px}
+    .countdown-note {font-size:11px;color:#b9b2d0}
+    .engagement-grid {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:12px}
+    .engagement-tile {padding:13px 10px;border:1px solid var(--line);background:#121725;border-radius:12px;min-width:0}
+    .engagement-tile strong {font-size:clamp(19px,3vw,25px);display:block;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+    .engagement-tile span {font-size:11px;color:var(--dim)}
+    .video-counters {font-size:11px;color:#b8bbd0;margin-top:5px}
+    @media(max-width:650px){.engagement-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.engagement-tile:last-child{grid-column:span 2}}
     .wide {grid-column:span 2}
     .section {margin-top:24px}
     .section-head {display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
@@ -101,6 +111,11 @@
     </div>
     <div class="card">
       <div class="section-head"><h2>Publikowanie</h2><span class="pill">Co 96 min</span></div>
+      <div class="countdown-panel">
+        <div class="countdown-caption">Do następnej zaplanowanej próby filmu</div>
+        <div class="countdown-number" id="countdown" aria-live="off">--:--:--</div>
+        <div class="countdown-note">Godzina według harmonogramu; publikacja zależy od wygenerowania filmu i dostępności platform.</div>
+      </div>
       <div class="smallstat" style="margin-top:0">
         <div class="smallbox"><strong id="pending">—</strong><span>Oczekujące / niepotwierdzone</span></div>
         <div class="smallbox"><strong id="failed">—</strong><span>Nieudane publikacje</span></div>
@@ -125,6 +140,19 @@
       <div class="videos" id="videos"><span class="muted">Wczytywanie potwierdzonych filmów…</span></div>
       <p class="hint" style="margin-top:10px">Pokazuję wyłącznie filmy z potwierdzonym linkiem TikToka.</p>
     </div>
+  </section>
+  <section class="section card">
+    <div class="section-head"><h2>Reakcje na filmy</h2><span class="pill">Do 5 najnowszych</span></div>
+    <p class="hint">Potwierdzone publiczne liczniki najnowszych filmów. Brak dostępu do danych oznacza „—”, nie zero.</p>
+    <div class="engagement-grid">
+      <div class="engagement-tile"><strong id="views-count">—</strong><span>Wyświetlenia</span></div>
+      <div class="engagement-tile"><strong id="likes-count">—</strong><span>Polubienia</span></div>
+      <div class="engagement-tile"><strong id="comments-count">—</strong><span>Komentarze</span></div>
+      <div class="engagement-tile"><strong id="shares-count">—</strong><span>Udostępnienia</span></div>
+      <div class="engagement-tile"><strong id="saves-count">—</strong><span>Zapisania</span></div>
+    </div>
+    <p class="hint" id="engagement-updated" style="margin-top:12px">Oczekiwanie na pierwsze potwierdzone statystyki reakcji.</p>
+    <p class="hint" style="margin-top:8px">TikTok nie udostępnia w tym połączeniu listy osób, które polubiły, udostępniły albo skomentowały; otwórz film, żeby zobaczyć dostępne komentarze.</p>
   </section>
   <section class="section">
     <div class="section-head"><h2>Stałe zasady projektu</h2><span class="pill">Zapisane w GitHub</span></div>
@@ -154,6 +182,17 @@
   function elapsed(x){var t=new Date(x).getTime();return isNaN(t)?Infinity:Date.now()-t}
   function validCount(x){return Number.isSafeInteger(x)&&x>=0}
   function setBar(id,n,total){el(id).style.width=pct(n,total)+"%"}
+  function secondsToNextSlot(){
+    var n=Date.now(),d=new Date(n),start=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
+    var next=start+(Math.floor((n-start)/5760000)+1)*5760000;
+    return Math.max(0,Math.ceil((next-n)/1000));
+  }
+  function tickCountdown(){
+    var total=secondsToNextSlot();
+    var h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
+    put("countdown",String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0"));
+    put("slot-time",nextSlot());
+  }
   function nextSlot(){
     var n=Date.now(),d=new Date(n),start=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
     var index=Math.floor((n-start)/5760000)+1;
@@ -168,6 +207,12 @@
     var left=document.createElement("div"),name=document.createElement("div"),date=document.createElement("div"),right=document.createElement("span");
     name.className="videoname";name.textContent=v.concept||"Opublikowany film AI";
     date.className="videodate";date.textContent=when(v.sent_at_utc);
+    if(v.engagement && typeof v.engagement==="object"){
+      var info=document.createElement("div");info.className="video-counters";
+      var parts=[["likes","Polubienia"],["comments","Komentarze"],["views","Wyświetlenia"]];
+      info.textContent=parts.filter(function(k){return validCount(v.engagement[k[0]])}).map(function(k){return k[1]+": "+number(v.engagement[k[0]])}).join(" • ");
+      if(info.textContent)left.appendChild(info);
+    }
     right.className="videoicon";right.textContent="Obejrzyj ↗";left.append(name,date);a.append(left,right);el("videos").appendChild(a);
   }
   function draw(history){
@@ -217,6 +262,21 @@
       if(delta>=1&&gained>0){put("days-500",count>=second?"0":number(Math.ceil((second-count)/(gained/delta))))}
     }
   }
+  function renderEngagement(data){
+    var e=data&&data.engagement||{};
+    ["views","likes","comments","shares","saves"].forEach(function(key){
+      put(key+"-count",validCount(e[key])?number(e[key]):"—");
+    });
+    var tracked=validCount(e.videos_monitored)?e.videos_monitored:0;
+    var count=validCount(e.videos_recent_confirmed)?e.videos_recent_confirmed:0;
+    if(tracked){
+      put("engagement-updated","Odczyt: "+when(e.last_checked_at_utc)+
+        " • Dane dla "+tracked+" z "+count+" ostatnich potwierdzonych filmów."+
+        (elapsed(e.last_checked_at_utc)>3600000?" Odczyt może być nieaktualny.":""));
+    } else {
+      put("engagement-updated","Brak potwierdzonych danych reakcji. Publiczne statystyki TikToka mogą być niedostępne.");
+    }
+  }
   function render(data){
     if(!data||typeof data!=="object")throw Error("Nieprawidłowe dane");
     put("followers",validCount(data.followers)?number(data.followers):"—");
@@ -230,7 +290,7 @@
     put("earnings",typeof data.earnings_gbp==="number"&&Number.isFinite(data.earnings_gbp)?"£"+data.earnings_gbp.toFixed(2):"Brak danych");
     put("earnings-hint",typeof data.earnings_gbp==="number"?"Zarejestrowany wynik":"Niepodłączone dane o przychodach");
     put("slot-time",nextSlot());put("updated","Plik statystyk: "+when(data.generated_at_utc));
-    updateGoals(data);updateStatus(data);draw(data.follower_history);
+    updateGoals(data);updateStatus(data);draw(data.follower_history);renderEngagement(data);
     el("videos").replaceChildren();
     var videos=(Array.isArray(data.videos)?data.videos:[]).filter(function(x){return x&&x.status==="sent"&&x.url}).slice(0,6);
     videos.forEach(appendVideo);
@@ -244,7 +304,7 @@
       else {el("state-dot").className="dot bad";put("state","Nie udało się pobrać nowych statystyk z GitHub. Spróbuję ponownie za 5 min.");if(!el("followers").textContent.trim()||el("followers").textContent==="—")put("quality","Dane chwilowo niedostępne; liczników nie zastępuję szacunkami.");}
     })
   }
-  put("slot-time",nextSlot());refresh();setInterval(refresh,5*60*1000);
+  tickCountdown();setInterval(tickCountdown,1000);refresh();setInterval(refresh,5*60*1000);
 })();
 </script>
 </body>
