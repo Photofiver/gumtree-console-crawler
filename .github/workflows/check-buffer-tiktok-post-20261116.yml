@@ -1,0 +1,42 @@
+name: Verify actual TikTok publication (read-only Buffer API)
+on:
+  push:
+    paths:
+      - '.github/workflows/check-buffer-tiktok-post-20261116.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+    steps:
+      - name: Query Buffer post publication and external TikTok URL (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error
+          token=os.environ.get("BUFFER_API_KEY","")
+          if not token: raise RuntimeError("No BUFFER_API_KEY configured")
+          query='query($input: PostInput!) { post(input: $input) { id status externalLink sentAt dueAt schedulingType channelService channel { name service } error { message } } }'
+          payload={"query":query,"variables":{"input":{"id":"6afabab2d7e5fee638aedb4b"}}}
+          req=urllib.request.Request("https://api.buffer.com", data=json.dumps(payload).encode(), method="POST",headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"})
+          try:
+              with urllib.request.urlopen(req,timeout=30) as response: result=json.load(response)
+          except urllib.error.HTTPError as e:
+              print("BUFFER_HTTP_ERROR",e.code)
+              raise
+          if result.get("errors"):
+              print("BUFFER_QUERY_ERRORS",json.dumps([{"message":x.get("message","")[:150]} for x in result["errors"]]))
+              raise SystemExit(1)
+          post=result.get("data",{}).get("post") or {}
+          if (post.get("channel",{}).get("name","").lstrip("@").lower() != "photofiver.photof" or post.get("channelService")!="tiktok"):
+              raise RuntimeError("Wrong TikTok channel or post")
+          safe={x:post.get(x) for x in ("id","status","externalLink","sentAt","dueAt","schedulingType")}
+          safe["channel"]="@photofiver.photof"
+          safe["error"]=post.get("error",{}).get("message") if post.get("error") else None
+          print("REAL_TIKTOK_POST_STATUS",json.dumps(safe,ensure_ascii=False))
+          PY
