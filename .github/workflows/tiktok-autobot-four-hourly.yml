@@ -24,6 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Check bot Python syntax without generating or uploading
+        run: python3 -m py_compile autopost_tiktok/generate.py autopost_tiktok/buffer_publish.py
       - name: Avoid duplicate film for the same 4-hour slot
         id: duplicate
         shell: bash
@@ -41,21 +43,21 @@ jobs:
           fi
       - name: Read-only verification of connected TikTok account in Buffer
         id: preflight
-        if: github.event_name != 'push' && steps.duplicate.outputs.exists == 'false'
+        if: steps.duplicate.outputs.exists == 'false'
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: python3 autopost_tiktok/buffer_publish.py check
       - name: Install original AI generation and Polish voice quality verifier
-        if: steps.preflight.outputs.ready == 'true'
+        if: github.event_name != 'push' && steps.preflight.outputs.ready == 'true'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg
           python3 -m pip install --upgrade gradio_client faster-whisper
       - name: Generate new original moving vertical AI cat with spoken Polish
-        if: steps.preflight.outputs.ready == 'true'
+        if: github.event_name != 'push' && steps.preflight.outputs.ready == 'true'
         run: timeout 490s python3 autopost_tiktok/generate.py
       - name: Save verified film to publicly accessible GitHub MP4 URL
-        if: steps.preflight.outputs.ready == 'true'
+        if: github.event_name != 'push' && steps.preflight.outputs.ready == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -66,7 +68,7 @@ jobs:
           git commit -m "Generate original Polish-speaking AI cat for TikTok"
           git push origin HEAD:main
       - name: Send film to verified TikTok account via Buffer automatic publishing
-        if: steps.preflight.outputs.ready == 'true'
+        if: github.event_name != 'push' && steps.preflight.outputs.ready == 'true'
         env:
           BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
         run: python3 autopost_tiktok/buffer_publish.py send
