@@ -1,4 +1,5 @@
 name: Verify actual TikTok publication (read-only Buffer API)
+# Recheck after initial Buffer status sending; read-only
 on:
   push:
     paths:
