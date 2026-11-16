@@ -76,6 +76,29 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,"No free AI video provider"):
                 gen.obtain_generated_video("cat story",123)
 
+    def test_ltx_fallback_clamps_out_of_range_seed(self):
+        with tempfile.TemporaryDirectory() as td:
+            sample = Path(td) / "fresh-cat.mp4"
+            sample.write_bytes(b"video-data" * 4000)
+            test_case = self
+
+            class FakeClient:
+                def __init__(self, model):
+                    self.model = model
+
+                def predict(self, *args, **kwargs):
+                    if self.model.startswith("mastaP/"):
+                        raise RuntimeError("anonymous GPU quota exhausted")
+                    test_case.assertGreaterEqual(args[5], 0)
+                    test_case.assertLessEqual(args[5], 2147483647)
+                    return str(sample)
+
+            with patch("gradio_client.Client", side_effect=FakeClient):
+                result, model = gen.obtain_generated_video(
+                    "original AI cat clip", 4019789778)
+                self.assertEqual(result, sample)
+                self.assertEqual(model, "Lightricks/LTX-2.5")
+
     def test_exactly_100_distinct_friendly_human_activities(self):
         self.assertEqual(len(gen.SCENES), 100)
         self.assertEqual(len(set(x[0] for x in gen.SCENES)), 100)
