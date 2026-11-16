@@ -4,7 +4,8 @@
       "source": "social_videos/new-photorealistic-ai-cat-wan22-20261116.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/buffer-ready/new-photorealistic-ai-cat-wan22-20261116.mp4",
       "attempted_at": "2026-11-16T08:11:25.318684+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afabab2d7e5fee638aedb4b"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
