@@ -1,0 +1,43 @@
+name: Publish original Polish speaking robot MP4
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-speaking-robot.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Fetch verified Polish speaking robot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p social_videos /tmp/speaking
+          gh run download 43792550478 --repo ${{ github.repository }} --name ai-speaking-robot-polish --dir /tmp/speaking
+          file /tmp/speaking/ai-speaking-robot-polish.mp4
+          test -s /tmp/speaking/ai-speaking-robot-polish.mp4
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          j=json.loads(Path('/tmp/speaking/ai-speaking-robot-report.json').read_text())
+          assert j['success'] and j['verified_speech_track'] and j['generated_from_text']
+          assert 'Cześć!' in j['speech_text']
+          print("Verified Polish speaking robot",j['speech_text'])
+          PY
+          cp /tmp/speaking/ai-speaking-robot-polish.mp4 social_videos/ai-speaking-robot-polish.mp4
+      - name: Commit direct MP4 file
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social_videos/ai-speaking-robot-polish.mp4
+          if git diff --cached --quiet; then echo "Already published"; exit 0; fi
+          git commit -m "Publish original AI robot speaking Polish"
+          git push origin HEAD:main
