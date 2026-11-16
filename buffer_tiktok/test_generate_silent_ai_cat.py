@@ -76,5 +76,57 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,"No free AI video provider"):
                 gen.obtain_generated_video("cat story",123)
 
+    def test_exactly_100_distinct_friendly_human_activities(self):
+        self.assertEqual(len(gen.SCENES), 100)
+        self.assertEqual(len(set(x[0] for x in gen.SCENES)), 100)
+        self.assertEqual(len(gen.CAT_LOOKS), 16)
+        self.assertEqual(len(gen.ENVIRONMENT_STYLES), 17)
+
+    def test_365_days_have_distinct_full_visual_concepts(self):
+        # 15 slots/day x 365 days = 5,475 prompts.
+        # A complete (action, cat appearance, environment) combination cannot repeat.
+        first = dt.date(2026, 11, 17)
+        seen = set()
+        for days in range(365):
+            stamp = (first + dt.timedelta(days=days)).strftime("%Y%m%d")
+            scenes_per_day = set()
+            looks_per_day = set()
+            for slot in range(15):
+                activity = gen.choose_scene(stamp, slot)[0]
+                look = gen.choose_look(stamp, slot)
+                room = gen.choose_environment(stamp, slot)
+                concept = (activity, look, room)
+                self.assertNotIn(concept, seen)
+                seen.add(concept)
+                scenes_per_day.add(activity)
+                looks_per_day.add(look)
+            self.assertEqual(len(scenes_per_day), 15)
+            self.assertEqual(len(looks_per_day), 15)
+        self.assertEqual(len(seen), 365 * 15)
+
+    def test_prompt_uses_new_coat_color_and_background_without_sound_or_text(self):
+        p = gen.video_prompt("carefully folds a towel",
+                             "fluffy solid black domestic longhair with amber eyes",
+                             "soft dusty-rose and warm walnut color palette")
+        self.assertIn("solid black", p)
+        self.assertIn("dusty-rose", p)
+        self.assertNotIn("living ginger British Shorthair CAT", p)
+        self.assertIn("COMPLETELY SILENT", p)
+        self.assertIn("NO text", p)
+
+    def test_no_second_generated_post_for_same_existing_daily_slot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            previous = gen.DEST
+            gen.DEST = Path(folder)
+            try:
+                existing = Path(folder) / "new-ai-cat-20261116-s05-original-scene.mp4"
+                existing.write_bytes(b"previously published video")
+                with patch.object(gen, "utc_slot", return_value=("20261116", 5)), \
+                     patch.object(gen, "obtain_generated_video") as call:
+                    gen.generate()
+                    call.assert_not_called()
+            finally:
+                gen.DEST = previous
+
 if __name__ == "__main__":
     unittest.main()
