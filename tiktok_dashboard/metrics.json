@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-11-16T08:56:29Z",
+  "followers": 2,
+  "followers_checked_at_utc": "2026-11-16T08:56:29Z",
+  "followers_source": "public_tiktok_profile",
+  "follower_history": [
+    {
+      "utc": "2026-11-16T08:56:29Z",
+      "followers": 2
+    }
+  ],
+  "posted_confirmed": 2,
+  "posted_24h": 2,
+  "pending": 0,
+  "failed": 0,
+  "posting_status_checked_at_utc": "2026-11-16T08:38:28Z",
+  "platform_data_quality": "confirmed",
+  "videos": [
+    {
+      "id": "6afac092a869c35e5bcc965b",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708685490966252833",
+      "sent_at_utc": "2026-11-16T08:38:16.752Z",
+      "concept": "AI cat doing yoga"
+    },
+    {
+      "id": "6afabab2d7e5fee638aedb4b",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708679032308649248",
+      "sent_at_utc": "2026-11-16T08:13:13.445Z",
+      "concept": "AI cat drinking coffee"
+    }
+  ],
+  "planned_slots_per_day": 15,
+  "slot_minutes": 96,
+  "portfolio": "@photofiver.photof",
+  "earnings_gbp": null,
+  "views_30d": null,
+  "notes": "Follower baseline and both TikTok video URLs verified from live GitHub Actions logs."
+}
