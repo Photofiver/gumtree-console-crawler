@@ -1,0 +1,40 @@
+name: Photorealistic AI cat native Polish speech and lip sync QA
+on:
+  push:
+    paths:
+      - 'cat_short/generate_realistic_cat_speaking.py'
+      - '.github/workflows/realistic-cat-native-speech.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  realistic-cat-speech:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install generator, audio and speech recognition
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python3 -m pip install --upgrade gradio_client faster-whisper
+      - name: Create truly photorealistic talking cat and evaluate its speech
+        run: timeout 540s python3 cat_short/generate_realistic_cat_speaking.py
+      - name: Show real verification
+        if: always()
+        run: |
+          cat realistic-cat-speaking-report.json || true
+          test ! -f realistic-cat-speaking-native-ai.mp4 || ffprobe -v error -show_entries stream=codec_type,codec_name -of json realistic-cat-speaking-native-ai.mp4
+      - name: Save clip and verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: photorealistic-cat-speaking-test
+          path: |
+            realistic-cat-speaking-native-ai.mp4
+            realistic-cat-speaking-report.json
+          if-no-files-found: warn
+          retention-days: 7
