@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-16T08:56:29Z",
+  "generated_at_utc": "2026-11-16T09:07:49.093193Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-16T08:56:29Z",
+  "followers_checked_at_utc": "2026-11-16T09:07:49.093193Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -15,7 +15,7 @@
   "pending": 0,
   "failed": 0,
   "posting_status_checked_at_utc": "2026-11-16T08:38:28Z",
-  "platform_data_quality": "confirmed",
+  "platform_data_quality": "verified_latest_available",
   "videos": [
     {
       "id": "6afac092a869c35e5bcc965b",
@@ -37,5 +37,5 @@
   "portfolio": "@photofiver.photof",
   "earnings_gbp": null,
   "views_30d": null,
-  "notes": "Follower baseline and both TikTok video URLs verified from live GitHub Actions logs."
+  "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented."
 }
