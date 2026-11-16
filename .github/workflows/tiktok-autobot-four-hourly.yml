@@ -1,0 +1,83 @@
+name: TikTok AI cat autoposter every 4 hours
+on:
+  schedule:
+    # UTC: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/tiktok-autobot-four-hourly.yml'
+permissions:
+  contents: write
+concurrency:
+  group: photofiver-tiktok-ai-autoposter
+  cancel-in-progress: false
+jobs:
+  ai-cat-to-tiktok:
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Avoid duplicate film for the same 4-hour slot
+        id: duplicate
+        shell: bash
+        run: |
+          h=$(date -u +%-H)
+          day=$(date -u +%Y%m%d)
+          slot=$(printf '%02d' "$((h / 4 * 4))")
+          path="social_videos/ai-cat-${day}-${slot}.mp4"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+          if test -e "$path"; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Already generated a film for this 4-hour slot, refusing to create a duplicate."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read-only verification of connected TikTok account in Buffer
+        id: preflight
+        if: github.event_name != 'push' && steps.duplicate.outputs.exists == 'false'
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: python3 autopost_tiktok/buffer_publish.py check
+      - name: Install original AI generation and Polish voice quality verifier
+        if: steps.preflight.outputs.ready == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
+          python3 -m pip install --upgrade gradio_client faster-whisper
+      - name: Generate new original moving vertical AI cat with spoken Polish
+        if: steps.preflight.outputs.ready == 'true'
+        run: timeout 490s python3 autopost_tiktok/generate.py
+      - name: Save verified film to publicly accessible GitHub MP4 URL
+        if: steps.preflight.outputs.ready == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${{ steps.duplicate.outputs.path }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${{ steps.duplicate.outputs.path }}"
+          git commit -m "Generate original Polish-speaking AI cat for TikTok"
+          git push origin HEAD:main
+      - name: Send film to verified TikTok account via Buffer automatic publishing
+        if: steps.preflight.outputs.ready == 'true'
+        env:
+          BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+        run: python3 autopost_tiktok/buffer_publish.py send
+      - name: Preserve execution reports and verification
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiktok-auto-cat-${{ github.run_id }}
+          path: |
+            autopost_tiktok/preflight-status.json
+            autopost_tiktok/last-generation-report.json
+            autopost_tiktok/last-publish-report.json
+          if-no-files-found: warn
+          retention-days: 7
