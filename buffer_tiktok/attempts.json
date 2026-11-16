@@ -1,0 +1,12 @@
+{
+  "attempts": {
+    "38c32e1247153c7162f7600b1a91f1711f39bf32777378211722349b7251d14d": {
+      "source": "social_videos/new-photorealistic-ai-cat-wan22-20261116.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/buffer-ready/new-photorealistic-ai-cat-wan22-20261116.mp4",
+      "attempted_at": "2026-11-16T08:11:25.318684+00:00",
+      "status": "attempt_reserved_before_network_call"
+    }
+  },
+  "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
+  "buffer_channel_last_verified_utc": "2026-11-16T08:11:25.318684+00:00"
+}
