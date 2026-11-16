@@ -1,7 +1,5 @@
-name: TikTok + GitHub AI generator every 4 hours (direct API)
+name: Legacy TikTok API diagnostics (manual only; silent AI generator owns schedule)
 on:
-  schedule:
-    - cron: '0 */4 * * *'
   workflow_dispatch:
   push:
     paths:
