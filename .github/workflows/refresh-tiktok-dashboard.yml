@@ -1,7 +1,7 @@
 name: Refresh TikTok goals dashboard (public followers + confirmed Buffer posts)
 on:
   schedule:
-    - cron: '7,22,37,52 * * * *'
+    - cron: '8,23,38,53 * * * *'  # refreshed registration after missing scheduled runs
   workflow_dispatch:
   push:
     paths:
