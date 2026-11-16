@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-16T09:07:49.093193Z",
+  "generated_at_utc": "2026-11-16T09:54:42.327665Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-16T09:07:49.093193Z",
+  "followers_checked_at_utc": "2026-11-16T09:54:42.327665Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -22,14 +22,30 @@
       "status": "sent",
       "url": "https://tiktok.com/@photofiver.photof/video/7708685490966252833",
       "sent_at_utc": "2026-11-16T08:38:16.752Z",
-      "concept": "AI cat doing yoga"
+      "concept": "AI cat doing yoga",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-16T09:54:42.327665Z"
     },
     {
       "id": "6afabab2d7e5fee638aedb4b",
       "status": "sent",
       "url": "https://tiktok.com/@photofiver.photof/video/7708679032308649248",
       "sent_at_utc": "2026-11-16T08:13:13.445Z",
-      "concept": "AI cat drinking coffee"
+      "concept": "AI cat drinking coffee",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-16T09:54:42.327665Z"
     }
   ],
   "planned_slots_per_day": 15,
@@ -37,5 +53,17 @@
   "portfolio": "@photofiver.photof",
   "earnings_gbp": null,
   "views_30d": null,
-  "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented."
+  "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
+  "engagement": {
+    "likes": 0,
+    "comments": 0,
+    "shares": 0,
+    "views": 0,
+    "saves": null,
+    "videos_monitored": 2,
+    "videos_recent_confirmed": 2,
+    "last_checked_at_utc": "2026-11-16T09:54:42.327665Z",
+    "source": "public_tiktok_video_html",
+    "can_identify_likers_or_commenters": false
+  }
 }
