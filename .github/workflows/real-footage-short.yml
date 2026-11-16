@@ -1,0 +1,35 @@
+name: Real footage social short (Wikimedia licensed)
+on:
+  push:
+    paths:
+      - 'real_footage_video/**'
+      - '.github/workflows/real-footage-short.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install portable encoder and imaging
+        run: python3 -m pip install --user Pillow imageio-ffmpeg
+      - name: Download actual CC video and create portrait MP4 with audio
+        run: python3 real_footage_video/make_real_short.py
+      - name: Verify video is present and not slides
+        run: |
+          test -s social-real-footage-short.mp4
+          file social-real-footage-short.mp4
+          ls -lh social-real-footage-short.mp4
+          cat social-real-footage-credits.json
+      - name: Upload MP4 and credits
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-footage-short
+          path: |
+            social-real-footage-short.mp4
+            social-real-footage-credits.json
+          if-no-files-found: warn
+          retention-days: 7
