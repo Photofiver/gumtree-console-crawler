@@ -20,6 +20,7 @@ RECEIPTS = ROOT / "buffer_tiktok" / "attempts.json"
 REPO = "Photofiver/gumtree-console-crawler"
 API = "https://api.buffer.com"
 MAX_PER_24H = 15
+TARGET_HANDLE = "photofiver.photof"
 
 def git(*args):
     return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
@@ -28,7 +29,7 @@ def commit_changes(*paths):
     git("config", "user.name", "github-actions[bot]")
     git("config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com")
     git("add", *paths)
-    if not subprocess.call(["git", "-C", str(ROOT), "diff", "--cached", "--quiet"]):
+    if subprocess.call(["git", "-C", str(ROOT), "diff", "--cached", "--quiet"]) == 0:
         return
     git("commit", "-m", "Track isolated Buffer/TikTok AI-video staging")
     for _ in range(3):
@@ -64,18 +65,35 @@ def gql(key, query, variables=None):
         raise RuntimeError("Buffer GraphQL request rejected") from None
     return body.get("data") or {}
 
-def verify_tiktok_channel(key, expected):
+def verify_tiktok_channel(key, expected=""):
+    """Only select the TikTok profile explicitly requested by the user."""
     account = gql(key, "query { account { organizations { id name } } }")
     orgs = (account.get("account") or {}).get("organizations") or []
+    matches = []
     for org in orgs:
         channels = gql(key, """query ($id: OrganizationId!) {
-          channels(input: { organizationId: $id }) { id name service }
+          channels(input: { organizationId: $id }) {
+            id name displayName externalLink service isDisconnected isLocked
+          }
         }""", {"id": org["id"]}).get("channels") or []
         for channel in channels:
-            if str(channel["id"]) == expected and str(channel["service"]).lower() == "tiktok":
-                print("Verified Buffer TikTok channel:", channel.get("name", ""), flush=True)
-                return
-    raise RuntimeError("Selected Buffer channel ID is not a connected TikTok channel")
+            if str(channel.get("service", "")).lower() != "tiktok":
+                continue
+            handle = str(channel.get("name") or "").lower().strip().lstrip("@")
+            url = str(channel.get("externalLink") or "").lower()
+            # Buffer Channel.name is the username/handle per its official schema.
+            if handle != TARGET_HANDLE and not url.rstrip("/").endswith("/@" + TARGET_HANDLE):
+                continue
+            if expected and str(channel["id"]) != expected:
+                continue
+            if channel.get("isDisconnected") or channel.get("isLocked"):
+                raise RuntimeError("Target TikTok profile is disconnected or locked in Buffer")
+            matches.append(channel)
+    if len(matches) != 1:
+        raise RuntimeError("Cannot uniquely verify TikTok account @"+TARGET_HANDLE+" in Buffer")
+    verified = matches[0]
+    print("Verified Buffer account: @"+TARGET_HANDLE+" (TikTok channel confirmed)", flush=True)
+    return str(verified["id"])
 
 def ffprobe(path):
     return json.loads(subprocess.check_output(
@@ -107,8 +125,8 @@ def ready_video(source):
 def main():
     key = os.getenv("BUFFER_API_KEY", "").strip()
     channel_id = os.getenv("BUFFER_TIKTOK_CHANNEL_ID", "").strip()
-    if not key or not channel_id:
-        print("DISABLED: Buffer account/API key or connected TikTok channel ID is missing.")
+    if not key:
+        print("DISABLED: No BUFFER_API_KEY GitHub Secret. Connect @"+TARGET_HANDLE+" in Buffer and save an API key.")
         return
     state = load_receipts()
     attempts = state.setdefault("attempts", {})
@@ -135,10 +153,14 @@ def main():
         verification_age = (now - dt.datetime.fromisoformat(last)).total_seconds()
     except (TypeError, ValueError):
         verification_age = 9999999
-    # Cache a verified TikTok channel for up to 24 hours to respect Buffer Free API limits.
-    if not 0 <= verification_age < 86400:
-        verify_tiktok_channel(key, channel_id)
+    cached_id = state.get("buffer_channel_id")
+    # Verify exact handle before first publish and at least once daily.
+    # This also avoids asking the non-technical user to find a channel ID.
+    if not cached_id or not 0 <= verification_age < 86400 or (channel_id and channel_id != cached_id):
+        cached_id = verify_tiktok_channel(key, channel_id)
+        state["buffer_channel_id"] = cached_id
         state["buffer_channel_last_verified_utc"] = now.isoformat()
+    channel_id = cached_id
     source, sha = available[0]
     finished = ready_video(source)
     url = "https://raw.githubusercontent.com/" + REPO + "/main/" + str(finished.relative_to(ROOT))
@@ -163,6 +185,7 @@ def main():
         "schedulingType": "automatic",
         "mode": "shareNow",
         "assets": [{"video": {"url": url}}],
+        "metadata": {"tiktok": {"isAiGenerated": True}},
         "aiAssisted": True
     }}
     try:
