@@ -29,11 +29,13 @@ jobs:
           python-version: '3.11'
       - name: Compile standalone posting script
         run: python3 -m py_compile buffer_tiktok/post_new_video.py
+      - name: Verify publisher safety offline
+        run: python3 -m unittest discover -s buffer_tiktok -p 'test_*.py' -v
       - name: Prepare one original AI video and submit via Buffer when authorized
         shell: bash
         run: |
           set -euo pipefail
-          if [ -n "$BUFFER_API_KEY" ] && [ -n "$BUFFER_TIKTOK_CHANNEL_ID" ]; then
+          if [ -n "$BUFFER_API_KEY" ]; then
             sudo apt-get update -qq
             sudo apt-get install -y ffmpeg
           fi
@@ -41,6 +43,6 @@ jobs:
       - name: Summarize limits and safety gates
         if: always()
         run: |
-          echo 'Free Buffer API requires a user-owned Buffer account, linked TikTok channel, and Buffer API key.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Free Buffer API requires user-owned Buffer account, linked @photofiver.photof TikTok channel and one Buffer API key saved as GitHub Secret BUFFER_API_KEY; channel ID auto-detected.' >> "$GITHUB_STEP_SUMMARY"
           echo 'TikTok 15/day is a ceiling target, not a guaranteed service quota; only new AI-generated MP4s are eligible.' >> "$GITHUB_STEP_SUMMARY"
           echo 'This workflow never modifies the trading bot and cannot publish without valid Buffer authorization.' >> "$GITHUB_STEP_SUMMARY"
