@@ -50,12 +50,12 @@ jobs:
             grep -q 'OK (1 test)' social-test-instrumentation.txt
       - name: Make vertical MP4 from Google's generated script (no generative video model)
         if: always()
-        continue-on-error: true
-        run: |
-          pip install Pillow
+                run: |
+          pip install Pillow imageio-ffmpeg
           python3 social_probe/create_text_video.py
-          ffmpeg -hide_banner -loglevel error -y -framerate 1/4 -i social-slide-%d.png -vf fps=24,format=yuv420p -c:v libx264 -preset ultrafast -movflags +faststart social-ai-test-vertical.mp4
-          ffprobe -v error -show_entries format=duration,size -of json social-ai-test-vertical.mp4
+          FFMPEG=$(python3 -c 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())')
+          "$FFMPEG" -hide_banner -loglevel error -y -framerate 1/4 -i social-slide-%d.png -vf fps=24,format=yuv420p -c:v libx264 -preset ultrafast -movflags +faststart social-ai-test-vertical.mp4
+          test -s social-ai-test-vertical.mp4 && file social-ai-test-vertical.mp4
       - name: Upload evidence and generated video
         if: always()
         uses: actions/upload-artifact@v4
