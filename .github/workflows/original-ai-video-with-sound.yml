@@ -15,6 +15,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install free AI model client
         run: python3 -m pip install --user --upgrade gradio_client
+      - name: Install audio verification tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg
       - name: Generate genuinely original AI visual and audio
         run: timeout 330s python3 original_ai_video/make_video_with_sound.py
       - name: Inspect output file and sound verification
