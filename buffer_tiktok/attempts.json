@@ -20,6 +20,12 @@
       "attempted_at": "2026-11-16T15:57:31.488820+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afb27ed6e855bed1e7e3316"
+    },
+    "5dccd3413a45aed8ee4dbe650987531726ed54c299bbea286f0014a3bf350dd8": {
+      "source": "social_videos/new-ai-cat-20261116-s14-reading-blank-newspaper.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261116-s14-reading-blank-newspaper.mp4",
+      "attempted_at": "2026-11-16T23:59:09.610560+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
