@@ -1,0 +1,35 @@
+name: Publish social test MP4 as one-click file
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-social-test-video.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Retrieve verified video artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p social_videos /tmp/testvideo
+          gh run download 43788081760 --repo ${{ github.repository }} --name social-ai-video-test --dir /tmp/testvideo
+          file /tmp/testvideo/social-ai-test-vertical.mp4
+          test -s /tmp/testvideo/social-ai-test-vertical.mp4
+          cp /tmp/testvideo/social-ai-test-vertical.mp4 social_videos/social-ai-test-vertical.mp4
+      - name: Commit the MP4 without affecting other files
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social_videos/social-ai-test-vertical.mp4
+          if git diff --cached --quiet; then echo "Video already published"; exit 0; fi
+          git commit -m "Publish generated social video MP4 for direct download"
+          git push origin HEAD:main
