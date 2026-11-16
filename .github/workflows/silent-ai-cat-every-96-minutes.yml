@@ -11,6 +11,8 @@ on:
   push:
     paths:
       - '.github/workflows/silent-ai-cat-every-96-minutes.yml'
+      - 'buffer_tiktok/generate_silent_ai_cat.py'
+      - 'buffer_tiktok/test_generate_silent_ai_cat.py'
 permissions:
   contents: write
 concurrency:
