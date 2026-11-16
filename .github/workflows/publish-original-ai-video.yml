@@ -1,0 +1,43 @@
+name: Publish original AI video as direct MP4 link
+on:
+  push:
+    paths:
+      - '.github/workflows/publish-original-ai-video.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download verified diffusion-generated video
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p social_videos /tmp/original_video
+          gh run download 43791174335 --repo ${{ github.repository }} --name original-ai-motion-evidence --dir /tmp/original_video
+          file /tmp/original_video/original-ai-motion-test.mp4
+          test -s /tmp/original_video/original-ai-motion-test.mp4
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          report=json.loads(Path('/tmp/original_video/ai_video_probe_report.json').read_text())
+          assert report['successful_video'] is True
+          assert report['space']=='Lightricks/LTX-2.5'
+          assert Path('/tmp/original_video/original-ai-motion-test.mp4').stat().st_size >= 100000
+          PY
+          cp /tmp/original_video/original-ai-motion-test.mp4 social_videos/original-ai-generated-robot.mp4
+      - name: Commit the MP4 only
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add social_videos/original-ai-generated-robot.mp4
+          if git diff --cached --quiet; then echo "Video already published"; exit 0; fi
+          git commit -m "Publish actual original AI-generated robot video for direct download"
+          git push origin HEAD:main
