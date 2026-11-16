@@ -1,0 +1,70 @@
+name: Social AI and video capability probe
+on:
+  push:
+    paths:
+      - 'social_probe/**'
+      - '.github/workflows/social-ai-video-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  social-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build isolated Android social media probe
+        run: |
+          cp social_probe/SocialMediaProbeTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/SocialMediaProbeTest.java
+          gradle --no-daemon -p android_browser :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Ask Google AI and inspect video and publishing sites anonymously
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: -no-snapshot-load -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          disable-animations: true
+          script: |
+            adb install -r android_browser/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r android_browser/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            timeout -k 5s 240s adb shell am instrument -w -r -e class com.photofiver.phonebrowser.SocialMediaProbeTest com.photofiver.phonebrowser.test/androidx.test.runner.AndroidJUnitRunner | tee social-test-instrumentation.txt
+            adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/social-media-probe.json social-media-probe.json || true
+            if test -s social-media-probe.json; then python3 -m json.tool social-media-probe.json | head -c 16000; fi
+            grep -q 'OK (1 test)' social-test-instrumentation.txt
+      - name: Make vertical MP4 from Google's generated script (no generative video model)
+        if: always()
+        continue-on-error: true
+        run: |
+          pip install Pillow
+          python3 social_probe/create_text_video.py
+          ffmpeg -hide_banner -loglevel error -y -framerate 1/4 -i social-slide-%d.png -vf fps=24,format=yuv420p -c:v libx264 -preset ultrafast -movflags +faststart social-ai-test-vertical.mp4
+          ffprobe -v error -show_entries format=duration,size -of json social-ai-test-vertical.mp4
+      - name: Upload evidence and generated video
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: social-ai-video-test
+          path: |
+            social-media-probe.json
+            social-test-instrumentation.txt
+            social-ai-script.json
+            social-ai-test-vertical.mp4
+          if-no-files-found: warn
+          retention-days: 7
