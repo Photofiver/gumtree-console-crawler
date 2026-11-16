@@ -7,6 +7,8 @@ on:
   push:
     paths:
       - 'buffer_tiktok/post_new_video.py'
+      - 'buffer_tiktok/captions.py'
+      - 'buffer_tiktok/test_post_new_video.py'
       - '.github/workflows/buffer-ai-tiktok-15-daily.yml'
 permissions:
   contents: write
@@ -29,7 +31,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Compile standalone posting script
-        run: python3 -m py_compile buffer_tiktok/post_new_video.py
+        run: python3 -m py_compile buffer_tiktok/post_new_video.py buffer_tiktok/captions.py
       - name: Verify publisher safety offline
         run: python3 -m unittest discover -s buffer_tiktok -p 'test_*.py' -v
       - name: Prepare one original AI video and submit via Buffer when authorized
