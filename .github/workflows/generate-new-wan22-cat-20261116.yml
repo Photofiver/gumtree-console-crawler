@@ -63,4 +63,5 @@ jobs:
           exit 1
       - name: Preserve diagnostics if rendering fails
         if: failure()
-        run: echo 'No successful AI generation: inspect generation step log; do not present old video as new'
+        run: |
+          echo 'No successful AI generation: inspect generation step log; do not present old video as new'
