@@ -1,22 +1,41 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-16T09:54:42.327665Z",
+  "generated_at_utc": "2026-11-16T16:00:15.811239Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-16T09:54:42.327665Z",
+  "followers_checked_at_utc": "2026-11-16T16:00:15.811239Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
       "utc": "2026-11-16T08:56:29Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-16T16:00:15.811239Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 2,
-  "posted_24h": 2,
+  "posted_confirmed": 3,
+  "posted_24h": 3,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-16T08:38:28Z",
+  "posting_status_checked_at_utc": "2026-11-16T16:00:15.811239Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afb27ed6e855bed1e7e3316",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708799141748444449",
+      "sent_at_utc": "2026-11-16T15:59:16.274Z",
+      "concept": "new ai cat 20261116 s09 painting wooden fence",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
+    },
     {
       "id": "6afac092a869c35e5bcc965b",
       "status": "sent",
@@ -30,7 +49,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-16T09:54:42.327665Z"
+      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
     },
     {
       "id": "6afabab2d7e5fee638aedb4b",
@@ -45,7 +64,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-16T09:54:42.327665Z"
+      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
     }
   ],
   "planned_slots_per_day": 15,
@@ -60,9 +79,9 @@
     "shares": 0,
     "views": 0,
     "saves": null,
-    "videos_monitored": 2,
-    "videos_recent_confirmed": 2,
-    "last_checked_at_utc": "2026-11-16T09:54:42.327665Z",
+    "videos_monitored": 3,
+    "videos_recent_confirmed": 3,
+    "last_checked_at_utc": "2026-11-16T16:00:15.811239Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
