@@ -1,0 +1,58 @@
+name: Refresh TikTok goals dashboard (public followers + confirmed Buffer posts)
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tiktok_dashboard/update_metrics.py'
+      - '.github/workflows/refresh-tiktok-dashboard.yml'
+permissions:
+  contents: write
+concurrency:
+  group: tiktok-stats-refresh
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Read public TikTok follower count and Buffer post statuses (no writes to social media)
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tiktok_dashboard/update_metrics.py
+          python3 tiktok_dashboard/update_metrics.py
+      - name: Save public verified metrics snapshot in social-only repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tiktok_dashboard/metrics.json
+          if git diff --cached --quiet; then
+            echo "No metrics changes"
+            exit 0
+          fi
+          git commit -m "Update live TikTok follower and verified publication metrics"
+          for attempt in 1 2 3 4; do
+            if git push origin HEAD:main; then exit 0; fi
+            git pull --rebase origin main
+          done
+          echo "Metrics prepared locally but could not push latest snapshot" >&2
+          exit 1
+      - name: Explain refresh frequency
+        if: always()
+        run: |
+          echo 'Public follower count refreshed every 15 minutes when accessible; Buffer status read-only.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The dashboard browser checks for new JSON every 5 minutes.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'GitHub Actions scheduled execution can be delayed or skipped; timestamps show actual freshness.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Trading bot remains unchanged.' >> "$GITHUB_STEP_SUMMARY"
