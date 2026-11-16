@@ -85,11 +85,11 @@ def main():
                         record["errors"].append("Could not find next-page arrow on page "+str(index))
                         break
                     try:
-                        page.wait_for_function("""n => {
+                        page.wait_for_function(r"""n => {
                           const t = document.body.innerText;
                           const m=t.match(/LOT\s*\n\s*(\d+)/);
                           return m && Number(m[1]) !== n;
-                        }""",prev_marker,timeout=8500)
+                        }""",arg=prev_marker,timeout=8500)
                     except Exception:
                         record["errors"].append("Next page did not visibly update after page "+str(index))
                         break
