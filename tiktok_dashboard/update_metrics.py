@@ -3,6 +3,8 @@
 Runs in social-only repo. Never changes TikTok, Buffer, or trading bot settings.
 """
 import datetime as dt
+from concurrent.futures import ThreadPoolExecutor
+from public_engagement import public_video_stats
 import html
 import json
 import os
@@ -150,6 +152,8 @@ def build():
             "id": post_id, "status": pre.get("status") or "unconfirmed",
             "url": pre.get("url"), "sent_at_utc": pre.get("sent_at_utc"),
             "concept": item.get("source", "").split("/")[-1].replace(".mp4", "").replace("-", " "),
+            "engagement": pre.get("engagement"),
+            "engagement_checked_at_utc": pre.get("engagement_checked_at_utc"),
         }
         if key and pre.get("status") != "sent":
             try:
@@ -174,6 +178,43 @@ def build():
     videos.extend(p for p in old.values() if p.get("id") not in ids
                   and p.get("status") == "sent")
     videos.sort(key=lambda p: p.get("sent_at_utc") or "", reverse=True)
+    # Read public per-video metrics (latest 5). TikTok may block HTML lookups.
+    # Never turn missing data into zero. Previously verified values keep their
+    # original checked-at timestamp, so the dashboard can mark them stale.
+    eligible = [p for p in videos if
+                p.get("status") == "sent" and p.get("url")][:5]
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        fresh = list(pool.map(lambda p: public_video_stats(p["url"]), eligible))
+    checked = 0
+    for post, stats in zip(eligible, fresh):
+        if stats is not None:
+            post["engagement"] = stats
+            post["engagement_checked_at_utc"] = stamp
+            checked += 1
+    observed = [p for p in eligible if isinstance(p.get("engagement"), dict)]
+    keys = ("likes", "comments", "shares", "views", "saves")
+    total = {k: sum(p["engagement"][k] for p in observed
+                    if type(p["engagement"].get(k)) is int)
+             for k in keys}
+    # Partial totals are misleading; report counts only if every one of
+    # the monitored records exposed that metric. Otherwise use null.
+    for k in keys:
+        if not observed or any(type(p["engagement"].get(k)) is not int
+                               for p in observed):
+            total[k] = None
+    latest = max((p.get("engagement_checked_at_utc") or "" for p in observed),
+                 default="") or None
+    data["engagement"] = {
+        **total,
+        "videos_monitored": len(observed),
+        "videos_recent_confirmed": len(eligible),
+        "last_checked_at_utc": latest,
+        "source": "public_tiktok_video_html",
+        "can_identify_likers_or_commenters": False,
+    }
+    print("TIKTOK_PUBLIC_ENGAGEMENT", json.dumps({
+        "attempted": len(eligible), "read_now": checked,
+        "with_previous_verified_snapshot": len(observed)}))
     sent = [p for p in videos if p["status"] == "sent" and p.get("url")]
     cutoff = now - dt.timedelta(hours=24)
     posts24 = sum(1 for p in sent if
