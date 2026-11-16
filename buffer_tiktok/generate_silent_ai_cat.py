@@ -53,7 +53,145 @@ SCENES = [
     ("setting-dinner-table", "neatly sets down a little plate and folded napkin on a table, ready for dinner", "Dinner is served. The chef demands treats as a tip. ", "#AICat #DinnerTime #CuteCats"),
     ("decorating-cupcake", "carefully decorates a tiny cupcake with a dab of pink icing, then admires it", "A cupcake designed by an artist with paws. ", "#AICat #CupcakeArt #BakingCat"),
     ("using-telescope", "looks through a tiny toy telescope from a balcony at the peaceful evening sky", "Searching for the planet made entirely of treats. ", "#AICat #Stargazing #FunnyCats"),
+    ("ironing-shirt", "carefully smooths a doll-size shirt with an unplugged toy iron and hangs it neatly", "The tiny laundry expert is ironing out life's problems.", "#AICat #LaundryDay #CuteCats"),
+    ("pouring-cereal", "pours cereal from a small blank box into a bowl, then gently picks up a spoon", "Breakfast is officially a paw-fessional operation.", "#AICat #BreakfastTime #FunnyCats"),
+    ("packing-lunch", "packs a tiny sandwich and apple into a small plain lunchbox", "Lunch packed. Productivity optional.", "#AICat #LunchPrep #CatTok"),
+    ("stacking-cups", "carefully stacks colorful empty paper cups into a very tall tower", "Engineering degree: pending. Confidence: unlimited.", "#AICat #CatEngineering #FunnyCats"),
+    ("organizing-socks", "sorts several tiny colorful clean socks into matching pairs", "The sock detective has finally cracked the case.", "#AICat #LaundryDay #FunnyCats"),
+    ("making-paper-plane", "folds a clean unmarked sheet of paper into a little airplane", "First-class travel, economy-size aircraft.", "#AICat #PaperCrafts #CuteCats"),
+    ("folding-paper-boat", "folds a little blue origami boat out of plain paper", "Captain Whiskers is preparing to sail.", "#AICat #Origami #CatTok"),
+    ("potting-succulent", "gently places a small succulent into a plain ceramic plant pot", "This gardener has extremely good paws for plants.", "#AICat #PlantTok #CuteCats"),
+    ("polishing-glasses", "carefully wipes a pair of small spectacles with a soft cloth", "The professor is ready for another important nap.", "#AICat #ProfessorCat #FunnyCats"),
+    ("checking-watch", "peeks at a blank-faced toy wristwatch, then looks dramatically surprised", "Is it snack o'clock yet? Asking for a friend.", "#AICat #SnackTime #FunnyCats"),
+    ("building-cardboard-house", "folds up a small plain cardboard box into a cozy miniature house", "Property developer. Budget: one cardboard box.", "#AICat #CardboardHouse #CatTok"),
+    ("drawing-abstract-art", "makes joyful colorful abstract squiggles on plain art paper with a crayon, no letters or numbers", "A little modern art from a very serious artist.", "#AICat #ArtTok #CuteCats"),
+    ("making-fruit-salad", "carefully arranges precut strawberry and banana pieces in a small bowl", "Today's five-star menu is extremely fruity.", "#AICat #FruitSalad #FunnyCats"),
+    ("placing-bookmarks", "slides a colorful blank bookmark between the pages of an open picture book", "Bookmark placed. Time for an intellectual nap.", "#AICat #BookTok #CozyCats"),
+    ("watering-window-flowers", "gently waters colorful flowers in a window box with a tiny watering can", "The neighborhood flower inspector is on duty.", "#AICat #FlowerTok #CatLife"),
+    ("wiping-window", "cleans a little section of a window with a soft microfiber cloth", "Window cleaning: now available in paws-size.", "#AICat #CleaningDay #FunnyCats"),
+    ("sorting-crayons", "arranges wax crayons by their colors into a tidy rainbow", "Color coordination is this cat's superpower.", "#AICat #RainbowArt #CuteCats"),
+    ("arranging-cushions", "perfectly lines up three colorful cushions on a sofa and steps back to admire them", "Interior design by a surprisingly picky cat.", "#AICat #InteriorDesign #CatTok"),
+    ("dusting-bookshelf", "carefully dusts a low bookshelf with a fluffy little duster", "Someone takes spring cleaning very seriously.", "#AICat #SpringCleaning #FunnyCats"),
+    ("painting-wooden-fence", "uses a tiny soft paintbrush to paint a clean decorative wooden fence panel", "That fence has never looked so important.", "#AICat #DIYCat #FunnyCats"),
+    ("practicing-tai-chi", "slowly performs a gentle tai chi pose on a small mat", "Inner peace, outer fluff.", "#AICat #MindfulCat #CuteCats"),
+    ("photographing-flowers", "holds a small unbranded toy camera and takes pictures of a bunch of flowers", "The photographer requests payment in snacks.", "#AICat #CatPhotographer #FunnyCats"),
+    ("packing-suitcase", "carefully packs a folded colorful scarf into a tiny rolling suitcase", "The travel plans are ambitious. The suitcase is not.", "#AICat #TravelCat #FunnyCats"),
+    ("rolling-suitcase", "proudly pulls a miniature wheeled suitcase down a tidy hallway", "Going on vacation. Back before dinner.", "#AICat #VacationMode #CatTok"),
+    ("reading-blank-newspaper", "carefully unfolds a blank newsprint-style sheet and peers over the top", "Breaking news: the treat supply is running low.", "#AICat #MorningNews #FunnyCats"),
+    ("whisking-cake-batter", "gently stirs cake batter in a bowl with a small wooden whisk", "The pastry department has hired a new whisker.", "#AICat #BakingCat #CatTok"),
+    ("spreading-jam", "carefully spreads strawberry jam onto a piece of toast using a rounded butter spreader", "Breakfast is toast-ally under control.", "#AICat #BreakfastCat #FunnyCats"),
+    ("stirring-hot-chocolate", "gently stirs a cooled cup of pretend hot chocolate with a tiny spoon", "The hot chocolate committee has reached a decision.", "#AICat #CozyTime #CuteCats"),
+    ("planting-seedlings", "carefully plants a little leafy seedling in a pot of soft soil", "Tiny plant. Big gardener energy.", "#AICat #Gardening #CatTok"),
+    ("sweeping-patio", "sweeps a few dry leaves on a quiet patio with a miniature broom", "The patio maintenance team works for treats.", "#AICat #GardenLife #FunnyCats"),
+    ("mopping-floor", "slowly pushes a miniature clean damp mop over a tiled floor", "A surprisingly dedicated member of the cleaning crew.", "#AICat #CleanWithMe #FunnyCats"),
+    ("arranging-birdseed", "carefully fills a small empty bird feeder with prepared birdseed while indoors", "The neighborhood cafe is preparing for guests.", "#AICat #GardenHelper #CuteCats"),
+    ("practicing-ballet", "does an elegant little ballet pose beside a wooden dance barre", "The tiniest ballerina has entered the stage.", "#AICat #BalletCat #CuteCats"),
+    ("doing-gentle-exercise", "performs one slow easy stretch with paws on a soft exercise mat", "Personal trainer available. Payment by treats only.", "#AICat #FitCat #CatTok"),
+    ("lifting-toy-weights", "lifts two extremely lightweight foam toy dumbbells in a playful workout", "Gym membership: one nap and two snacks.", "#AICat #GymCat #FunnyCats"),
+    ("polishing-trophy", "gently buffs a small blank golden trophy with a soft cloth", "Award winner. Category: excellent napping.", "#AICat #AwardWinning #FunnyCats"),
+    ("planting-tulip", "plants one colorful tulip into a little flower pot", "The tulip has a new very fluffy landlord.", "#AICat #FlowerGarden #CuteCats"),
+    ("sorting-buttons", "sorts several oversized colorful craft buttons into neat color groups", "Spreadsheet skills, but make them adorable.", "#AICat #OrganizedCat #FunnyCats"),
+    ("sewing-fabric-patch", "carefully arranges a soft fabric patch onto a little cloth using a safe plastic sewing tool", "Fashion designer with impeccable whiskers.", "#AICat #CraftTok #CatLife"),
+    ("knitting-hat", "works on a tiny colorful knitted hat with extra chunky soft needles", "Winter fashion is looking pawsome.", "#AICat #KnittingCat #CozyCats"),
+    ("painting-plant-pot", "paints cheerful abstract color stripes on a plain flower pot", "The pottery collection just got a makeover.", "#AICat #DIYDecor #ArtCat"),
+    ("hanging-picture-frame", "straightens a small lightweight empty picture frame on an already mounted hook", "The gallery curator is very particular.", "#AICat #HomeDecor #FunnyCats"),
+    ("decorating-blank-card", "decorates a blank greeting card with colorful shapes and no written words", "Someone is sending handmade happiness today.", "#AICat #CraftTime #CuteCats"),
+    ("stamping-shapes", "presses a round foam stamp into washable paint and makes colorful shapes on paper", "Print shop open. No receipts, only purrs.", "#AICat #CreativeCat #ArtTok"),
+    ("setting-picnic-blanket", "carefully unfolds a small gingham picnic blanket on a grassy garden lawn", "The picnic organiser has arrived early.", "#AICat #PicnicTime #CuteCats"),
+    ("serving-cupcakes", "carefully arranges a few miniature cupcakes on a plain serving tray", "The dessert waiter has excellent taste.", "#AICat #CupcakeTime #FunnyCats"),
+    ("balancing-tray", "slowly walks with a small empty tray balanced between its front paws", "Service with a smile and four little paws.", "#AICat #WaiterCat #FunnyCats"),
+    ("spinning-globe", "gently spins a colorful unlabeled toy globe and points one paw toward it", "World travel begins right after lunch.", "#AICat #TravelDreams #CatTok"),
+    ("magic-flower-trick", "pulls a paper flower from a small empty top hat during a playful magic trick", "A round of applause for the great Meowdini.", "#AICat #MagicCat #FunnyCats"),
+    ("playing-chess", "carefully moves one oversized chess piece across a blank-sided chessboard", "Grandmaster of the snack break.", "#AICat #ChessCat #CuteCats"),
+    ("stacking-wooden-blocks", "carefully builds a wobbly tower of colorful wooden blocks", "The structural engineer approves this tower.", "#AICat #BuildingBlocks #FunnyCats"),
+    ("trying-rain-boots", "tries on a pair of comically oversized colorful toy rain boots", "Ready for puddles. Not ready for the forecast.", "#AICat #RainyDay #CuteCats"),
+    ("opening-tiny-umbrella", "opens a little decorative umbrella while standing on a cozy indoor rug", "Prepared for any weather. Even indoors.", "#AICat #UmbrellaCat #FunnyCats"),
+    ("sculpting-clay-vase", "shapes a small soft lump of modeling clay into a tiny vase", "An artist at work. Please admire the vase.", "#AICat #ClayArt #CuteCats"),
+    ("folding-origami-star", "carefully folds a colorful paper star from a plain square sheet", "This star is officially the cutest in the galaxy.", "#AICat #OrigamiArt #CatTok"),
+    ("tying-ribbon", "gently ties a colorful ribbon around a plain flower pot", "A simple ribbon. A major decorating achievement.", "#AICat #CraftyCat #CuteCats"),
+    ("sorting-recycling", "sorts clean paper and plastic containers into two plain colored bins", "The recycling manager works for extra treats.", "#AICat #EcoCat #FunnyCats"),
+    ("pushing-shopping-trolley", "gently pushes a miniature empty toy shopping trolley past an indoor produce display", "Grocery list: snacks, snacks and more snacks.", "#AICat #ShoppingCat #CatTok"),
+    ("arranging-fruit-stand", "places shiny toy fruit into neat rows on a tiny market stall", "Fresh produce and the friendliest shopkeeper.", "#AICat #MarketCat #CuteCats"),
+    ("sorting-wooden-coins", "carefully arranges oversized plain wooden pretend coins into tiny stacks", "The accountant says the snack budget is approved.", "#AICat #MoneyCat #FunnyCats"),
+    ("playing-xylophone", "gently taps oversized colorful keys of a toy xylophone with a soft foam mallet", "A silent concert for the world's fluffiest audience.", "#AICat #MusicCat #CuteCats"),
+    ("washing-mirror", "gently wipes a small mirror with a soft cloth and admires its reflection", "Mirror, mirror, who's the fluffiest of all?", "#AICat #MirrorCat #FunnyCats"),
+    ("hanging-laundry", "clips two tiny clean socks onto a low indoor miniature clothesline", "The laundry service is now open for business.", "#AICat #LaundryCat #CuteCats"),
+    ("watering-herbs", "gently waters two pots of fresh kitchen herbs on a window ledge", "A budding chef and now a herb gardener.", "#AICat #HerbGarden #CatTok"),
+    ("cleaning-toy-car", "carefully polishes a tiny parked toy car with a soft cloth", "Car wash open. Five-star paw service.", "#AICat #CarWash #FunnyCats"),
+    ("teaching-teddy-bear", "sits beside a teddy bear and points a paw toward a completely blank open book", "Today's class has one student and zero homework.", "#AICat #TeacherCat #CuteCats"),
+    ("packing-backpack", "neatly puts a soft scarf into a miniature backpack and closes it", "Packed and ready for a very short adventure.", "#AICat #AdventureCat #CatTok"),
+    ("sorting-boardgames", "carefully arranges colorful blank board-game pieces inside a small box", "Game night organiser takes the rules very seriously.", "#AICat #GameNight #FunnyCats"),
+    ("folding-shopping-bags", "neatly folds colorful reusable shopping bags on a kitchen table", "The bag folding championship has a new winner.", "#AICat #OrganizedCat #CuteCats"),
+    ("checking-recipe-book", "turns a page of an entirely blank recipe book and points toward a bowl of flour", "Chef's secret ingredient? More treats.", "#AICat #CatChef #FunnyCats"),
+    ("making-sushi-roll", "carefully rolls pretend felt sushi pieces together on a bamboo mat", "The tiny sushi chef has prepared today's special.", "#AICat #SushiCat #CuteCats"),
+    ("fluffing-pillow", "pats a big soft pillow until it is perfectly fluffy and sits down proudly", "An elite-level expert in pillow comfort.", "#AICat #CozyCat #CatTok"),
 ]
+
+# Appearance, backgrounds, and activity are three independent cycles.
+# Their combined cycle is lcm(100, 16, 17) = 6800 posting slots,
+# which exceeds 15 * 365 = 5475 possible videos in a year.
+CAT_LOOKS = [
+    "ginger tabby British Shorthair with copper eyes",
+    "fluffy solid black domestic longhair with amber eyes",
+    "black-and-white tuxedo domestic shorthair with green eyes",
+    "silver tabby American Shorthair with dark stripes",
+    "cream-colored British Shorthair with honey-colored eyes",
+    "white Persian with soft long fur and blue eyes",
+    "blue-gray Russian Blue with emerald eyes",
+    "calico domestic shorthair with black, ginger and white patches",
+    "tortoiseshell domestic shorthair with mottled black and orange fur",
+    "chocolate-brown Burmese with golden eyes",
+    "seal-point Siamese with deep blue eyes and dark ears",
+    "fluffy seal-bicolor Ragdoll with bright blue eyes",
+    "golden spotted Bengal with lively green eyes",
+    "brown tabby Maine Coon with a fluffy ruff and tufted ears",
+    "ginger-and-white domestic shorthair with white socks",
+    "dilute calico domestic shorthair with gray, cream and white patches"
+]
+ENVIRONMENT_STYLES = [
+    "soft sage-green and oak home decor",
+    "warm honey-colored timber details",
+    "clean Scandinavian whites and beige textiles",
+    "pale blue and white coastal interior details",
+    "sunny pale-yellow and cream decor",
+    "soft lavender and natural linen details",
+    "warm terracotta and earthy ceramics",
+    "calm pastel mint-green surroundings",
+    "subtle vintage cottage furnishing details",
+    "minimalist pale birchwood and white palette",
+    "natural rattan and soft cream textiles",
+    "muted teal and brushed brass details",
+    "welcoming peach and ivory color accents",
+    "soft dusty-rose and warm walnut color palette",
+    "fresh seafoam-green and stone-gray palette",
+    "subtle navy-blue and white decorative details",
+    "warm caramel and muted beige details"
+]
+CAPTION_ENDINGS = (
+    "What should this little helper try next?",
+    "Would you hire this tiny professional?",
+    "How would your cat handle this job?",
+    "Give this little worker a rating out of ten!",
+    "What should we call this very serious expert?",
+    "Tag someone who needs a laugh today!"
+)
+
+def slot_number(date_stamp: str, slot: int) -> int:
+    daynum = dt.date.fromisoformat(
+        f"{date_stamp[:4]}-{date_stamp[4:6]}-{date_stamp[6:]}"
+    ).toordinal()
+    if not 0 <= slot < 15:
+        raise ValueError("Invalid daily slot")
+    return daynum * 15 + slot
+
+def choose_look(date_stamp: str, slot: int):
+    serial = slot_number(date_stamp, slot)
+    return CAT_LOOKS[serial % len(CAT_LOOKS)]
+
+def choose_environment(date_stamp: str, slot: int):
+    serial = slot_number(date_stamp, slot)
+    return ENVIRONMENT_STYLES[serial % len(ENVIRONMENT_STYLES)]
+
 
 def utc_slot(now: Optional[dt.datetime] = None):
     now = now or dt.datetime.now(dt.timezone.utc)
@@ -66,22 +204,23 @@ def utc_slot(now: Optional[dt.datetime] = None):
     return now.strftime("%Y%m%d"), index
 
 def choose_scene(date_stamp: str, slot: int):
-    daynum = dt.date.fromisoformat(f"{date_stamp[:4]}-{date_stamp[4:6]}-{date_stamp[6:]}").toordinal()
-    return SCENES[(daynum * 15 + slot) % len(SCENES)]
+    return SCENES[slot_number(date_stamp, slot) % len(SCENES)]
 
 def output_paths(date_stamp: str, slot: int, slug: str):
     stem = f"new-ai-cat-{date_stamp}-s{slot:02d}-{slug}"
     return DEST / (stem + ".mp4"), DEST / (stem + ".json")
 
-def video_prompt(action: str):
+def video_prompt(action: str, look: str = CAT_LOOKS[0],
+                 environment: str = ENVIRONMENT_STYLES[0]):
     return (
         "Create an entirely original AI-generated moving video of ONE highly "
-        "photorealistic living ginger British Shorthair CAT, with accurate real "
+        "photorealistic living " + look + " CAT, with accurate real "
         "feline eyes, fur, whiskers and paws. The cat behaves like a cheerful little "
         "human in a delightfully absurd but safe way: it " + action + ". "
         "The cat's action and moving paws are clearly visible, with physical "
         "movement throughout the shot. ONE stable continuously moving cinematic "
-        "shot, bright warm natural light, detailed realistic environment, "
+        "shot, detailed realistic environment naturally suited to the action, "
+        "styled with " + environment + ", natural-looking lighting, "
         "centered subject and action so it can be cropped into a vertical 9:16 "
         "TikTok video. Wholesome, friendly, funny, charming, non-offensive, "
         "family-friendly, no human actors, no cruelty, no distress, no dangerous "
@@ -155,12 +294,18 @@ def validate_video(path: Path):
 
 def generate():
     date_stamp, slot = utc_slot()
+    # Never post a second film for a slot after a code or appearance update.
+    if list(DEST.glob(f"new-ai-cat-{date_stamp}-s{slot:02d}-*.mp4")):
+        print("EXISTING_AI_SLOT_VIDEO_NO_REGENERATION", date_stamp, slot, flush=True)
+        return
     slug, action, hook, tags = choose_scene(date_stamp, slot)
+    look = choose_look(date_stamp, slot)
+    environment = choose_environment(date_stamp, slot)
     output, sidecar = output_paths(date_stamp, slot, slug)
     if output.exists():
         print("EXISTING_AI_SLOT_VIDEO_NO_REGENERATION", output, flush=True)
         return
-    prompt = video_prompt(action)
+    prompt = video_prompt(action, look, environment)
     seed = int.from_bytes(hashlib.sha256(
         (date_stamp + str(slot)).encode()).digest()[:4], "big")
     video, model = obtain_generated_video(prompt, seed)
@@ -181,7 +326,12 @@ def generate():
             "no_added_text_or_subtitles": True,
             "no_audio_verified": True,
             "concept": action,
-            "caption": (hook.strip() + " " + tags + " #AIGenerated").strip(),
+            "cat_appearance": look,
+            "environment_style": environment,
+            "content_variety_cycle_slots": 6800,
+            "caption": (hook.strip() + " " +
+                        CAPTION_ENDINGS[slot_number(date_stamp, slot) % len(CAPTION_ENDINGS)] +
+                        " " + tags + " #AIGenerated").strip(),
             "prompt": prompt,
             "utc_day": date_stamp,
             "scheduled_slot": slot,
