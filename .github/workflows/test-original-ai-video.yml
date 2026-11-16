@@ -1,0 +1,36 @@
+name: Test free original AI motion video (public LTX ZeroGPU)
+on:
+  push:
+    paths:
+      - 'original_ai_video/**'
+      - '.github/workflows/test-original-ai-video.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Gradio client
+        run: python3 -m pip install --user --upgrade gradio_client
+      - name: Test public original video generation using LTX 2.5 (no token)
+        run: timeout 300s python3 original_ai_video/test_ltx_free.py
+      - name: Inspect MP4 only if truly generated
+        if: success()
+        run: |
+          test -s original-ai-motion-test.mp4
+          file original-ai-motion-test.mp4
+          ls -lh original-ai-motion-test.mp4
+      - name: Preserve test results and MP4 if any
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: original-ai-motion-evidence
+          path: |
+            ai_video_probe_report.json
+            ai_video_api.json
+            original-ai-motion-test.mp4
+          if-no-files-found: warn
+          retention-days: 7
