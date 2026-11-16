@@ -49,7 +49,7 @@ try:
  )
  report["full_prompt"]=prompt
  client=Client("Lightricks/LTX-2.5",httpx_kwargs={"timeout":40.0})
- result=client.predict(prompt,None,896,512,6.0,2718,"conv",False,False,False,api_name="/run")
+ result=client.predict(prompt,None,896,512,5.0,2718,"conv",False,False,False,api_name="/run")
  raw=result[0] if isinstance(result,(tuple,list)) else result
  if isinstance(raw,dict): raw=raw.get("path") or raw.get("video") or raw.get("name")
  generated=Path(raw)
