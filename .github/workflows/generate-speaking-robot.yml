@@ -1,0 +1,39 @@
+name: Original AI robot speaking Polish (test)
+on:
+  push:
+    paths:
+      - 'original_ai_video/make_speaking_robot.py'
+      - '.github/workflows/generate-speaking-robot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  create-speaking-video:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install local Polish voice and audio tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y espeak-ng ffmpeg
+          python3 -m pip install --user --upgrade gradio_client
+      - name: Produce original AI moving film with Polish spoken greeting
+        run: timeout 380s python3 original_ai_video/make_speaking_robot.py
+      - name: Inspect content
+        if: success()
+        run: |
+          test -s ai-speaking-robot-polish.mp4
+          file ai-speaking-robot-polish.mp4
+          ffprobe -v error -show_entries stream=codec_type,codec_name -of json ai-speaking-robot-polish.mp4
+          cat ai-speaking-robot-report.json
+      - name: Upload generated spoken AI film
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-speaking-robot-polish
+          path: |
+            ai-speaking-robot-polish.mp4
+            ai-speaking-robot-report.json
+          if-no-files-found: warn
+          retention-days: 7
