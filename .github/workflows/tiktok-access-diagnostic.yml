@@ -1,0 +1,85 @@
+name: Check TikTok publishing access (no upload)
+on:
+  push:
+    paths:
+      - '.github/workflows/tiktok-access-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-tiktok:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+      TIKTOK_TOKEN: ${{ secrets.TIKTOK_TOKEN }}
+      TIKTOK_OAUTH_ACCESS_TOKEN: ${{ secrets.TIKTOK_OAUTH_ACCESS_TOKEN }}
+      TIKTOK_API_ACCESS_TOKEN: ${{ secrets.TIKTOK_API_ACCESS_TOKEN }}
+      TIKTOK_REFRESH_TOKEN: ${{ secrets.TIKTOK_REFRESH_TOKEN }}
+      TIKTOK_OAUTH_REFRESH_TOKEN: ${{ secrets.TIKTOK_OAUTH_REFRESH_TOKEN }}
+    steps:
+      - name: Verify TikTok OAuth publishing permission without publishing a video
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import urllib.request
+          import urllib.error
+
+          token_names = (
+              "TIKTOK_ACCESS_TOKEN",
+              "TIKTOK_TOKEN",
+              "TIKTOK_OAUTH_ACCESS_TOKEN",
+              "TIKTOK_API_ACCESS_TOKEN",
+          )
+          token = next((os.getenv(n) for n in token_names if os.getenv(n)), None)
+          refresh = any(os.getenv(n) for n in (
+              "TIKTOK_REFRESH_TOKEN", "TIKTOK_OAUTH_REFRESH_TOKEN"))
+          # Never print or otherwise write OAuth credentials.
+          print("GitHub has a TikTok publishing access token:", "YES" if token else "NO")
+          print("GitHub has a TikTok refresh token:", "YES" if refresh else "NO")
+          if not token:
+              print("RESULT: NOT CONNECTED VIA GITHUB SECRETS (known token names)")
+              print("This does not test an existing TikTok login in ChatGPT Work.")
+              raise SystemExit(0)
+
+          url = "https://open.tiktokapis.com/v2/post/publish/creator_info/query/"
+          req = urllib.request.Request(
+              url, data=b"{}",
+              method="POST",
+              headers={
+                  "Authorization": "Bearer " + token,
+                  "Content-Type": "application/json; charset=UTF-8",
+              },
+          )
+          status = None
+          try:
+              with urllib.request.urlopen(req, timeout=25) as resp:
+                  status = resp.status
+                  raw = resp.read(32768).decode("utf-8", "replace")
+          except urllib.error.HTTPError as err:
+              status = err.code
+              raw = err.read(32768).decode("utf-8", "replace")
+          except Exception as err:
+              print("RESULT: TIKTOK_API_UNREACHABLE; network error type:",
+                    type(err).__name__)
+              raise SystemExit(0)
+
+          try:
+              result = json.loads(raw)
+          except ValueError:
+              print("RESULT: UNEXPECTED_API_RESPONSE; HTTP", status)
+              raise SystemExit(0)
+          error = result.get("error") or {}
+          code = str(error.get("code","unknown"))
+          print("TikTok API HTTP status:", status)
+          print("TikTok API error code:", code)
+          if status == 200 and code == "ok":
+              print("RESULT: VERIFIED_AUTHORIZED_FOR_TIKTOK_DIRECT_POST_API")
+              print("No film was posted; account identity not verified by this check.")
+          elif code in ("scope_not_authorized", "access_token_invalid"):
+              print("RESULT: NO_VALID_TIKTOK_VIDEO_PUBLISH_AUTHORIZATION")
+          else:
+              print("RESULT: TIKTOK_PUBLISH_ACCESS_NOT_CONFIRMED")
+          PY
