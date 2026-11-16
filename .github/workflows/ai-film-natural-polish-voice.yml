@@ -21,6 +21,9 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg
           python3 -m pip install --upgrade piper-tts
+      - name: Download open-licensed Polish neural voice model
+        run: |
+          python3 -m piper.download_voices pl_PL-gosia-medium
       - name: Generate natural-sounding Polish narration and encode MP4
         run: timeout 400s python3 original_ai_video/replace_with_neural_polish.py
       - name: Validate actual film and report
