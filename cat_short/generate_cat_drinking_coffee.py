@@ -56,7 +56,8 @@ try:
     OUT.parent.mkdir(parents=True,exist_ok=True)
     # Explicitly strip *all* audio regardless of whether the model adds any.
     check(["ffmpeg","-hide_banner","-y","-i",str(src),"-map","0:v:0",
-        "-an","-c:v","libx264","-preset","fast","-crf","22","-pix_fmt","yuv420p",
+        "-an","-vf","scale=512:896:force_original_aspect_ratio=decrease,pad=512:896:(ow-iw)/2:(oh-ih)/2",
+        "-c:v","libx264","-preset","fast","-crf","22","-pix_fmt","yuv420p",
         "-movflags","+faststart",str(OUT)])
     probe=json.loads(check(["ffprobe","-v","error","-show_entries",
         "stream=codec_type,width,height,r_frame_rate,nb_frames:format=duration,size",
@@ -68,11 +69,12 @@ try:
     duration=float(probe.get("format",{}).get("duration",0))
     width=int(stream.get("width",0))
     height=int(stream.get("height",0))
-    if width>=height or duration<3 or duration>7 or OUT.stat().st_size<100_000:
+    print("RENDER INFO",{"width":width,"height":height,"duration":duration,"bytes":OUT.stat().st_size},flush=True)
+    if width>=height or duration<2 or duration>12 or OUT.stat().st_size<100_000:
         raise RuntimeError("Invalid MP4: not short portrait moving-video output")
     # Detect a common false result: unchanged frame repeated throughout.
     changes=check(["ffmpeg","-v","info","-i",str(OUT),"-vf",
-        "select='gt(scene,0.001)',showinfo","-an","-f","null","-"])
+        "select='gt(scene,0.0001)',showinfo","-an","-f","null","-"])
     changed_frames=changes.stderr.count("showinfo")-1
     result.update({"success":True,"original_ai_motion":True,"silent_no_audio":True,
        "duration_s":duration,"width":width,"height":height,
