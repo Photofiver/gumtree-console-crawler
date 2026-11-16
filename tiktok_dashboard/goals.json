@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "account": "@photofiver.photof",
+  "started_at_utc": "2026-11-16T08:56:29Z",
+  "baseline_followers": 2,
+  "milestones": [
+    {
+      "followers": 100,
+      "label": "Cel pierwszych 30 dni"
+    },
+    {
+      "followers": 500,
+      "label": "Cel rozwoju profilu i przygotowania do afiliacji"
+    }
+  ],
+  "publishing": {
+    "target_slots_per_day": 15,
+    "interval_minutes": 96,
+    "max_per_slot": 1,
+    "platform": "TikTok",
+    "automated_attempts_not_guaranteed_posts": true
+  },
+  "creative": {
+    "subject": "Fotorealistyczne koty wykonujące ludzkie czynności",
+    "variety": "Różne kolory, rasy kotów, czynności i scenerie; bez powtarzania filmów",
+    "sound": false,
+    "music": false,
+    "in_video_text": false,
+    "subtitles": false,
+    "tone": "zabawne, życzliwe, bez obrażania kogokolwiek",
+    "caption_language": "en",
+    "hashtags": true,
+    "ai_label": true,
+    "comments_allowed": true
+  },
+  "monetization": {
+    "strategy": "Afiliacja po spełnieniu rzeczywistych wymagań odpowiedniego programu i zatwierdzeniu konta",
+    "earnings_goal_gbp": null,
+    "eligibility_is_not_guaranteed_by_500_followers": true
+  },
+  "data_rules": {
+    "followers": "Tylko faktyczny odczyt profilu, z datą",
+    "published": "Tylko posty potwierdzone przez Buffer (status sent) z linkiem",
+    "views_and_revenue": "Brak danych to brak danych, nigdy szacunek udający pomiar",
+    "refresh_minutes": 5,
+    "git_actions_stats_schedule_minutes": 15
+  },
+  "safety": {
+    "trading_repo": "Photofiver/Stock-finder",
+    "do_not_modify_trading_bot": true,
+    "do_not_modify_google_ai_connection": true
+  }
+}
