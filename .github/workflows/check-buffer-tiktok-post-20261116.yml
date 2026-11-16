@@ -1,4 +1,4 @@
-name: Verify actual TikTok publication (read-only Buffer API)
+name: Verify newest silent yoga-cat TikTok publication (read-only)
 # Recheck after initial Buffer status sending; read-only
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
           token=os.environ.get("BUFFER_API_KEY","")
           if not token: raise RuntimeError("No BUFFER_API_KEY configured")
           query='query($input: PostInput!) { post(input: $input) { id status externalLink sentAt dueAt schedulingType channelService channel { name service } error { message } } }'
-          payload={"query":query,"variables":{"input":{"id":"6afabab2d7e5fee638aedb4b"}}}
+          payload={"query":query,"variables":{"input":{"id":"6afac092a869c35e5bcc965b"}}}
           req=urllib.request.Request("https://api.buffer.com", data=json.dumps(payload).encode(), method="POST",headers={"Authorization":"Bearer "+token,"Content-Type":"application/json"})
           try:
               with urllib.request.urlopen(req,timeout=30) as response: result=json.load(response)
