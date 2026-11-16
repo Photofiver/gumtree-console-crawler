@@ -207,13 +207,14 @@
     var left=document.createElement("div"),name=document.createElement("div"),date=document.createElement("div"),right=document.createElement("span");
     name.className="videoname";name.textContent=v.concept||"Opublikowany film AI";
     date.className="videodate";date.textContent=when(v.sent_at_utc);
+    left.append(name,date);
     if(v.engagement && typeof v.engagement==="object"){
       var info=document.createElement("div");info.className="video-counters";
       var parts=[["likes","Polubienia"],["comments","Komentarze"],["views","Wyświetlenia"]];
       info.textContent=parts.filter(function(k){return validCount(v.engagement[k[0]])}).map(function(k){return k[1]+": "+number(v.engagement[k[0]])}).join(" • ");
       if(info.textContent)left.appendChild(info);
     }
-    right.className="videoicon";right.textContent="Obejrzyj ↗";left.append(name,date);a.append(left,right);el("videos").appendChild(a);
+    right.className="videoicon";right.textContent="Obejrzyj ↗";a.append(left,right);el("videos").appendChild(a);
   }
   function draw(history){
     var rows=(Array.isArray(history)?history:[]).filter(function(x){return x&&validCount(x.followers)&&Number.isFinite(new Date(x.utc).getTime())}).sort(function(a,b){return new Date(a.utc)-new Date(b.utc)});
