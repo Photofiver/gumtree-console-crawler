@@ -1,4 +1,5 @@
 name: Verify newest silent yoga-cat TikTok publication (read-only)
+# Second read-only status check after first returned sending
 # Recheck after initial Buffer status sending; read-only
 on:
   push:
