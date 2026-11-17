@@ -53,7 +53,8 @@
       "source": "social_videos/new-ai-cat-20261117-s04-sweeping-patio.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s04-sweeping-patio.mp4",
       "attempted_at": "2026-11-17T06:57:17.540844+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afbfacf9f28abc4561f981d"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
