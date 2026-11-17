@@ -1,26 +1,18 @@
-name: AI silent human-like cat TikTok every 96 minutes (up to 15/day)
+name: AI cat reach recovery (up to 3 longer originals per day)
 on:
   schedule:
-    # UTC, exactly 96-minute spacing over 24 hours (15 slots); Actions can start late.
-    # Schedule offset refreshed 2026-11-16 to re-register missing scheduled runs.
-    - cron: '1 0,8,16 * * *'
-    - cron: '37 1,9,17 * * *'
-    - cron: '13 3,11,19 * * *'
-    - cron: '49 4,12,20 * * *'
-    - cron: '25 6,14,22 * * *'
-    # Hourly retry when GPU quota becomes available or a scheduled job is missed.
-    # The generator fills the oldest unmade clip, including previous UTC days;
-    # it never repeats generated clips or creates more than 15 per target day.
-    # Twice-hourly recovery window: extra GitHub schedule opportunities, but
-    # generator still selects only one oldest due UNIQUE clip per run.
-    # 15/day remains an upper bound for Buffer submissions, not a promise.
-    - cron: '7,37 * * * *'
+    # Temporary zero-view recovery: three evenly spaced publishing windows.
+    # Retry each window once in case GitHub skips a scheduled event.
+    # Generator still creates at most one fresh, unique 3-shot story per slot.
+    - cron: '1,17 0,8,16 * * *'
   workflow_dispatch:
   push:
     paths:
       - '.github/workflows/silent-ai-cat-every-96-minutes.yml'
       - 'buffer_tiktok/generate_silent_ai_cat.py'
       - 'buffer_tiktok/test_generate_silent_ai_cat.py'
+      - 'buffer_tiktok/post_new_video.py'
+      - 'buffer_tiktok/test_post_new_video.py'
 permissions:
   contents: write
 concurrency:
@@ -96,7 +88,7 @@ jobs:
           if [ "$GENERATION_OUTCOME" != "success" ]; then
             echo 'No AI video generated in this slot. Quota or model unavailability. Old media never reused.' >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo '15 planned 96-minute UTC slots/day; missed unique clips remain queued across days. One new video per run.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'RECOVERY: maximum 3 original 8+ second cat stories/day; no old 3-second clips. This does not guarantee TikTok distribution.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No audio; no added text or subtitles inside the video. English caption and hashtags outside.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Actual production depends on public free GPU quotas and TikTok/Buffer platform limits.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Trading bot is not touched.' >> "$GITHUB_STEP_SUMMARY"
