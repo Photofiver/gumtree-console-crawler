@@ -1,0 +1,61 @@
+name: CeX UK HDD cash price check
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  lookup:
+    if: ${{ startsWith(github.event.issue.title, '[cex-price]') && github.event.issue.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Look up matching HDDs in public UK search index
+        id: check
+        shell: python
+        run: |
+          import json, urllib.request, urllib.parse, time, os
+          queries = [
+            "1TB 2.5 SATA Hard Drive",
+            "1TB 2.5 HDD",
+            "Seagate Barracuda 1TB",
+            "1TB SATA Laptop Hard Drive",
+          ]
+          summaries = []
+          endpoint = "https://search.webuy.io/1/indexes/*/queries"
+          for query in queries:
+              params = urllib.parse.urlencode({"query":query, "hitsPerPage":30})
+              payload = json.dumps({"requests":[{"indexName":"prod_cex_uk","params":params}]}).encode("utf-8")
+              req=urllib.request.Request(endpoint,data=payload,headers={"Content-Type":"application/json","User-Agent":"Photofiver-CeX-ReadOnly-PriceCheck/1.0"},method="POST")
+              try:
+                  with urllib.request.urlopen(req,timeout=22) as res:
+                      data = json.load(res)
+                  hits = data.get("results",[{}])[0].get("hits",[])
+                  results = []
+                  for h in hits:
+                      title = str(h.get("boxName",""))
+                      s = title.casefold()
+                      if not ("1tb" in s or "1 tb" in s or "1000gb" in s):
+                          continue
+                      if not any(t in s for t in ("hard drive","hdd","2.5","sata")) or "ssd" in s:
+                          continue
+                      results.append({"name":title,"boxId":h.get("boxId"),"cash":h.get("cashPriceCalculated"),"voucher":h.get("exchangePriceCalculated"),"retail":h.get("sellPrice"),"category":h.get("categoryName"),"origin":h.get("origin"),"discontinued":h.get("discontinued")})
+                  summaries.append({"query":query,"results":results[:15],"hits":len(hits)})
+              except Exception as e:
+                  summaries.append({"query":query,"error":str(e)[:240]})
+              time.sleep(1.1)
+          with open("cex-hdd-lookup.json","w",encoding="utf8") as f:
+              json.dump(summaries,f,ensure_ascii=False,indent=2)
+          print(json.dumps(summaries,ensure_ascii=False))
+      - name: Post results to GitHub issue
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs=require("fs");
+            const body=fs.existsSync("cex-hdd-lookup.json")?fs.readFileSync("cex-hdd-lookup.json","utf8"):"CeX price check failed before results were produced";
+            await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:"CeX UK HDD read-only search result:\n\n" + "~~~json\n"+body.slice(0,55000)+"\n~~~"});
