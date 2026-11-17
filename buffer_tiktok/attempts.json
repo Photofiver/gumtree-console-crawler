@@ -41,6 +41,12 @@
       "attempted_at": "2026-11-17T02:28:35.188782+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afbbbd5df36f4d82561d50f"
+    },
+    "83c02a442caca1be4d46b327a2ffb2304ef1c6b7052998a2e10359cbdd3470be": {
+      "source": "social_videos/new-ai-cat-20261117-s02-stirring-hot-chocolate.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s02-stirring-hot-chocolate.mp4",
+      "attempted_at": "2026-11-17T03:15:03.978172+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
