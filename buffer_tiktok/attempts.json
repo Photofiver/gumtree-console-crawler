@@ -97,6 +97,12 @@
       "attempted_at": "2026-11-17T16:18:22.945661+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afc7e51f78506c8dd3511b5"
+    },
+    "49d9b29d41be283ec9ada12a147d8dfe8d1b1d73d240414eb0f0dcff22279091": {
+      "source": "social_videos/new-ai-cat-20261116-s12-packing-suitcase.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261116-s12-packing-suitcase.mp4",
+      "attempted_at": "2026-11-17T17:22:48.903671+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
