@@ -392,10 +392,10 @@ def generate():
         (date_stamp + str(slot)).encode()).digest()[:4], "big")
     output.parent.mkdir(parents=True, exist_ok=True)
     models = []
-    raw_hashes = set()
-    # Three DISTINCT fresh model generations create a short beginning,
-    # action and ending. No reversing, speed stretching or looping a 3s clip.
-    # If free GPU quota cannot provide the story, publish nothing low-quality.
+    normalized_hashes = set()
+    # Keep each newly generated original shot between workflow runs.
+    # Anonymous free GPU quotas can expire after just one generation.
+    # Without persistence a failed second shot would waste the first forever.
     moments = (
         "Shot ONE of three: the cat approaches its task; visible anticipation and motion, "
         "establishing composition, camera at a medium distance.",
@@ -404,28 +404,62 @@ def generate():
         "Shot THREE of three: the same kind of cat completes its task and gives an "
         "expressive pleased reaction, camera at a wider angle.",
     )
+    part_dir = ROOT / "social_videos" / "story-parts" / output.stem
+    part_dir.mkdir(parents=True, exist_ok=True)
     try:
-        with tempfile.TemporaryDirectory(prefix="new-original-cat-story-") as folder:
-            clips = []
-            for index, moment in enumerate(moments):
+        clips = []
+        for index, moment in enumerate(moments):
+            segment = part_dir / f"shot{index:02d}.mp4"
+            if segment.exists():
+                # Never assume a previous GitHub run saved valid media.
+                try:
+                    probe = json.loads(run([
+                        "ffprobe", "-v", "error", "-show_streams",
+                        "-show_format", "-of", "json", str(segment)
+                    ], timeout=30).stdout)
+                    streams = probe.get("streams", [])
+                    picture = [s for s in streams if s.get("codec_type") == "video"]
+                    length = float(probe.get("format", {}).get("duration", 0))
+                    if (len(picture) != 1 or
+                        any(s.get("codec_type") == "audio" for s in streams) or
+                        picture[0].get("codec_name") != "h264" or
+                        int(picture[0].get("width", 0)) != 720 or
+                        int(picture[0].get("height", 0)) != 1280 or
+                        not 2.8 <= length <= 8 or segment.stat().st_size < 40000):
+                        raise ValueError("Invalid staged original shot")
+                except Exception:
+                    segment.unlink(missing_ok=True)
+                    print("DISCARDED_INVALID_STORY_PART", index, flush=True)
+            if segment.exists():
+                model = "validated_saved_original_shot"
+                print("RESUMED_STORY_PART", index, flush=True)
+            else:
                 raw, model = obtain_generated_video(
                     prompt + " " + moment, seed + index * 7919)
-                fingerprint = hashlib.sha256(raw.read_bytes()).hexdigest()
-                if fingerprint in raw_hashes:
-                    raise RuntimeError("Provider returned the same footage twice; no loop uploads")
-                raw_hashes.add(fingerprint)
-                models.append(model)
-                segment = Path(folder) / f"shot{index:02d}.mp4"
-                run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-                     "-i", str(raw), "-map", "0:v:0",
-                     "-vf", "crop='min(iw,ih*9/16)':ih:(iw-ow)/2:0,scale=720:1280:flags=lanczos,fps=25",
-                     "-t", "7", "-an", "-c:v", "libx264", "-preset", "veryfast",
-                     "-crf", "22", "-pix_fmt", "yuv420p",
-                     "-movflags", "+faststart", str(segment)], timeout=130)
-                clips.append(segment)
+                temp = segment.with_suffix(".partial.mp4")
+                try:
+                    run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                         "-i", str(raw), "-map", "0:v:0",
+                         "-vf", "crop='min(iw,ih*9/16)':ih:(iw-ow)/2:0,scale=720:1280:flags=lanczos,fps=25",
+                         "-t", "7", "-an", "-c:v", "libx264", "-preset", "veryfast",
+                         "-crf", "22", "-pix_fmt", "yuv420p",
+                         "-movflags", "+faststart", str(temp)], timeout=130)
+                    if temp.stat().st_size < 40000:
+                        raise RuntimeError("Generated story shot is empty")
+                    temp.replace(segment)
+                finally:
+                    temp.unlink(missing_ok=True)
+                print("NEW_STORY_PART", str(segment.relative_to(ROOT)), flush=True)
+            fingerprint = hashlib.sha256(segment.read_bytes()).hexdigest()
+            if fingerprint in normalized_hashes:
+                raise RuntimeError("Provider returned repeated footage")
+            normalized_hashes.add(fingerprint)
+            models.append(model)
+            clips.append(segment)
+        with tempfile.TemporaryDirectory(prefix="cat-story-join-") as folder:
             concat_list = Path(folder) / "story.txt"
             concat_list.write_text(
-                "".join(f"file '{segment}'\n" for segment in clips),
+                "".join(f"file '{segment}'\\n" for segment in clips),
                 encoding="utf-8")
             run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
                  "-f", "concat", "-safe", "0", "-i", str(concat_list),

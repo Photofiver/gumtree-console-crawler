@@ -59,7 +59,7 @@ jobs:
         run: |
           set -euo pipefail
           shopt -s nullglob
-          files=(social_videos/new-ai-cat-*.mp4 social_videos/new-ai-cat-*.json)
+          files=(social_videos/new-ai-cat-*.mp4 social_videos/new-ai-cat-*.json social_videos/story-parts/*/shot??.mp4)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "NO_NEW_AI_CLIP: no verified original video this slot."
             exit 0
