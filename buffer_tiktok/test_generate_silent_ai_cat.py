@@ -46,7 +46,7 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             {"codec_type":"video","width":720,"height":1280,
              "codec_name":"h264","avg_frame_rate":"25/1"},
             {"codec_type":"audio","codec_name":"aac"}],
-            "format":{"duration":"3.2"}}
+            "format":{"duration":"9.2"}}
         with tempfile.TemporaryDirectory() as td:
             f=Path(td)/"video.mp4"
             f.write_bytes(b"0"*50000)
@@ -60,7 +60,7 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
         sample={"streams":[
             {"codec_type":"video","width":720,"height":1280,
              "codec_name":"h264","avg_frame_rate":"25/1"}],
-            "format":{"duration":"3.2"}}
+            "format":{"duration":"9.2"}}
         with tempfile.TemporaryDirectory() as td:
             f=Path(td)/"video.mp4"
             f.write_bytes(b"0"*50000)
@@ -120,6 +120,7 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
 
     def test_backfill_missed_daily_slot(self):
         with tempfile.TemporaryDirectory() as folder, \
+             patch.object(gen, "RECOVERY_START_DAY", dt.date(2026, 11, 18)), \
              patch.object(gen, "BACKFILL_START_DAY", dt.date(2026, 11, 17)), \
              patch.object(gen, "BACKFILL_START_SLOT", 0):
             previous = gen.DEST
@@ -137,7 +138,8 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
                 gen.DEST = previous
 
     def test_backlog_survives_midnight_and_skips_prelaunch(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, \
+             patch.object(gen, "RECOVERY_START_DAY", dt.date(2026, 11, 18)):
             previous = gen.DEST
             gen.DEST = Path(folder)
             try:
@@ -159,6 +161,34 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
                 self.assertIsNone(gen.next_due_slot(next_morning))
             finally:
                 gen.DEST = previous
+
+
+    def test_recovery_only_three_daily_slots_with_no_prior_day_backlog(self):
+        with tempfile.TemporaryDirectory() as folder, \
+             patch.object(gen, "DEST", Path(folder)):
+            # Missed 3-second historical clips from Nov 16 are not backfilled.
+            at_first = dt.datetime(2026, 11, 18, 8, 10, tzinfo=dt.timezone.utc)
+            self.assertEqual(gen.next_due_slot(at_first), ("20261118", 0))
+            (Path(folder) / "new-ai-cat-20261118-s00-first.mp4").write_bytes(b"clip")
+            self.assertEqual(gen.next_due_slot(at_first), ("20261118", 5))
+            (Path(folder) / "new-ai-cat-20261118-s05-second.mp4").write_bytes(b"clip")
+            self.assertIsNone(gen.next_due_slot(at_first))
+            at_third = dt.datetime(2026, 11, 18, 16, 20, tzinfo=dt.timezone.utc)
+            self.assertEqual(gen.next_due_slot(at_third), ("20261118", 10))
+
+    def test_recovery_rejects_legacy_three_second_content(self):
+        probe = {"streams": [
+            {"codec_type": "video", "width": 720, "height": 1280,
+             "codec_name": "h264", "avg_frame_rate": "25/1"}],
+            "format": {"duration": "3.08"}}
+        with tempfile.TemporaryDirectory() as folder:
+            video = Path(folder) / "old-short.mp4"
+            video.write_bytes(b"0" * 50000)
+            class Response:
+                stdout = json.dumps(probe)
+            with patch.object(gen, "run", return_value=Response()):
+                with self.assertRaisesRegex(ValueError, "duration"):
+                    gen.validate_video(video)
 
     def test_exactly_100_distinct_friendly_human_activities(self):
         self.assertEqual(len(gen.SCENES), 100)
