@@ -8,9 +8,9 @@ on:
     - cron: '13 3,11,19 * * *'
     - cron: '49 4,12,20 * * *'
     - cron: '25 6,14,22 * * *'
-    # Hourly recovery for delayed/dropped GitHub scheduled executions.
-    # The generator fills ONLY the oldest missing slot already due today;
-    # it never creates a sixteenth clip or reposts earlier media.
+    # Hourly retry when GPU quota becomes available or a scheduled job is missed.
+    # The generator fills the oldest unmade clip, including previous UTC days;
+    # it never repeats generated clips or creates more than 15 per target day.
     - cron: '7 * * * *'
   workflow_dispatch:
   push:
@@ -93,7 +93,7 @@ jobs:
           if [ "$GENERATION_OUTCOME" != "success" ]; then
             echo 'No AI video generated in this slot. Quota or model unavailability. Old media never reused.' >> "$GITHUB_STEP_SUMMARY"
           fi
-          echo '15 evenly spaced UTC slots per day, one unique AI-generated silent cat film at most per run.' >> "$GITHUB_STEP_SUMMARY"
+          echo '15 planned 96-minute UTC slots/day; missed unique clips remain queued across days. One new video per run.' >> "$GITHUB_STEP_SUMMARY"
           echo 'No audio; no added text or subtitles inside the video. English caption and hashtags outside.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Actual production depends on public free GPU quotas and TikTok/Buffer platform limits.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Trading bot is not touched.' >> "$GITHUB_STEP_SUMMARY"
