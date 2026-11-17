@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-17T00:08:39.220316Z",
+  "generated_at_utc": "2026-11-17T08:00:00.940846Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-17T00:08:39.220316Z",
+  "followers_checked_at_utc": "2026-11-17T08:00:00.940846Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -16,15 +16,79 @@
     {
       "utc": "2026-11-17T00:08:39.220316Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-17T08:00:00.940846Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 4,
-  "posted_24h": 4,
+  "posted_confirmed": 8,
+  "posted_24h": 8,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-17T00:08:39.220316Z",
+  "posting_status_checked_at_utc": "2026-11-17T08:00:00.940846Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afbfacf9f28abc4561f981d",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709030989858639137",
+      "sent_at_utc": "2026-11-17T06:59:02.451Z",
+      "concept": "new ai cat 20261117 s04 sweeping patio",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T08:00:00.940846Z"
+    },
+    {
+      "id": "6afbc6b9df36f4d825655486",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708973550132137249",
+      "sent_at_utc": "2026-11-17T03:16:50.064Z",
+      "concept": "new ai cat 20261117 s02 stirring hot chocolate",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T08:00:00.940846Z"
+    },
+    {
+      "id": "6afbbbd5df36f4d82561d50f",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708961638870797601",
+      "sent_at_utc": "2026-11-17T02:30:22.684Z",
+      "concept": "new ai cat 20261117 s01 spreading jam",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T08:00:00.940846Z"
+    },
+    {
+      "id": "6afba7f0797935b975d14c10",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708939896102161696",
+      "sent_at_utc": "2026-11-17T01:04:35.237Z",
+      "concept": "new ai cat 20261117 s00 whisking cake batter",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T08:00:00.940846Z"
+    },
     {
       "id": "6afb98cf4b26315855ab36a3",
       "status": "sent",
@@ -38,7 +102,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+      "engagement_checked_at_utc": "2026-11-17T08:00:00.940846Z"
     },
     {
       "id": "6afb27ed6e855bed1e7e3316",
@@ -98,9 +162,9 @@
     "shares": 0,
     "views": 0,
     "saves": null,
-    "videos_monitored": 4,
-    "videos_recent_confirmed": 4,
-    "last_checked_at_utc": "2026-11-17T00:08:39.220316Z",
+    "videos_monitored": 5,
+    "videos_recent_confirmed": 5,
+    "last_checked_at_utc": "2026-11-17T08:00:00.940846Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
