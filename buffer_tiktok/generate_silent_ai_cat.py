@@ -14,6 +14,7 @@ import re
 from pathlib import Path
 import subprocess
 import sys
+import tempfile
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -23,6 +24,12 @@ SLOT_MINUTES = 96
 # Old, missed slots stay eligible after midnight; no other user's account is used.
 BACKFILL_START_DAY = dt.date(2026, 11, 16)
 BACKFILL_START_SLOT = 5
+# Visibility recovery: reduce volume while platform distribution is unverified.
+# The 15-slot clock remains available for future use; the active recovery
+# dates intentionally produce only three UNIQUE original videos per UTC day.
+RECOVERY_START_DAY = dt.date(2026, 11, 18)
+RECOVERY_SLOTS = (0, 5, 10)  # 00:00, 08:00, 16:00 UTC
+MIN_STORY_SECONDS = 8.0
 
 # All actions are lighthearted, safe and friendly; none involve a person,
 # impersonation, frightening animals, dangerous stunts or politics.
@@ -318,7 +325,7 @@ def validate_video(path: Path):
     fps = fps_num / max(1, fps_den)
     if width != 720 or height != 1280 or stream.get("codec_name") != "h264":
         raise ValueError("Expected 720x1280 H264")
-    if not 2.8 <= duration <= 8 or not 24 <= fps <= 30:
+    if not MIN_STORY_SECONDS <= duration <= 25 or not 24 <= fps <= 30:
         raise ValueError("Invalid duration or framerate")
     if path.stat().st_size < 40000:
         raise ValueError("Missing image detail")
@@ -344,6 +351,13 @@ def next_due_slot(now: Optional[dt.datetime] = None):
             r"new-ai-cat-(\d{8})-s(\d{2})-.+\.mp4", clip.name)
         if match:
             existing.add((match.group(1), int(match.group(2))))
+    # During recovery, do not backfill old 3-second videos or flood the feed.
+    # A missed recovery slot can still be generated later on the SAME day.
+    if today >= RECOVERY_START_DAY:
+        for slot in RECOVERY_SLOTS:
+            if slot <= latest_due and (date_stamp, slot) not in existing:
+                return date_stamp, slot
+        return None
     day = BACKFILL_START_DAY
     while day <= today:
         stamp = day.strftime("%Y%m%d")
@@ -376,19 +390,53 @@ def generate():
     prompt = video_prompt(action, look, environment)
     seed = int.from_bytes(hashlib.sha256(
         (date_stamp + str(slot)).encode()).digest()[:4], "big")
-    video, model = obtain_generated_video(prompt, seed)
     output.parent.mkdir(parents=True, exist_ok=True)
+    models = []
+    raw_hashes = set()
+    # Three DISTINCT fresh model generations create a short beginning,
+    # action and ending. No reversing, speed stretching or looping a 3s clip.
+    # If free GPU quota cannot provide the story, publish nothing low-quality.
+    moments = (
+        "Shot ONE of three: the cat approaches its task; visible anticipation and motion, "
+        "establishing composition, camera at a medium distance.",
+        "Shot TWO of three: the same kind of cat actively performs the described task, "
+        "clear paw and object movement, camera at a closer perspective.",
+        "Shot THREE of three: the same kind of cat completes its task and gives an "
+        "expressive pleased reaction, camera at a wider angle.",
+    )
     try:
-        # Strip ALL model audio. Never add text/subtitles/voiceovers to the frame.
-        run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-             "-i", str(video), "-map", "0:v:0",
-             "-vf", "crop='min(iw,ih*9/16)':ih:(iw-ow)/2:0,scale=720:1280:flags=lanczos,fps=25",
-             "-t", "6", "-an", "-c:v", "libx264", "-preset", "veryfast",
-             "-crf", "22", "-pix_fmt", "yuv420p",
-             "-movflags", "+faststart", str(output)], timeout=130)
+        with tempfile.TemporaryDirectory(prefix="new-original-cat-story-") as folder:
+            clips = []
+            for index, moment in enumerate(moments):
+                raw, model = obtain_generated_video(
+                    prompt + " " + moment, seed + index * 7919)
+                fingerprint = hashlib.sha256(raw.read_bytes()).hexdigest()
+                if fingerprint in raw_hashes:
+                    raise RuntimeError("Provider returned the same footage twice; no loop uploads")
+                raw_hashes.add(fingerprint)
+                models.append(model)
+                segment = Path(folder) / f"shot{index:02d}.mp4"
+                run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                     "-i", str(raw), "-map", "0:v:0",
+                     "-vf", "crop='min(iw,ih*9/16)':ih:(iw-ow)/2:0,scale=720:1280:flags=lanczos,fps=25",
+                     "-t", "7", "-an", "-c:v", "libx264", "-preset", "veryfast",
+                     "-crf", "22", "-pix_fmt", "yuv420p",
+                     "-movflags", "+faststart", str(segment)], timeout=130)
+                clips.append(segment)
+            concat_list = Path(folder) / "story.txt"
+            concat_list.write_text(
+                "".join(f"file '{segment}'\\n" for segment in clips),
+                encoding="utf-8")
+            run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                 "-f", "concat", "-safe", "0", "-i", str(concat_list),
+                 "-an", "-c:v", "libx264", "-preset", "veryfast",
+                 "-crf", "22", "-pix_fmt", "yuv420p",
+                 "-movflags", "+faststart", str(output)], timeout=130)
         report = validate_video(output)
         details = {
-            "generated_with": model,
+            "generated_with": models,
+            "unique_original_shots": len(models),
+            "no_repeated_or_looped_footage": True,
             "original_text_to_video": True,
             "no_stock_footage": True,
             "no_added_text_or_subtitles": True,
@@ -409,7 +457,7 @@ def generate():
                            encoding="utf-8")
         print("NEW_SILENT_AI_CAT_SUCCESS", json.dumps({
             "video": str(output.relative_to(ROOT)), "metadata": str(sidecar.relative_to(ROOT)),
-            "model": model, **report
+            "models": models, **report
         }), flush=True)
     except Exception:
         output.unlink(missing_ok=True)
