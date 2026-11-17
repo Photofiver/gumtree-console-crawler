@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class TiktokDirectGoogleBrainstormTest {
-    private static final String QUESTION = "Odpowiedz na problem programistyczny, NIE proponuj monitorowania ani alertów: Czy prywatny bot GitHub Actions może LEGALNIE i BEZ OBSŁUGI publikować nowo generowane filmy AI na moim TikToku co 4 godziny, używając wyłącznie oficjalnego TikTok Content Posting API, bez Buffer? Czy jednorazowy OAuth i audyt wystarczy, czy TikTok wymaga osobnej zgody i podglądu KAŻDEGO filmu? Czy audyt TikTok akceptuje aplikację służącą wyłącznie jednemu własnemu kontu? Podaj 3 praktyczne opcje, wymagane kroki, wady i źródła; jeśli niemożliwe, napisz wprost dlaczego. Odpowiedz po polsku.";
+    private static final String QUESTION = "Zdiagnozuj zero wyświetleń na KONKRETNYM publicznym koncie TikTok @photofiver.photof (listopad 2026), link przykładowy https://www.tiktok.com/@photofiver.photof/video/7709229348355607841 . Publikacja Buffer API status sent, ponad 15 filmów, nowe filmy AI koty bez audio i napisów, 720x1280 25fps, długość 3.08 s, 13 filmów na 24h, 5 najnowszych ma publicznie playCount=0. Profil 2 followers, 9 likes łącznie. Zweryfikuj co można obiektywnie ustalić o przyczynie ZERA na tym koncie z publicznych linków, TikTok i Buffer. Czy przyczyną może być ustawienie prywatności, For You eligibility, content review, wiek, spam, AI label, krótkie klipy? Nie twierdź bez dowodu. Podaj KONKRETNY test rozstrzygający w TikTok Studio i uzasadnij oficjalnymi URL; odpowiedz po polsku.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
