@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-16T16:00:15.811239Z",
+  "generated_at_utc": "2026-11-17T00:08:39.220316Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-16T16:00:15.811239Z",
+  "followers_checked_at_utc": "2026-11-17T00:08:39.220316Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -12,15 +12,34 @@
     {
       "utc": "2026-11-16T16:00:15.811239Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-17T00:08:39.220316Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 3,
-  "posted_24h": 3,
+  "posted_confirmed": 4,
+  "posted_24h": 4,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-16T16:00:15.811239Z",
+  "posting_status_checked_at_utc": "2026-11-17T00:08:39.220316Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afb98cf4b26315855ab36a3",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7708923240328072481",
+      "sent_at_utc": "2026-11-17T00:00:59.618Z",
+      "concept": "new ai cat 20261116 s14 reading blank newspaper",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
     {
       "id": "6afb27ed6e855bed1e7e3316",
       "status": "sent",
@@ -34,7 +53,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
+      "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
     },
     {
       "id": "6afac092a869c35e5bcc965b",
@@ -49,7 +68,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
+      "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
     },
     {
       "id": "6afabab2d7e5fee638aedb4b",
@@ -64,7 +83,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-16T16:00:15.811239Z"
+      "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
     }
   ],
   "planned_slots_per_day": 15,
@@ -79,9 +98,9 @@
     "shares": 0,
     "views": 0,
     "saves": null,
-    "videos_monitored": 3,
-    "videos_recent_confirmed": 3,
-    "last_checked_at_utc": "2026-11-16T16:00:15.811239Z",
+    "videos_monitored": 4,
+    "videos_recent_confirmed": 4,
+    "last_checked_at_utc": "2026-11-17T00:08:39.220316Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
