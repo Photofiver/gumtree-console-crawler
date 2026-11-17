@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-17T19:47:20.637490Z",
+  "generated_at_utc": "2026-11-17T22:40:23.159816Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-17T19:47:20.637490Z",
+  "followers_checked_at_utc": "2026-11-17T22:40:23.159816Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -24,15 +24,34 @@
     {
       "utc": "2026-11-17T14:29:22.505811Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-17T22:40:23.159816Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 15,
-  "posted_24h": 12,
+  "posted_confirmed": 16,
+  "posted_24h": 13,
   "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-17T19:47:20.637490Z",
+  "posting_status_checked_at_utc": "2026-11-17T22:40:23.159816Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afcaf2dc595016b82b1bae5",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709229348355607841",
+      "sent_at_utc": "2026-11-17T19:48:37.416Z",
+      "concept": "new ai cat 20261116 s13 rolling suitcase",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T22:40:23.159816Z"
+    },
     {
       "id": "6afc8d6aa166de7b3ec4f3ce",
       "status": "sent",
@@ -46,7 +65,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
+      "engagement_checked_at_utc": "2026-11-17T22:40:23.159816Z"
     },
     {
       "id": "6afc7e51f78506c8dd3511b5",
@@ -61,7 +80,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
+      "engagement_checked_at_utc": "2026-11-17T22:40:23.159816Z"
     },
     {
       "id": "6afc5cea2617e11226cff5b7",
@@ -76,7 +95,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
+      "engagement_checked_at_utc": "2026-11-17T22:40:23.159816Z"
     },
     {
       "id": "6afc3e27fc6f5341d7184cec",
@@ -91,7 +110,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
+      "engagement_checked_at_utc": "2026-11-17T22:40:23.159816Z"
     },
     {
       "id": "6afc38a7d7c204e9d9abcbd5",
@@ -259,11 +278,11 @@
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
     },
     {
-      "id": "6afcaf2dc595016b82b1bae5",
+      "id": "6afcd7b7b1f02ae62298907d",
       "status": "sending",
       "url": null,
       "sent_at_utc": null,
-      "concept": "new ai cat 20261116 s13 rolling suitcase",
+      "concept": "new ai cat 20261117 s05 mopping floor",
       "engagement": null,
       "engagement_checked_at_utc": null
     }
@@ -282,7 +301,7 @@
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-17T19:47:20.637490Z",
+    "last_checked_at_utc": "2026-11-17T22:40:23.159816Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
