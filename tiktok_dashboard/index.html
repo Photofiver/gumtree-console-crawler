@@ -114,7 +114,7 @@
       <div class="countdown-panel">
         <div class="countdown-caption">Do następnej zaplanowanej próby filmu</div>
         <div class="countdown-number" id="countdown" aria-live="off">--:--:--</div>
-        <div class="countdown-note">Godzina według harmonogramu; publikacja zależy od wygenerowania filmu i dostępności platform.</div>
+        <div class="countdown-note" id="publication-note">Godzina według harmonogramu; publikacja zależy od wygenerowania filmu i dostępności platform.</div>
       </div>
       <div class="smallstat" style="margin-top:0">
         <div class="smallbox"><strong id="pending">—</strong><span>Oczekujące / niepotwierdzone</span></div>
@@ -174,6 +174,11 @@
   var rawBase="https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/tiktok_dashboard/";
   var defaults={baseline_followers:2,started_at_utc:"2026-11-16T08:56:29Z",milestones:[{followers:100},{followers:500}]};
   var goals=defaults;
+  var latestMetrics=null;
+  function nextScheduledTime(){
+    var n=Date.now(),d=new Date(n),start=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
+    return start+60000+(Math.floor((n-start-60000)/5760000)+1)*5760000;
+  }
   function el(id){return document.getElementById(id)}
   function put(id,v){var e=el(id);if(e)e.textContent=(v===null||v===undefined)?"—":String(v)}
   function number(v){return new Intl.NumberFormat("pl-PL").format(v)}
@@ -184,7 +189,7 @@
   function setBar(id,n,total){el(id).style.width=pct(n,total)+"%"}
   function secondsToNextSlot(){
     var n=Date.now(),d=new Date(n),start=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
-    var next=start+(Math.floor((n-start)/5760000)+1)*5760000;
+    var next=nextScheduledTime();
     return Math.max(0,Math.ceil((next-n)/1000));
   }
   function tickCountdown(){
@@ -192,11 +197,15 @@
     var h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
     put("countdown",String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0"));
     put("slot-time",nextSlot());
+    if(latestMetrics){
+      var stale=elapsed(latestMetrics.generated_at_utc)>3600000;
+      put("publication-note",(stale?"Nieaktualne dane — ostatni odczyt: ":"Ostatni odczyt: ")+when(latestMetrics.generated_at_utc)+". Licznik pokazuje termin uruchomienia; potwierdzenie filmu pojawi się po publikacji.");
+    }
   }
   function nextSlot(){
     var n=Date.now(),d=new Date(n),start=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
     var index=Math.floor((n-start)/5760000)+1;
-    var next=start+index*5760000;
+    var next=nextScheduledTime();
     return new Intl.DateTimeFormat("pl-PL",{timeZone:"Europe/London",hour:"2-digit",minute:"2-digit"}).format(new Date(next));
   }
   function appendVideo(v){
@@ -280,6 +289,8 @@
   }
   function render(data){
     if(!data||typeof data!=="object")throw Error("Nieprawidłowe dane");
+    latestMetrics=data;
+    tickCountdown();
     put("followers",validCount(data.followers)?number(data.followers):"—");
     put("followers-hint","Odczyt: "+when(data.followers_checked_at_utc));
     put("posts24",validCount(data.posted_24h)?number(data.posted_24h):"—");
