@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class CexCashTest {
-    private static final String QUESTION = "As of November 17, 2026, how much money does CeX UK (uk.webuy.com) pay in CASH for one working, tested, used Seagate BarraCuda 1TB 2.5-inch SATA HDD (mechanical HARD DISK, not an SSD)? Locate the matching CeX UK product listing and quote its exact current WeBuy for Cash price in GBP, voucher price separately if available, a direct working CeX product URL, and any required condition or capacity or model code. Be careful: CeX selling price is NOT its buying/cash price. If you cannot verify a current EXACT cash offer from the official CeX listing, respond CASH PRICE NOT VERIFIED and do not invent a number. Provide citations/source URLs.";
+    private static final String QUESTION = "Find the CURRENT CeX UK (uk.webuy.com) EXACT product page for a used SEAGATE BARRACUDA ST1000LM048 1TB 2.5 inch SATA mechanical HDD, not SSD. The auction photo shows model ST1000LM048. Search this exact model and if no exact CeX entry exists, search CeX generic 1TB 2.5 SATA laptop HDD listing. Give an actual full https://uk.webuy.com/product-detail URL which you VERIFIED resolves and matches an HDD, and the exact WeBuy CASH offer, not voucher or sale price. If the official CeX site does not expose a confirmed matching listing and price, state NO VERIFIED CEX PRODUCT URL OR CASH PRICE. Do not invent product codes, dates, URLs, or prices. Differentiate official verified evidence from guesses; include source URLs.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
