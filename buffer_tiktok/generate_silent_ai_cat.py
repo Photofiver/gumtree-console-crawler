@@ -10,6 +10,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -18,6 +19,10 @@ from typing import Optional
 ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / "social_videos"
 SLOT_MINUTES = 96
+# The TikTok automation began on 16 November around 08:00 UTC (slot 5).
+# Old, missed slots stay eligible after midnight; no other user's account is used.
+BACKFILL_START_DAY = dt.date(2026, 11, 16)
+BACKFILL_START_SLOT = 5
 
 # All actions are lighthearted, safe and friendly; none involve a person,
 # impersonation, frightening animals, dangerous stunts or politics.
@@ -322,11 +327,32 @@ def validate_video(path: Path):
             "bytes": path.stat().st_size}
 
 def next_due_slot(now: Optional[dt.datetime] = None):
-    """Backfill missed slots, without creating more than 15 videos per UTC day."""
+    """Return oldest unfinished, already-due slot, including previous UTC days.
+
+    A failed video is NOT marked complete. Once a public model has free GPU
+    again, a later scheduled execution can generate the missed *unique* clip.
+    Returning None means nothing is currently due. A produced clip is counted
+    only by its validated MP4, never by a successful workflow exit status.
+    """
+    now = now or dt.datetime.now(dt.timezone.utc)
     date_stamp, latest_due = utc_slot(now)
-    for slot in range(latest_due + 1):
-        if not any(DEST.glob(f"new-ai-cat-{date_stamp}-s{slot:02d}-*.mp4")):
-            return date_stamp, slot
+    today = dt.date(int(date_stamp[:4]), int(date_stamp[4:6]),
+                    int(date_stamp[6:]))
+    existing = set()
+    for clip in DEST.glob("new-ai-cat-*-s??-*.mp4"):
+        match = re.fullmatch(
+            r"new-ai-cat-(\d{8})-s(\d{2})-.+\.mp4", clip.name)
+        if match:
+            existing.add((match.group(1), int(match.group(2))))
+    day = BACKFILL_START_DAY
+    while day <= today:
+        stamp = day.strftime("%Y%m%d")
+        first_slot = BACKFILL_START_SLOT if day == BACKFILL_START_DAY else 0
+        last_slot = latest_due if day == today else 14
+        for slot in range(first_slot, last_slot + 1):
+            if (stamp, slot) not in existing:
+                return stamp, slot
+        day += dt.timedelta(days=1)
     return None
 
 
