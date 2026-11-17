@@ -112,7 +112,7 @@
     <div class="card">
       <div class="section-head"><h2>Publikowanie</h2><span class="pill">Co 96 min</span></div>
       <div class="countdown-panel">
-        <div class="countdown-caption">Do następnej zaplanowanej próby filmu</div>
+        <div class="countdown-caption" id="countdown-caption">Do następnej zaplanowanej próby filmu</div>
         <div class="countdown-number" id="countdown" aria-live="off">--:--:--</div>
         <div class="countdown-note" id="publication-note">Godzina według harmonogramu; publikacja zależy od wygenerowania filmu i dostępności platform.</div>
       </div>
@@ -192,14 +192,31 @@
     var next=nextScheduledTime();
     return Math.max(0,Math.ceil((next-n)/1000));
   }
+  function lastConfirmedPublication(){
+    if(!latestMetrics||!Array.isArray(latestMetrics.videos))return NaN;
+    var dates=latestMetrics.videos.filter(function(v){return v&&v.status==="sent"&&v.url})
+      .map(function(v){return Date.parse(v.sent_at_utc)}).filter(Number.isFinite);
+    return dates.length?Math.max.apply(null,dates):NaN;
+  }
   function tickCountdown(){
-    var total=secondsToNextSlot();
+    var published=lastConfirmedPublication(),now=Date.now();
+    // 96-minute planned UTC slots; do not reset an overdue counter without
+    // a later verified TikTok publication.
+    var anchor=Date.UTC(2026,10,16,0,1);
+    var firstUnconfirmed=Number.isFinite(published)?
+      anchor+(Math.floor((published-anchor)/5760000)+1)*5760000:NaN;
+    var overdue=Number.isFinite(firstUnconfirmed)&&now>=firstUnconfirmed;
+    var total=overdue?Math.floor((now-firstUnconfirmed)/1000):secondsToNextSlot();
     var h=Math.floor(total/3600),m=Math.floor((total%3600)/60),sec=total%60;
     put("countdown",String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0"));
+    put("countdown-caption",overdue?"Od planowanego terminu bez potwierdzenia filmu":"Do następnej zaplanowanej próby filmu");
     put("slot-time",nextSlot());
     if(latestMetrics){
       var stale=elapsed(latestMetrics.generated_at_utc)>3600000;
-      put("publication-note",(stale?"Nieaktualne dane — ostatni odczyt: ":"Ostatni odczyt: ")+when(latestMetrics.generated_at_utc)+". Licznik pokazuje termin uruchomienia; potwierdzenie filmu pojawi się po publikacji.");
+      var note=overdue?
+        "Brak nowszej potwierdzonej publikacji w dostępnych danych. Ostatni film: "+when(new Date(published))+". Oczekujące w Buffer: "+(validCount(latestMetrics.pending)?latestMetrics.pending:"—")+". ":
+        "Następna godzina jest planem, nie gwarancją publikacji. ";
+      put("publication-note",note+(stale?"UWAGA: dane nieaktualne. ":"")+"Ostatni odczyt: "+when(latestMetrics.generated_at_utc)+".");
     }
   }
   function nextSlot(){
