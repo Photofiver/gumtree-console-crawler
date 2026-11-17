@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-17T17:32:31.195264Z",
+  "generated_at_utc": "2026-11-17T19:47:20.637490Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-17T17:32:31.195264Z",
+  "followers_checked_at_utc": "2026-11-17T19:47:20.637490Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -28,9 +28,9 @@
   ],
   "posted_confirmed": 15,
   "posted_24h": 12,
-  "pending": 0,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-17T17:32:31.195264Z",
+  "posting_status_checked_at_utc": "2026-11-17T19:47:20.637490Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -46,7 +46,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T17:32:31.195264Z"
+      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
     },
     {
       "id": "6afc7e51f78506c8dd3511b5",
@@ -61,7 +61,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T17:32:31.195264Z"
+      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
     },
     {
       "id": "6afc5cea2617e11226cff5b7",
@@ -76,7 +76,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T17:32:31.195264Z"
+      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
     },
     {
       "id": "6afc3e27fc6f5341d7184cec",
@@ -91,7 +91,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T17:32:31.195264Z"
+      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
     },
     {
       "id": "6afc38a7d7c204e9d9abcbd5",
@@ -106,7 +106,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-17T17:32:31.195264Z"
+      "engagement_checked_at_utc": "2026-11-17T19:47:20.637490Z"
     },
     {
       "id": "6afc37fec7a652d27c9a2e05",
@@ -257,6 +257,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6afcaf2dc595016b82b1bae5",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261116 s13 rolling suitcase",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -273,7 +282,7 @@
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-17T17:32:31.195264Z",
+    "last_checked_at_utc": "2026-11-17T19:47:20.637490Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
