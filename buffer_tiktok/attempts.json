@@ -32,7 +32,8 @@
       "source": "social_videos/new-ai-cat-20261117-s00-whisking-cake-batter.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s00-whisking-cake-batter.mp4",
       "attempted_at": "2026-11-17T01:03:42.365224+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afba7f0797935b975d14c10"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
