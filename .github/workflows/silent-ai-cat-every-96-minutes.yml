@@ -8,6 +8,10 @@ on:
     - cron: '13 3,11,19 * * *'
     - cron: '49 4,12,20 * * *'
     - cron: '25 6,14,22 * * *'
+    # Hourly recovery for delayed/dropped GitHub scheduled executions.
+    # The generator fills ONLY the oldest missing slot already due today;
+    # it never creates a sixteenth clip or reposts earlier media.
+    - cron: '7 * * * *'
   workflow_dispatch:
   push:
     paths:
@@ -93,3 +97,8 @@ jobs:
           echo 'No audio; no added text or subtitles inside the video. English caption and hashtags outside.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Actual production depends on public free GPU quotas and TikTok/Buffer platform limits.' >> "$GITHUB_STEP_SUMMARY"
           echo 'Trading bot is not touched.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Surface failed AI generation as a real workflow failure
+        if: ${{ always() && steps.create.outcome == 'failure' }}
+        run: |
+          echo 'Generation failed after all free providers; no new TikTok video was created.' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
