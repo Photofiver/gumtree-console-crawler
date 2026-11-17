@@ -1,0 +1,27 @@
+name: Verify TikTok recovery code (no publishing)
+on:
+  push:
+    paths:
+      - '.github/workflows/test-tiktok-recovery-code.yml'
+      - 'buffer_tiktok/generate_silent_ai_cat.py'
+      - 'buffer_tiktok/post_new_video.py'
+      - 'buffer_tiktok/test_generate_silent_ai_cat.py'
+      - 'buffer_tiktok/test_post_new_video.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only test import dependencies
+        run: python -m pip install --disable-pip-version-check gradio_client
+      - name: Compile and run all TikTok generator and publisher unit tests
+        run: |
+          python -m py_compile buffer_tiktok/generate_silent_ai_cat.py buffer_tiktok/post_new_video.py
+          python -m unittest discover -s buffer_tiktok -p 'test_*.py' -v
