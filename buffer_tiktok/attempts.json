@@ -88,7 +88,8 @@
       "source": "social_videos/new-ai-cat-20261116-s10-practicing-tai-chi.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261116-s10-practicing-tai-chi.mp4",
       "attempted_at": "2026-11-17T13:55:52.741786+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afc5cea2617e11226cff5b7"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
