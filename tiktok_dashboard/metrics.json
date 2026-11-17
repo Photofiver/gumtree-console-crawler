@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-17T08:00:00.940846Z",
+  "generated_at_utc": "2026-11-17T14:29:22.505811Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-17T08:00:00.940846Z",
+  "followers_checked_at_utc": "2026-11-17T14:29:22.505811Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -20,15 +20,94 @@
     {
       "utc": "2026-11-17T08:00:00.940846Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-17T14:29:22.505811Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 8,
-  "posted_24h": 8,
+  "posted_confirmed": 13,
+  "posted_24h": 11,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-17T08:00:00.940846Z",
+  "posting_status_checked_at_utc": "2026-11-17T14:29:22.505811Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afc5cea2617e11226cff5b7",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709138879047044384",
+      "sent_at_utc": "2026-11-17T13:56:39.044Z",
+      "concept": "new ai cat 20261116 s10 practicing tai chi",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T14:29:22.505811Z"
+    },
+    {
+      "id": "6afc3e27fc6f5341d7184cec",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709105044678839584",
+      "sent_at_utc": "2026-11-17T11:46:25.631Z",
+      "concept": "new ai cat 20261116 s08 dusting bookshelf",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T14:29:22.505811Z"
+    },
+    {
+      "id": "6afc38a7d7c204e9d9abcbd5",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709098980784852257",
+      "sent_at_utc": "2026-11-17T11:22:54.719Z",
+      "concept": "new ai cat 20261116 s07 arranging cushions",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T14:29:22.505811Z"
+    },
+    {
+      "id": "6afc37fec7a652d27c9a2e05",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709098265869929761",
+      "sent_at_utc": "2026-11-17T11:19:04.476Z",
+      "concept": "new ai cat 20261116 s06 sorting crayons",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T14:29:22.505811Z"
+    },
+    {
+      "id": "6afc2e197b2821ba9e4e6ba5",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709087387078429984",
+      "sent_at_utc": "2026-11-17T10:36:52.151Z",
+      "concept": "new ai cat 20261117 s03 planting seedlings",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 0,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-17T14:29:22.505811Z"
+    },
     {
       "id": "6afbfacf9f28abc4561f981d",
       "status": "sent",
@@ -164,7 +243,7 @@
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-17T08:00:00.940846Z",
+    "last_checked_at_utc": "2026-11-17T14:29:22.505811Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
