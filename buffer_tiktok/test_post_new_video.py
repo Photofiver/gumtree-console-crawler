@@ -3,6 +3,20 @@ from unittest.mock import patch, call
 from buffer_tiktok import post_new_video as pub
 
 class BufferTiktokSafetyTests(unittest.TestCase):
+
+    def test_recovery_cannot_flood_15_short_posts(self):
+        self.assertEqual(pub.MAX_PER_24H, 3)
+        self.assertGreaterEqual(pub.MIN_PUBLISH_SECONDS, 8)
+
+    def test_recovery_rejects_3_second_video_even_if_buffer_accepts_it(self):
+        from pathlib import Path
+        fake = {"streams": [{"codec_type": "video", "codec_name": "h264",
+                 "avg_frame_rate": "25/1"}],
+                "format": {"duration": "3.08"}}
+        with patch.object(pub, "ffprobe", return_value=fake):
+            with self.assertRaisesRegex(RuntimeError, "short clips"):
+                pub.ready_video(Path("social_videos/old-3-second.mp4"))
+
     def test_connects_only_requested_handle(self):
         def response(key, query, variables=None):
             if "organizations" in query:
