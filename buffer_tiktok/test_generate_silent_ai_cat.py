@@ -99,6 +99,41 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
                 self.assertEqual(result, sample)
                 self.assertEqual(model, "Lightricks/LTX-2.5")
 
+    def test_third_public_provider_after_two_failures(self):
+        with tempfile.TemporaryDirectory() as td:
+            video = Path(td) / "fresh-distilled.mp4"
+            video.write_bytes(b"new-motion" * 5000)
+            class FakeClient:
+                def __init__(self, model):
+                    self.model = model
+                def predict(self, *args, **kwargs):
+                    if self.model != "Lightricks/ltx-video-distilled":
+                        raise RuntimeError("other provider exhausted")
+                    self.assert_noop = None
+                    assert args[6] == "text-to-video"
+                    assert kwargs["api_name"] == "/text_to_video"
+                    return ({"video": {"path": str(video)}}, 123)
+            with patch("gradio_client.Client", side_effect=FakeClient):
+                result, model = gen.obtain_generated_video("photorealistic moving cat", 123)
+                self.assertEqual(result, video)
+                self.assertEqual(model, "Lightricks/ltx-video-distilled")
+
+    def test_backfill_missed_daily_slot(self):
+        with tempfile.TemporaryDirectory() as folder:
+            previous = gen.DEST
+            gen.DEST = Path(folder)
+            try:
+                # Slots 0 and 2 published, but slot 1 missed by GitHub cron.
+                for n in (0, 2):
+                    (gen.DEST / f"new-ai-cat-20261117-s{n:02d}-unique.mp4").write_bytes(b"existing")
+                when = dt.datetime(2026, 11, 17, 4, 59, tzinfo=dt.timezone.utc)
+                self.assertEqual(gen.next_due_slot(when), ("20261117", 1))
+                for n in (1, 3):
+                    (gen.DEST / f"new-ai-cat-20261117-s{n:02d}-unique.mp4").write_bytes(b"existing")
+                self.assertIsNone(gen.next_due_slot(when))
+            finally:
+                gen.DEST = previous
+
     def test_exactly_100_distinct_friendly_human_activities(self):
         self.assertEqual(len(gen.SCENES), 100)
         self.assertEqual(len(set(x[0] for x in gen.SCENES)), 100)
@@ -144,7 +179,7 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             try:
                 existing = Path(folder) / "new-ai-cat-20261116-s05-original-scene.mp4"
                 existing.write_bytes(b"previously published video")
-                with patch.object(gen, "utc_slot", return_value=("20261116", 5)), \
+                with patch.object(gen, "next_due_slot", return_value=("20261116", 5)), \
                      patch.object(gen, "obtain_generated_video") as call:
                     gen.generate()
                     call.assert_not_called()
