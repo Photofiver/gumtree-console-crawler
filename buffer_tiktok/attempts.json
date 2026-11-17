@@ -83,6 +83,12 @@
       "attempted_at": "2026-11-17T11:44:37.554722+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afc3e27fc6f5341d7184cec"
+    },
+    "1598427352c2eeaa5d9062f05bcb2062c75fbb43c8f3bea6128e2a4a97a68dc1": {
+      "source": "social_videos/new-ai-cat-20261116-s10-practicing-tai-chi.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261116-s10-practicing-tai-chi.mp4",
+      "attempted_at": "2026-11-17T13:55:52.741786+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
