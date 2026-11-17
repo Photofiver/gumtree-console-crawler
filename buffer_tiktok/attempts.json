@@ -60,7 +60,8 @@
       "source": "social_videos/new-ai-cat-20261117-s03-planting-seedlings.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s03-planting-seedlings.mp4",
       "attempted_at": "2026-11-17T10:36:08.008939+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afc2e197b2821ba9e4e6ba5"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
