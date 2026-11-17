@@ -62,6 +62,12 @@
       "attempted_at": "2026-11-17T10:36:08.008939+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afc2e197b2821ba9e4e6ba5"
+    },
+    "6967dacaf59191a4ac3c185764bd9033a9af9cd2de9ea1edd410af9c5169de2f": {
+      "source": "social_videos/new-ai-cat-20261116-s06-sorting-crayons.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261116-s06-sorting-crayons.mp4",
+      "attempted_at": "2026-11-17T11:18:20.375414+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
