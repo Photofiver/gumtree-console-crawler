@@ -40,7 +40,7 @@ jobs:
               const chunkSize=80;
               for(let i=0;i<all.length;i+=chunkSize){
                 const part=all.slice(i,i+chunkSize);
-                const body="Belfast lots "+(i+1)+"–"+(i+part.length)+" of "+all.length+"\n\n"+part.map(x=>"LOT "+x.lot+" | "+x.auction+" | "+x.title+" | bid £"+(x.current_bid_gbp===null?"?":x.current_bid_gbp)+" | premium "+(x.premium_pct===null?"not specified":x.premium_pct+"%")+" | "+x.location+" | "+x.auction_url).join("\n");
+                const body="Belfast lots "+(i+1)+"–"+(i+part.length)+" of "+all.length+"\n\n"+part.map(x=>"LOT "+x.lot+" | "+x.auction+" | "+x.title+" | bid £"+(x.current_bid_gbp===null?"?":x.current_bid_gbp)+" | premium "+(x.premium_pct===null?"not specified":x.premium_pct+"%")+" | "+x.location+" | "+(x.detail_url||x.auction_url)).join("\n");
                 await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:context.issue.number,body:body.slice(0,57000)});
               }
             }
