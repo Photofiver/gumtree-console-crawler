@@ -235,29 +235,59 @@ def run(cmd, timeout=120):
                           stderr=subprocess.PIPE, text=True, timeout=timeout)
 
 def take_video_from_result(result):
-    thing = result[0] if isinstance(result, (tuple, list)) else result
-    if isinstance(thing, dict):
-        thing = thing.get("path") or thing.get("video") or thing.get("name")
-    if not isinstance(thing, str) or not Path(thing).is_file():
+    """Gradio Spaces return either a file path or a nested video component."""
+    def find_file(value):
+        if isinstance(value, str):
+            path = Path(value)
+            return path if path.is_file() else None
+        if isinstance(value, dict):
+            for key in ("path", "video", "name"):
+                if key in value:
+                    found = find_file(value[key])
+                    if found:
+                        return found
+        if isinstance(value, (list, tuple)):
+            for item in value:
+                found = find_file(item)
+                if found:
+                    return found
+        return None
+
+    path = find_file(result)
+    if path is None:
         raise RuntimeError("AI generation produced no local playable video")
-    return Path(thing)
+    return path
 
 def obtain_generated_video(prompt: str, seed: int):
     from gradio_client import Client
     failures = []
-    # Previously demonstrated working public Hugging Face Spaces. They may
-    # refuse requests when anonymous GPU quotas or queue capacity are used up.
-    # LTX API accepts a signed 31-bit seed, while our deterministic hash may be 32-bit.
-    for model in ("mastaP/wan22-remix-sfw-t2v", "Lightricks/LTX-2.5"):
+    # Account-free public model APIs, documented by their open-source clients.
+    # Fail over on missing capacity, API errors or invalid output. Hugging Face
+    # may enforce a SHARED anonymous ZeroGPU budget across all three Spaces.
+    # Never rotate identities or API tokens to bypass provider quotas.
+    models = (
+        "mastaP/wan22-remix-sfw-t2v",
+        "Lightricks/LTX-2.5",
+        "Lightricks/ltx-video-distilled",
+    )
+    for model in models:
         try:
             print("AI_VIDEO_ATTEMPT", model, flush=True)
             client = Client(model)
             if model == "mastaP/wan22-remix-sfw-t2v":
                 result = client.predict(prompt, api_name="/generate_video")
-            else:
+            elif model == "Lightricks/LTX-2.5":
                 result = client.predict(
                     prompt, None, 512, 896, 5.0, seed & 0x7fffffff,
                     "conv", False, False, False, api_name="/run")
+            else:
+                # Public API: github.com/umer-un/prompt-to-video,
+                # src/lib/hf-space.ts (text_to_video, 13 positional arguments).
+                result = client.predict(
+                    prompt, "worst quality, blurry, distorted, watermark",
+                    "", "", 896, 512, "text-to-video", 3.5, 9,
+                    seed & 0xffffffff, False, 1, True,
+                    api_name="/text_to_video")
             path = take_video_from_result(result)
             if path.stat().st_size < 25000:
                 raise RuntimeError("Generated video file too small")
@@ -291,10 +321,23 @@ def validate_video(path: Path):
             "width": width, "height": height, "audio_streams": 0,
             "bytes": path.stat().st_size}
 
+def next_due_slot(now: Optional[dt.datetime] = None):
+    """Backfill missed slots, without creating more than 15 videos per UTC day."""
+    date_stamp, latest_due = utc_slot(now)
+    for slot in range(latest_due + 1):
+        if not any(DEST.glob(f"new-ai-cat-{date_stamp}-s{slot:02d}-*.mp4")):
+            return date_stamp, slot
+    return None
+
+
 def generate():
-    date_stamp, slot = utc_slot()
-    # Never post a second film for a slot after a code or appearance update.
-    if list(DEST.glob(f"new-ai-cat-{date_stamp}-s{slot:02d}-*.mp4")):
+    due = next_due_slot()
+    if due is None:
+        print("ALL_DUE_AI_SLOTS_ALREADY_HAVE_VIDEOS", flush=True)
+        return
+    date_stamp, slot = due
+    # Never post a second film for an already generated slot.
+    if any(DEST.glob(f"new-ai-cat-{date_stamp}-s{slot:02d}-*.mp4")):
         print("EXISTING_AI_SLOT_VIDEO_NO_REGENERATION", date_stamp, slot, flush=True)
         return
     slug, action, hook, tags = choose_scene(date_stamp, slot)
