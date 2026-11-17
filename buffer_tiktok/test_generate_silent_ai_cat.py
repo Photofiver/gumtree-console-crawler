@@ -119,7 +119,9 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
                 self.assertEqual(model, "Lightricks/ltx-video-distilled")
 
     def test_backfill_missed_daily_slot(self):
-        with tempfile.TemporaryDirectory() as folder:
+        with tempfile.TemporaryDirectory() as folder, \
+             patch.object(gen, "BACKFILL_START_DAY", dt.date(2026, 11, 17)), \
+             patch.object(gen, "BACKFILL_START_SLOT", 0):
             previous = gen.DEST
             gen.DEST = Path(folder)
             try:
@@ -131,6 +133,30 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
                 for n in (1, 3):
                     (gen.DEST / f"new-ai-cat-20261117-s{n:02d}-unique.mp4").write_bytes(b"existing")
                 self.assertIsNone(gen.next_due_slot(when))
+            finally:
+                gen.DEST = previous
+
+    def test_backlog_survives_midnight_and_skips_prelaunch(self):
+        with tempfile.TemporaryDirectory() as folder:
+            previous = gen.DEST
+            gen.DEST = Path(folder)
+            try:
+                # Nothing was due before the bot existed.
+                before_launch = dt.datetime(2026, 11, 16, 7, 0, tzinfo=dt.timezone.utc)
+                self.assertIsNone(gen.next_due_slot(before_launch))
+                # Yesterday had 15 slots total, starting from the first active
+                # slot 5; a failed one remains due, even the following day.
+                for n in range(5, 15):
+                    if n == 9:
+                        continue
+                    (gen.DEST / f"new-ai-cat-20261116-s{n:02d}-unique.mp4").write_bytes(b"existing")
+                next_morning = dt.datetime(2026, 11, 17, 4, 0, tzinfo=dt.timezone.utc)
+                self.assertEqual(gen.next_due_slot(next_morning), ("20261116", 9))
+                (gen.DEST / "new-ai-cat-20261116-s09-unique.mp4").write_bytes(b"existing")
+                self.assertEqual(gen.next_due_slot(next_morning), ("20261117", 0))
+                for n in range(3):
+                    (gen.DEST / f"new-ai-cat-20261117-s{n:02d}-unique.mp4").write_bytes(b"existing")
+                self.assertIsNone(gen.next_due_slot(next_morning))
             finally:
                 gen.DEST = previous
 
