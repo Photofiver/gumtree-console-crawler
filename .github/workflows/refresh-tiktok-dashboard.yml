@@ -3,6 +3,10 @@ on:
   schedule:
     - cron: '8,23,38,53 * * * *'  # refreshed registration after missing scheduled runs
   workflow_dispatch:
+  workflow_run:
+    workflows: ['AI silent human-like cat TikTok every 96 minutes (up to 15/day)']
+    types: [completed]
+    branches: [main]
   push:
     paths:
       - 'tiktok_dashboard/update_metrics.py'
