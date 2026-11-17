@@ -1,0 +1,54 @@
+name: TikTok zero-view diagnosis via Buffer metrics (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/tiktok-views-diagnosis-readonly.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    env:
+      BUFFER_API_KEY: ${{ secrets.BUFFER_API_KEY }}
+      TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
+      TIKTOK_TOKEN: ${{ secrets.TIKTOK_TOKEN }}
+      TIKTOK_OAUTH_ACCESS_TOKEN: ${{ secrets.TIKTOK_OAUTH_ACCESS_TOKEN }}
+      TIKTOK_API_ACCESS_TOKEN: ${{ secrets.TIKTOK_API_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose read-only post metrics and access
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error, pathlib, datetime
+          creds=os.getenv('BUFFER_API_KEY','').strip()
+          tiktok=next((os.getenv(k) for k in ('TIKTOK_ACCESS_TOKEN','TIKTOK_TOKEN','TIKTOK_OAUTH_ACCESS_TOKEN','TIKTOK_API_ACCESS_TOKEN') if os.getenv(k)),None)
+          print('TIKTOK_DIRECT_OAUTH_TOKEN_PRESENT',bool(tiktok))
+          if not creds:
+              print('BUFFER_KEY_PRESENT False; no API testing possible')
+              raise SystemExit(0)
+          print('BUFFER_KEY_PRESENT True')
+          attempts=json.loads(pathlib.Path('buffer_tiktok/attempts.json').read_text()).get('attempts',{})
+          selected=[x for x in attempts.values() if x.get('buffer_post_id')]
+          selected=sorted(selected,key=lambda v:v.get('attempted_at',''),reverse=True)[:18]
+          print('BUFFER_POSTS_IN_HISTORY',len(selected))
+          q='query($input: PostInput!) { post(input: $input) { id status externalLink sentAt channelService metricsUpdatedAt metrics { type name value unit } } }'
+          for a in selected:
+              pid=a.get('buffer_post_id')
+              payload={'query':q,'variables':{'input':{'id':pid}}}
+              req=urllib.request.Request('https://api.buffer.com',data=json.dumps(payload).encode(),headers={'Authorization':'Bearer '+creds,'Content-Type':'application/json'},method='POST')
+              try:
+                  with urllib.request.urlopen(req,timeout=22) as res:
+                      d=json.load(res)
+                  if d.get('errors'):
+                      print('BUFFER_METRICS_ERROR',pid,[str(e.get('message',''))[:170] for e in d['errors']])
+                      continue
+                  p=(d.get('data') or {}).get('post') or {}
+                  print('BUFFER_METRICS',json.dumps({'id':pid,'status':p.get('status'),'link':p.get('externalLink'),'sentAt':p.get('sentAt'),'metricsUpdatedAt':p.get('metricsUpdatedAt'),'metrics':p.get('metrics')},ensure_ascii=False))
+              except urllib.error.HTTPError as e:
+                  print('BUFFER_HTTP_ERROR',pid,e.code)
+              except Exception as e:
+                  print('BUFFER_QUERY_EXCEPTION',pid,type(e).__name__)
+          PY
