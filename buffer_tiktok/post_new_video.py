@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 RECEIPTS = ROOT / "buffer_tiktok" / "attempts.json"
 REPO = "Photofiver/gumtree-console-crawler"
 API = "https://api.buffer.com"
-MAX_PER_24H = 15
+MAX_PER_24H = 3  # Temporary reach-recovery cap; restore only after real TikTok reach is verified
+MIN_PUBLISH_SECONDS = 8.0
 TARGET_HANDLE = "photofiver.photof"
 
 def git(*args):
@@ -111,8 +112,8 @@ def ready_video(source):
     duration = float(info["format"]["duration"])
     fps_parts = stream.get("avg_frame_rate", "0/1").split("/")
     fps = float(fps_parts[0]) / float(fps_parts[1])
-    if duration < 3.0 or duration > 600:
-        raise RuntimeError("Video length outside supported TikTok range")
+    if duration < MIN_PUBLISH_SECONDS or duration > 600:
+        raise RuntimeError("Recovery mode: reject short clips below 8 seconds")
     if fps >= 23 and fps <= 60 and stream.get("codec_name") == "h264":
         return source
     target = ROOT / "social_videos" / "buffer-ready" / source.name
@@ -145,11 +146,28 @@ def main():
         except (ValueError, KeyError):
             pass
     if recent >= MAX_PER_24H:
-        print("SAFETY LIMIT: 15 API attempts in rolling 24 hours.")
+        print("RECOVERY LIMIT: 3 API attempts in rolling 24 hours. Avoids high-volume zero-view uploads.")
         return
-    sources = sorted((ROOT / "social_videos").glob("new-*.mp4"))
-    candidates = [(src, hashlib.sha256(src.read_bytes()).hexdigest()) for src in sources]
-    available = [(src, sha) for src, sha in candidates if sha not in attempts]
+    # Old 3-second clips stay on disk as an audit trail but must NEVER be
+    # uploaded during reach recovery. Use only validated new multi-shot films.
+    sources = sorted((ROOT / "social_videos").glob("new-ai-cat-*.mp4"))
+    available = []
+    for src in sources:
+        sidecar = src.with_suffix(".json")
+        if not sidecar.exists():
+            continue
+        try:
+            meta = json.loads(sidecar.read_text(encoding="utf-8"))
+            seconds = float(meta.get("validation", {}).get("seconds", 0))
+            unique_shots = int(meta.get("unique_original_shots", 0))
+            if seconds < MIN_PUBLISH_SECONDS or unique_shots < 3:
+                print("RECOVERY_SKIP_SHORT_OR_SINGLE_SHOT", src.name, seconds)
+                continue
+        except (ValueError, TypeError, OSError):
+            continue
+        sha = hashlib.sha256(src.read_bytes()).hexdigest()
+        if sha not in attempts:
+            available.append((src, sha))
     if not available:
         print("NO NEW AI VIDEO: existing clips will never be reposted.")
         return
