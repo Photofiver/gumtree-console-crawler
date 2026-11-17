@@ -39,8 +39,12 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m pip install --upgrade gradio_client
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg
+          # GitHub Ubuntu runners normally include FFmpeg; avoid a slow apt update
+          # during every scheduled slot. Install only if either binary is missing.
+          if ! command -v ffmpeg >/dev/null || ! command -v ffprobe >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y ffmpeg
+          fi
       - name: Test silent video, equal slots, and safe English publisher
         run: |
           python3 -m py_compile buffer_tiktok/generate_silent_ai_cat.py buffer_tiktok/post_new_video.py buffer_tiktok/captions.py
