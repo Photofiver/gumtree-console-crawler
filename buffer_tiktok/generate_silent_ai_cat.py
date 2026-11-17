@@ -27,7 +27,7 @@ BACKFILL_START_SLOT = 5
 # Visibility recovery: reduce volume while platform distribution is unverified.
 # The 15-slot clock remains available for future use; the active recovery
 # dates intentionally produce only three UNIQUE original videos per UTC day.
-RECOVERY_START_DAY = dt.date(2026, 11, 18)
+RECOVERY_START_DAY = dt.date(2026, 11, 17)
 RECOVERY_SLOTS = (0, 5, 10)  # 00:00, 08:00, 16:00 UTC
 MIN_STORY_SECONDS = 8.0
 
