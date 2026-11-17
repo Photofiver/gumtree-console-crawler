@@ -425,7 +425,7 @@ def generate():
                 clips.append(segment)
             concat_list = Path(folder) / "story.txt"
             concat_list.write_text(
-                "".join(f"file '{segment}'\\n" for segment in clips),
+                "".join(f"file '{segment}'\n" for segment in clips),
                 encoding="utf-8")
             run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
                  "-f", "concat", "-safe", "0", "-i", str(concat_list),
