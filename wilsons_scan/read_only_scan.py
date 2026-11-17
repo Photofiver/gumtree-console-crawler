@@ -56,6 +56,15 @@ def main():
                 for index in range(1,35):
                     txt=page.locator("body").inner_text(timeout=10000)
                     num_rows=parse_lots(txt,name,url,index)
+                    anchors=page.locator("a[href]").evaluate_all("""els => els.map(a => ({
+                      text: (a.innerText || a.getAttribute('title') || '').replace(/\\s+/g, ' ').trim().slice(0, 300),
+                      url: a.href
+                    })).filter(a => a.url.startsWith('https://www.wilsonsauctions.com/'))""")
+                    for row in num_rows:
+                        norm=lambda s: re.sub(r"\\s+"," ",s).strip().casefold()
+                        matches=[a for a in anchors if norm(row["title"]) in norm(a["text"]) and a["url"] != url]
+                        if matches:
+                            row["detail_url"]=matches[0]["url"]
                     if not num_rows:
                         record["errors"].append("No lot rows on page "+str(index)+": "+txt[:280])
                         break
