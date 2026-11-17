@@ -11,7 +11,10 @@ on:
     # Hourly retry when GPU quota becomes available or a scheduled job is missed.
     # The generator fills the oldest unmade clip, including previous UTC days;
     # it never repeats generated clips or creates more than 15 per target day.
-    - cron: '7 * * * *'
+    # Twice-hourly recovery window: extra GitHub schedule opportunities, but
+    # generator still selects only one oldest due UNIQUE clip per run.
+    # 15/day remains an upper bound for Buffer submissions, not a promise.
+    - cron: '7,37 * * * *'
   workflow_dispatch:
   push:
     paths:
