@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class TiktokDirectGoogleBrainstormTest {
-    private static final String QUESTION = "Zdiagnozuj zero wyświetleń na KONKRETNYM publicznym koncie TikTok @photofiver.photof (listopad 2026), link przykładowy https://www.tiktok.com/@photofiver.photof/video/7709229348355607841 . Publikacja Buffer API status sent, ponad 15 filmów, nowe filmy AI koty bez audio i napisów, 720x1280 25fps, długość 3.08 s, 13 filmów na 24h, 5 najnowszych ma publicznie playCount=0. Profil 2 followers, 9 likes łącznie. Zweryfikuj co można obiektywnie ustalić o przyczynie ZERA na tym koncie z publicznych linków, TikTok i Buffer. Czy przyczyną może być ustawienie prywatności, For You eligibility, content review, wiek, spam, AI label, krótkie klipy? Nie twierdź bez dowodu. Podaj KONKRETNY test rozstrzygający w TikTok Studio i uzasadnij oficjalnymi URL; odpowiedz po polsku.";
+    private static final String QUESTION = "TikTok @photofiver.photof: 17 publicznych filmów AI ma 0 wyświetleń. Buffer potwierdza publikację. Filmy miały 3 sekundy, publikowano 14/dobę. Nowy generator 8 sekund nie opublikował niczego, bo darmowy GPU wyczerpał limit. Czy da się potwierdzić ograniczenie For You bez dostępu do TikTok Studio? Jakie KONKRETNE testy i naprawy pozwolą odróżnić blokadę dystrybucji od błędu publikacji? Odpowiedź krótka, z oficjalnymi źródłami, bez zgadywania.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
