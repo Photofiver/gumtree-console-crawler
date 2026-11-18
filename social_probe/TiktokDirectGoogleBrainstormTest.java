@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 
 @RunWith(AndroidJUnit4.class)
 public class TiktokDirectGoogleBrainstormTest {
-    private static final String QUESTION = "TikTok @photofiver.photof: 17 publicznych filmów AI ma 0 wyświetleń. Buffer potwierdza publikację. Filmy miały 3 sekundy, publikowano 14/dobę. Nowy generator 8 sekund nie opublikował niczego, bo darmowy GPU wyczerpał limit. Czy da się potwierdzić ograniczenie For You bez dostępu do TikTok Studio? Jakie KONKRETNE testy i naprawy pozwolą odróżnić blokadę dystrybucji od błędu publikacji? Odpowiedź krótka, z oficjalnymi źródłami, bez zgadywania.";
+    private static final String QUESTION = "Druga runda: Nie zakładaj shadowbana ani że 14 filmów dziennie MUSI blokować TikTok. Potwierdzone: 17 filmów publicznych, playCount=0, Buffer sent, 3 sekundy, właściciel nie udostępnił TikTok Studio. Buffer oficjalnie mówi publikacja API nie obniża zasięgu. Jaki dowód może wskazać KONKRETNĄ przyczynę? Czy API Buffer pokazuje For You eligibility? Jaki pojedynczy eksperyment rozróżni niską jakość od blokady konta bez kupowania czegokolwiek? Filmy muszą pozostać bez dźwięku i napisów. Podaj tylko weryfikowalne fakty.";
     private static WebView view(MainActivity activity) {
         try {
             Field field = MainActivity.class.getDeclaredField("browser");
