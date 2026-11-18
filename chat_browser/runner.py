@@ -71,7 +71,8 @@ def is_safe_click(info: dict) -> bool:
     if tag == "a" and href:
         return href.startswith(("http://", "https://")) and is_safe_browsing_url(href)
     if tag == "button" or info.get("role") in {"button", "tab"}:
-        return bool(SAFE_BUTTON_WORDS.search(label) or\n                    (info.get("cookieContext") and COOKIE_DISMISS_WORDS.search(label)))
+        return bool(SAFE_BUTTON_WORDS.search(label) or
+                    (info.get("cookieContext") and COOKIE_DISMISS_WORDS.search(label)))
     return False
 
 
@@ -92,7 +93,8 @@ def inspect_element(locator) -> dict:
         label: [el.getAttribute('aria-label'), el.getAttribute('title'),
                 el.getAttribute('placeholder'), el.getAttribute('name'),
                 el.textContent].filter(Boolean).join(' ').trim().slice(0, 240),
-        href: el.href || '',\n        cookieContext: Boolean(el.closest('[id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i]'))
+        href: el.href || '',
+        cookieContext: Boolean(el.closest('[id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i]'))
     })""")
 
 
