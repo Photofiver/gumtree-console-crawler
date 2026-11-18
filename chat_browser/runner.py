@@ -14,7 +14,7 @@ from urllib.parse import unquote, urlsplit
 MAX_STEPS = 12
 MAX_TEXT = 14000
 # No arbitrary form submission, checkbox changes, or modifying commands.
-ACTIONS = {"click", "click_text", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot"}
+ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
@@ -188,7 +188,43 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                 action = step["action"]
                 selector = step.get("selector", "")
                 item = {"step": i, "action": action}
-                if action in {"click", "click_text"}:
+                if action == "dismiss_cookies":
+                    # Cookiebot-like banners may load after DOMContentLoaded.
+                    page.wait_for_timeout(1000)
+                    dismissed = False
+                    customized = False
+                    for _ in range(2):
+                        for frame in page.frames[:8]:
+                            for text_label in ("Deny", "Reject all", "Decline all", "Essential only",
+                                               "Necessary only", "Allow selection"):
+                                controls = frame.get_by_role("button", name=re.compile(
+                                    r"^" + re.escape(text_label) + r"$", re.I))
+                                if controls.count():
+                                    candidate = controls.first
+                                    if is_safe_click(inspect_element(candidate)) and candidate.is_visible():
+                                        candidate.click(timeout=4000)
+                                        item["cookie_result"] = "clicked " + text_label
+                                        dismissed = True
+                                        break
+                            if dismissed:
+                                break
+                        if dismissed:
+                            break
+                        if not customized:
+                            for frame in page.frames[:8]:
+                                controls = frame.get_by_role("button", name=re.compile(r"^Customize$", re.I))
+                                if controls.count():
+                                    candidate = controls.first
+                                    if is_safe_click(inspect_element(candidate)) and candidate.is_visible():
+                                        candidate.click(timeout=4000)
+                                        customized = True
+                                        page.wait_for_timeout(200)
+                                        break
+                        if not customized:
+                            break
+                    if not dismissed:
+                        item["cookie_result"] = "no dismissible cookie banner visible"
+                elif action in {"click", "click_text"}:
                     if action == "click_text":
                         target = step["value"].strip()
                         if not target or MUTATING_WORDS.search(target):
