@@ -31,7 +31,7 @@ SAFE_BUTTON_WORDS = re.compile(
     r"filtr|sortuj|szczeg[oó][lł]y|od[sś]wie[zż]|zamknij)\b",
     re.I,
 )
-SEARCH_FIELD_WORDS = re.compile(r"(?:search|find|query|wyszuk|szukaj)", re.I)
+COOKIE_DISMISS_WORDS = re.compile(\n    r"^(?:reject all|deny all|decline all|essential only|necessary only|only necessary|only essential|"\n    r"use necessary cookies|continue without accepting|deny|decline)\\b", re.I,\n)\nSEARCH_FIELD_WORDS = re.compile(r"(?:search|find|query|wyszuk|szukaj)", re.I)
 
 def classify_page_failure(title: str, url: str, body: str) -> str | None:
     """Report website access failures as failures, never as valid search results."""
@@ -67,7 +67,7 @@ def is_safe_click(info: dict) -> bool:
     if tag == "a" and href:
         return href.startswith(("http://", "https://")) and is_safe_browsing_url(href)
     if tag == "button" or info.get("role") in {"button", "tab"}:
-        return bool(SAFE_BUTTON_WORDS.search(label))
+        return bool(SAFE_BUTTON_WORDS.search(label) or\n                    (info.get("cookieContext") and COOKIE_DISMISS_WORDS.search(label)))
     return False
 
 
@@ -88,7 +88,7 @@ def inspect_element(locator) -> dict:
         label: [el.getAttribute('aria-label'), el.getAttribute('title'),
                 el.getAttribute('placeholder'), el.getAttribute('name'),
                 el.textContent].filter(Boolean).join(' ').trim().slice(0, 240),
-        href: el.href || ''
+        href: el.href || '',\n        cookieContext: Boolean(el.closest('[id*="cookie" i], [class*="cookie" i], [id*="consent" i], [class*="consent" i]'))
     })""")
 
 
