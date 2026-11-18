@@ -1,0 +1,63 @@
+name: TikTok public visibility and playback diagnostics (read-only)
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/tiktok-public-visibility-readonly.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check TikTok public video availability without login or viewing media
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,re,html,urllib.request,urllib.error,datetime
+          from pathlib import Path
+          data=json.loads(Path('tiktok_dashboard/metrics.json').read_text())
+          clips=[x for x in data.get('videos',[]) if x.get('status')=='sent' and x.get('url')][:5]
+          for x in clips:
+              url=x['url'].replace('https://tiktok.com/','https://www.tiktok.com/')
+              vid=url.rstrip('/').split('/')[-1]
+              req=urllib.request.Request(url+'?lang=en',headers={
+                  'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+                  'Accept':'text/html,application/xhtml+xml','Accept-Language':'en-GB,en;q=0.9'})
+              result={'video_id':vid,'sent_at':x.get('sent_at_utc'),'status':'UNKNOWN'}
+              try:
+                  with urllib.request.urlopen(req,timeout=25) as response:
+                      page=response.read(3200000).decode('utf-8','replace')
+                      result['http_status']=response.status
+                      result['final_url']=response.url.split('?')[0]
+                  result['html_title']=next(iter(re.findall(r'<title[^>]*>(.*?)</title>',page,re.S|re.I)), '')[:90]
+                  for pattern,kind in ((r'<script[^>]+id=["\\\']__UNIVERSAL_DATA_FOR_REHYDRATION__["\\\'][^>]*>(.*?)</script>','universal'),(r'<script[^>]+id=["\\\']SIGI_STATE["\\\'][^>]*>(.*?)</script>','sigi')):
+                      match=re.search(pattern,page,re.S|re.I)
+                      if not match: continue
+                      try: raw=json.loads(html.unescape(match.group(1)))
+                      except Exception: continue
+                      if kind=='universal':
+                          detail=(raw.get('__DEFAULT_SCOPE__') or {}).get('webapp.video-detail') or {}
+                          result['detail_status_code']=detail.get('statusCode')
+                          item=((detail.get('itemInfo') or {}).get('itemStruct') or detail.get('itemStruct') or {})
+                      else:
+                          item=(raw.get('ItemModule') or {}).get(vid) or {}
+                      if str(item.get('id'))!=vid: continue
+                      author=item.get('author') or {}
+                      result['creator']=author.get('uniqueId') if isinstance(author,dict) else author
+                      result['has_video_stream_metadata']=bool(item.get('video',{}).get('playAddr') or item.get('video',{}).get('downloadAddr'))
+                      result['privacy_flags']={k:v for k,v in item.items() if k in ('privateItem','isAd','isReviewing','warnInfo','status','itemControl','aigcLabelType','aigcLabelInfo')}
+                      result['playCount']=(item.get('stats') or {}).get('playCount')
+                      result['status']='PUBLIC_ITEM_METADATA_PRESENT'
+                      break
+                  if result['status']=='UNKNOWN':
+                      result['status']='NO_MATCHED_VIDEO_ITEM_IN_HTML'
+                  result['html_size_bytes']=len(page)
+              except urllib.error.HTTPError as e:
+                  result.update(status='HTTP_ERROR',http_status=e.code)
+              except Exception as e:
+                  result.update(status='NETWORK_ERROR',error_type=type(e).__name__,error=str(e)[:120])
+              print('TIKTOK_PUBLIC_VISIBILITY',json.dumps(result,ensure_ascii=False))
+          PY
