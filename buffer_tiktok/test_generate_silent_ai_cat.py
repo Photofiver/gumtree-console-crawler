@@ -176,6 +176,17 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             at_third = dt.datetime(2026, 11, 18, 16, 20, tzinfo=dt.timezone.utc)
             self.assertEqual(gen.next_due_slot(at_third), ("20261118", 10))
 
+    def test_resume_partial_older_original_before_starting_new_day(self):
+        with tempfile.TemporaryDirectory() as folder, \\
+             patch.object(gen, "DEST", Path(folder)):
+            previous = Path(folder) / "story-parts" / "new-ai-cat-20261117-s10-planting-tulip"
+            previous.mkdir(parents=True)
+            (previous / "shot00.mp4").write_bytes(b"saved new original shot")
+            now = dt.datetime(2026, 11, 18, 8, 10, tzinfo=dt.timezone.utc)
+            self.assertEqual(gen.next_due_slot(now), ("20261117", 10))
+            (Path(folder) / "new-ai-cat-20261117-s10-planting-tulip.mp4").write_bytes(b"completed")
+            self.assertEqual(gen.next_due_slot(now), ("20261118", 0))
+
     def test_recovery_rejects_legacy_three_second_content(self):
         probe = {"streams": [
             {"codec_type": "video", "width": 720, "height": 1280,

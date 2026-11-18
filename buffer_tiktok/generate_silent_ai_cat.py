@@ -351,8 +351,27 @@ def next_due_slot(now: Optional[dt.datetime] = None):
             r"new-ai-cat-(\d{8})-s(\d{2})-.+\.mp4", clip.name)
         if match:
             existing.add((match.group(1), int(match.group(2))))
-    # During recovery, do not backfill old 3-second videos or flood the feed.
-    # A missed recovery slot can still be generated later on the SAME day.
+    # Finish an already-started ORIGINAL multi-shot film before consuming
+    # today's free GPU quota on an unrelated new one.
+    # Only persisted recovery shots qualify; historic 3-second posts do not.
+    if today >= RECOVERY_START_DAY:
+        parts_dir = DEST / "story-parts"
+        for item in sorted(parts_dir.glob("new-ai-cat-????????-s??-*")):
+            match = re.fullmatch(r"new-ai-cat-(\\d{8})-s(\\d{2})-.+", item.name)
+            if not match or not item.is_dir():
+                continue
+            stamp, slot = match.group(1), int(match.group(2))
+            try:
+                episode_day = dt.datetime.strptime(stamp, "%Y%m%d").date()
+            except ValueError:
+                continue
+            if (RECOVERY_START_DAY <= episode_day <= today and
+                slot in RECOVERY_SLOTS and
+                (stamp, slot) not in existing and
+                any(item.glob("shot??.mp4"))):
+                print("RESUME_UNFINISHED_ORIGINAL_STORY", stamp, slot, flush=True)
+                return stamp, slot
+    # Do not regenerate historic short posts or fill old unstarted slots.
     if today >= RECOVERY_START_DAY:
         for slot in RECOVERY_SLOTS:
             if slot <= latest_due and (date_stamp, slot) not in existing:
@@ -404,7 +423,7 @@ def generate():
         "Shot THREE of three: the same kind of cat completes its task and gives an "
         "expressive pleased reaction, camera at a wider angle.",
     )
-    part_dir = ROOT / "social_videos" / "story-parts" / output.stem
+    part_dir = DEST / "story-parts" / output.stem
     part_dir.mkdir(parents=True, exist_ok=True)
     try:
         clips = []
