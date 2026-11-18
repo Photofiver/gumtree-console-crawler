@@ -33,7 +33,7 @@ SAFE_BUTTON_WORDS = re.compile(
 )
 COOKIE_DISMISS_WORDS = re.compile(
     r"^(?:reject all|deny all|decline all|essential only|necessary only|only necessary|only essential|"
-    r"use necessary cookies|continue without accepting|deny|decline)\b", re.I,
+    r"use necessary cookies|continue without accepting|deny|decline|customize|save preferences|allow selection)\b", re.I,
 )
 SEARCH_FIELD_WORDS = re.compile(r"(?:search|find|query|wyszuk|szukaj)", re.I)
 
