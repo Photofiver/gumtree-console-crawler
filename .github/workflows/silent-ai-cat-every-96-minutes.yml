@@ -2,9 +2,9 @@ name: AI cat reach recovery (up to 3 longer originals per day)
 on:
   schedule:
     # Temporary zero-view recovery: three evenly spaced publishing windows.
-    # Retry each window once in case GitHub skips a scheduled event.
+    # Retry each window once at non-peak minutes; GitHub can drop hourly-start runs.
     # Generator still creates at most one fresh, unique 3-shot story per slot.
-    - cron: '1,17 0,8,16 * * *'
+    - cron: '23,43 0,8,16 * * *'
   workflow_dispatch:
   push:
     paths:
