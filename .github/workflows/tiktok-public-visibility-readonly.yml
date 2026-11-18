@@ -19,7 +19,7 @@ jobs:
           import json,re,html,urllib.request,urllib.error,datetime
           from pathlib import Path
           data=json.loads(Path('tiktok_dashboard/metrics.json').read_text())
-          clips=[x for x in data.get('videos',[]) if x.get('status')=='sent' and x.get('url')][:5]
+          clips=[x for x in data.get('videos',[]) if x.get('status')=='sent' and x.get('url')][:18]
           for x in clips:
               url=x['url'].replace('https://tiktok.com/','https://www.tiktok.com/')
               vid=url.rstrip('/').split('/')[-1]
