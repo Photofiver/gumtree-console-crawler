@@ -357,7 +357,7 @@ def next_due_slot(now: Optional[dt.datetime] = None):
     if today >= RECOVERY_START_DAY:
         parts_dir = DEST / "story-parts"
         for item in sorted(parts_dir.glob("new-ai-cat-????????-s??-*")):
-            match = re.fullmatch(r"new-ai-cat-(\\d{8})-s(\\d{2})-.+", item.name)
+            match = re.fullmatch(r"new-ai-cat-(\d{8})-s(\d{2})-.+", item.name)
             if not match or not item.is_dir():
                 continue
             stamp, slot = match.group(1), int(match.group(2))

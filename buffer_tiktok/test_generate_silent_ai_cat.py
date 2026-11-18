@@ -177,8 +177,7 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             self.assertEqual(gen.next_due_slot(at_third), ("20261118", 10))
 
     def test_resume_partial_older_original_before_starting_new_day(self):
-        with tempfile.TemporaryDirectory() as folder, \\
-             patch.object(gen, "DEST", Path(folder)):
+        with tempfile.TemporaryDirectory() as folder, patch.object(gen, "DEST", Path(folder)):
             previous = Path(folder) / "story-parts" / "new-ai-cat-20261117-s10-planting-tulip"
             previous.mkdir(parents=True)
             (previous / "shot00.mp4").write_bytes(b"saved new original shot")
