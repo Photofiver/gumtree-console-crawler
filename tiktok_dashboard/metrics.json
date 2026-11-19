@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-19T04:04:13.280793Z",
+  "generated_at_utc": "2026-11-19T12:49:36.890443Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-19T04:04:13.280793Z",
+  "followers_checked_at_utc": "2026-11-19T12:49:36.890443Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -40,15 +40,34 @@
     {
       "utc": "2026-11-18T23:03:00.432141Z",
       "followers": 2
+    },
+    {
+      "utc": "2026-11-19T12:49:36.890443Z",
+      "followers": 2
     }
   ],
-  "posted_confirmed": 17,
-  "posted_24h": 0,
+  "posted_confirmed": 18,
+  "posted_24h": 1,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-17T23:06:28.931868Z",
+  "posting_status_checked_at_utc": "2026-11-19T12:49:36.890443Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6afea6dbb7fe0c41dda6bdf8",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7709783064880237856",
+      "sent_at_utc": "2026-11-19T07:37:38.342Z",
+      "concept": "new ai cat 20261117 s10 planting tulip",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "shares": 0,
+        "views": 229,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-19T12:49:36.890443Z"
+    },
     {
       "id": "6afcd7b7b1f02ae62298907d",
       "status": "sent",
@@ -62,7 +81,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
+      "engagement_checked_at_utc": "2026-11-19T12:49:36.890443Z"
     },
     {
       "id": "6afcaf2dc595016b82b1bae5",
@@ -77,7 +96,7 @@
         "views": 1,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
+      "engagement_checked_at_utc": "2026-11-19T12:49:36.890443Z"
     },
     {
       "id": "6afc8d6aa166de7b3ec4f3ce",
@@ -92,7 +111,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
+      "engagement_checked_at_utc": "2026-11-19T12:49:36.890443Z"
     },
     {
       "id": "6afc7e51f78506c8dd3511b5",
@@ -107,7 +126,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
+      "engagement_checked_at_utc": "2026-11-19T12:49:36.890443Z"
     },
     {
       "id": "6afc5cea2617e11226cff5b7",
@@ -312,14 +331,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 0,
+    "likes": 2,
     "comments": 0,
     "shares": 0,
-    "views": 1,
+    "views": 230,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-19T04:04:13.280793Z",
+    "last_checked_at_utc": "2026-11-19T12:49:36.890443Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
