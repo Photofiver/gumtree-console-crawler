@@ -118,8 +118,14 @@
       "attempted_at": "2026-11-17T22:39:49.057680+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6afcd7b7b1f02ae62298907d"
+    },
+    "5fe9e2eba32cb45f429a3ec1792d8c9d1872cd80b845c67e049a4163ef3712ae": {
+      "source": "social_videos/new-ai-cat-20261117-s10-planting-tulip.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s10-planting-tulip.mp4",
+      "attempted_at": "2026-11-19T07:35:53.264978+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
-  "buffer_channel_last_verified_utc": "2026-11-17T10:36:08.008939+00:00"
+  "buffer_channel_last_verified_utc": "2026-11-19T07:35:53.264978+00:00"
 }
