@@ -14,7 +14,7 @@ from urllib.parse import unquote, urlsplit
 MAX_STEPS = 12
 MAX_TEXT = 14000
 # No arbitrary form submission, checkbox changes, or modifying commands.
-ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot"}
+ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot", "blueprint_prompt"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
@@ -144,7 +144,7 @@ def parse_task(body: str) -> dict:
         if step["action"] in {"click", "fill", "press", "extract", "wait_for"}:
             if not isinstance(step.get("selector"), str) or not 1 <= len(step["selector"]) <= 300:
                 raise ValueError("A nonempty selector is required")
-        if step["action"] in {"fill", "press", "click_text"}:
+        if step["action"] in {"fill", "press", "click_text", "blueprint_prompt"}:
             if not isinstance(step.get("value"), str) or len(step["value"]) > 1000 or (step["action"] == "click_text" and not step["value"].strip()):
                 raise ValueError("A string value up to 1000 characters is required")
         if step["action"] in {"wait", "wait_for"}:
@@ -154,6 +154,8 @@ def parse_task(body: str) -> dict:
         if step["action"] == "scroll":
             if type(step.get("px", 650)) is not int or not 0 <= step.get("px", 650) <= 1600:
                 raise ValueError("Scrolling is restricted to 0–1600 pixels down")
+    if any(step["action"] == "blueprint_prompt" for step in steps) and urlsplit(task["url"]).hostname not in {"blueprint.io", "www.blueprint.io"}:
+        raise ValueError("Blueprint prompt action is restricted to blueprint.io")
     return task
 
 
@@ -162,6 +164,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
 
     screenshots = []
     action_results = []
+    blueprint_mode = any(s["action"] == "blueprint_prompt" for s in task.get("steps", []))
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
         context = browser.new_context(accept_downloads=False, permissions=[], service_workers="block", viewport={"width": 1280, "height": 800})
@@ -173,7 +176,9 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
         # is side-effect-free, but it greatly reduces the mutation surface.
         def route_request(route):
             try:
-                if route.request.method.upper() not in {"GET", "HEAD"}:
+                method = route.request.method.upper()
+                host = urlsplit(route.request.url).hostname
+                if method not in {"GET", "HEAD"} and not (blueprint_mode and method == "POST" and host in {"blueprint.io", "www.blueprint.io"}):
                     raise UnsafeTarget("State-changing HTTP method blocked")
                 require_public_url(route.request.url)
                 if not is_safe_browsing_url(route.request.url):
@@ -258,6 +263,14 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                     if not is_safe_click(inspect_element(element)):
                         raise ValueError("Only safe navigation links and buttons may be clicked")
                     element.click()
+                elif action == "blueprint_prompt":
+                    if urlsplit(page.url).hostname not in {"blueprint.io", "www.blueprint.io"}:
+                        raise ValueError("Blueprint prompt cannot run outside Blueprint")
+                    composer = page.locator("textarea[placeholder*='Ask blueprint']").first
+                    composer.fill(step["value"])
+                    composer.press("Enter")
+                    page.wait_for_timeout(5000)
+                    item["prompt_submitted"] = True
                 elif action == "fill":
                     element = page.locator(selector).first
                     if not is_search_field(inspect_element(element)):
