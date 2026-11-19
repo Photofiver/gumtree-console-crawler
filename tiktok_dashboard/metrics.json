@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-18T23:03:00.432141Z",
+  "generated_at_utc": "2026-11-19T04:04:13.280793Z",
   "followers": 2,
-  "followers_checked_at_utc": "2026-11-18T23:03:00.432141Z",
+  "followers_checked_at_utc": "2026-11-19T04:04:13.280793Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -62,7 +62,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-18T23:03:00.432141Z"
+      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
     },
     {
       "id": "6afcaf2dc595016b82b1bae5",
@@ -77,7 +77,7 @@
         "views": 1,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-18T23:03:00.432141Z"
+      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
     },
     {
       "id": "6afc8d6aa166de7b3ec4f3ce",
@@ -92,7 +92,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-18T23:03:00.432141Z"
+      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
     },
     {
       "id": "6afc7e51f78506c8dd3511b5",
@@ -107,7 +107,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-18T23:03:00.432141Z"
+      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
     },
     {
       "id": "6afc5cea2617e11226cff5b7",
@@ -122,7 +122,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-18T23:03:00.432141Z"
+      "engagement_checked_at_utc": "2026-11-19T04:04:13.280793Z"
     },
     {
       "id": "6afc3e27fc6f5341d7184cec",
@@ -319,7 +319,7 @@
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-18T23:03:00.432141Z",
+    "last_checked_at_utc": "2026-11-19T04:04:13.280793Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
