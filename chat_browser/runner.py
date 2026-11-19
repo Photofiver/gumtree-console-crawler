@@ -281,6 +281,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                             ),
                         }
                         if action == "snapshot":
+                            info["editables"] = frame.locator("textarea, [contenteditable], [role='textbox']").evaluate_all("els => els.slice(0, 16).map(x => ({tag:x.tagName.toLowerCase(),type:x.getAttribute('type'),role:x.getAttribute('role'),placeholder:x.getAttribute('placeholder'),aria:x.getAttribute('aria-label'),outer:x.outerHTML.slice(0,550)}))")
                             info["headings"] = frame.get_by_role("heading").all_inner_texts()[:12]
                             info["inputs"] = frame.locator("input").evaluate_all(
                                 "els => els.slice(0, 12).map(x => ({type: x.type, name: x.name, placeholder: x.placeholder}))"
