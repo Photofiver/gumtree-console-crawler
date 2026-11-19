@@ -141,6 +141,15 @@
       <p class="hint" style="margin-top:10px">Pokazuję wyłącznie filmy z potwierdzonym linkiem TikToka.</p>
     </div>
   </section>
+  <section class="section card" aria-labelledby="outreach-title">
+    <h2 id="outreach-title">Obserwowanie po polubieniu</h2>
+    <div class="engagement-grid">
+      <div class="engagement-tile"><strong id="outreach-followed">—</strong><span>Osoby zaobserwowane przez bota</span></div>
+      <div class="engagement-tile"><strong id="outreach-sent">—</strong><span>Wysłane zaproszenia</span></div>
+      <div class="engagement-tile"><strong id="outreach-accepted">—</strong><span>Potwierdzone przyjęcia prośby o wiadomość</span></div>
+    </div>
+    <p class="hint" id="outreach-status">Ładowanie liczników…</p>
+  </section>
   <section class="section card">
     <div class="section-head"><h2>Reakcje na filmy</h2><span class="pill">Do 5 najnowszych</span></div>
     <p class="hint">Potwierdzone publiczne liczniki najnowszych filmów. Brak dostępu do danych oznacza „—”, nie zero.</p>
@@ -327,7 +336,16 @@
   }
   function fetchJson(file){return fetch(rawBase+file+"?t="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw Error("HTTP "+r.status);return r.json()})}
   function refresh(){
-    return Promise.allSettled([fetchJson("metrics.json"),fetchJson("goals.json")]).then(function(res){
+    return Promise.allSettled([fetchJson("metrics.json"),fetchJson("goals.json"),fetchJson("outreach.json")]).then(function(res){
+      var outreach = res[2].status === "fulfilled" ? res[2].value : null;
+      var keys = ["followed", "sent", "accepted"];
+      if (outreach && outreach.account === "@photofiver.photof" && keys.every(function(key){ return validCount(outreach[key]); })) {
+        keys.forEach(function(key){ put("outreach-" + key, number(outreach[key])); });
+        put("outreach-status", outreach.checked_at_utc ? "Ostatnie sprawdzenie: " + when(outreach.checked_at_utc) : "Oczekiwanie na pierwsze sprawdzenie.");
+      } else {
+        keys.forEach(function(key){ put("outreach-" + key, "—"); });
+        put("outreach-status", "Liczniki chwilowo niedostępne.");
+      }
       if(res[1].status==="fulfilled"&&res[1].value&&res[1].value.account==="@photofiver.photof")goals=res[1].value;
       if(res[0].status==="fulfilled"){render(res[0].value)}
       else {el("state-dot").className="dot bad";put("state","Nie udało się pobrać nowych statystyk z GitHub. Spróbuję ponownie za 5 min.");if(!el("followers").textContent.trim()||el("followers").textContent==="—")put("quality","Dane chwilowo niedostępne; liczników nie zastępuję szacunkami.");}
