@@ -123,7 +123,8 @@
       "source": "social_videos/new-ai-cat-20261117-s10-planting-tulip.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261117-s10-planting-tulip.mp4",
       "attempted_at": "2026-11-19T07:35:53.264978+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6afea6dbb7fe0c41dda6bdf8"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
