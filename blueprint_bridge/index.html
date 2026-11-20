@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blueprint — prywatna przeglądarka GitHub</title>
+<style>
+:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif}
+body{margin:0;padding:10px;background:#121318;color:#ecedf1}
+header{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+h1{font-size:18px;margin:0;font-weight:650}
+small{font-size:12px;color:#9fa4ae;line-height:1.4}
+#message{margin:8px 0;font-size:12px;color:#bbc4d2;word-break:break-word}
+#screen{width:100%;height:auto;display:block;background:#262830;border:1px solid #424450;touch-action:manipulation;cursor:crosshair}
+.pan{width:min(100%,1150px);margin:auto}
+.row{display:flex;align-items:center;gap:7px;margin-top:10px;flex-wrap:wrap}
+button{border:1px solid #515665;background:#292d39;color:#fff;border-radius:8px;padding:10px 13px;font-size:14px;cursor:pointer}
+button.primary{background:#4054b9}
+input{flex:1;min-width:90px;background:#232730;border:1px solid #515665;border-radius:8px;color:#f5f5f5;padding:11px;font-size:16px}
+.note{font-size:12px;color:#a9abb3;line-height:1.5;margin-top:10px}
+</style></head>
+<body><main class="pan">
+<header><h1>Blueprint — prywatna przeglądarka</h1><small>GitHub Codespaces · Port 8765 musi pozostać PRIVATE</small></header>
+<div id="message">Ładowanie przeglądarki…</div>
+<img id="screen" alt="Widok przeglądarki" draggable="false">
+<div class="row">
+<button onclick="control('home',{})">Blueprint</button>
+<button onclick="control('scroll',{direction:'up'})">Przewiń ↑</button>
+<button onclick="control('scroll',{direction:'down'})">Przewiń ↓</button>
+<button onclick="control('key',{value:'Tab'})">Tab</button>
+<button onclick="control('key',{value:'Enter'})" class="primary">Enter</button>
+<button onclick="control('key',{value:'Backspace'})">⌫</button>
+</div>
+<div class="row">
+<input id="typing" type="text" placeholder="Tekst do wpisania w zaznaczone pole" autocomplete="off" spellcheck="false">
+<button onclick="typeText('typing')">Wpisz</button>
+</div>
+<div class="row">
+<input id="password" type="password" placeholder="Hasło — niewidoczne podczas wpisywania" autocomplete="off">
+<button onclick="typeText('password')">Wpisz hasło</button>
+</div>
+<p class="note">Kliknij na podglądzie, aby wybrać pole lub przycisk; potem wpisz tekst i naciśnij „Wpisz”, a następnie „Enter”, gdy trzeba. Nie umieszczaj haseł ani kodów logowania w publicznych GitHub Issues. Sesja Blueprint pozostaje tylko w prywatnym Codespace.</p>
+</main>
+<script>
+const img=document.querySelector('#screen'), message=document.querySelector('#message');
+let refreshing=false,lastUrl=null;
+async function call(path,data){const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});if(!r.ok)throw Error('HTTP '+r.status);return r.json();}
+async function control(action,data){try{await call('/'+action,data);await refresh();}catch(e){message.textContent='Błąd działania: '+String(e.message)}}
+async function typeText(id){const el=document.getElementById(id),v=el.value;if(!v)return;try{await call('/type',{value:v});el.value='';await refresh();}catch(e){message.textContent='Błąd wpisywania: '+e.message}}
+img.addEventListener('click', async e=>{if(!img.naturalWidth)return;const r=img.getBoundingClientRect(),x=Math.floor((e.clientX-r.left)*img.naturalWidth/r.width),y=Math.floor((e.clientY-r.top)*img.naturalHeight/r.height);await control('click',{x,y})});
+async function refresh(){if(refreshing)return;refreshing=true;try{
+  const r=await fetch('/screen?now='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('Browser '+r.status);
+  const blob=await r.blob(),url=URL.createObjectURL(blob);
+  const old=lastUrl;img.onload=()=>{if(old)URL.revokeObjectURL(old)};img.src=url;lastUrl=url;
+  const s=await fetch('/status',{cache:'no-store'}).then(r=>r.json());
+  message.textContent=(s.signed_in?'Blueprint: zalogowany':'Blueprint: zaloguj się na ekranie')+' | GitHub: '+s.worker;
+}catch(e){message.textContent='Brak połączenia z Codespace: '+e.message}finally{refreshing=false}}
+refresh();setInterval(refresh,2000);
+</script></body></html>
