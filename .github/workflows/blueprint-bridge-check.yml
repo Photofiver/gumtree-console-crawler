@@ -54,6 +54,18 @@ jobs:
           screenshot=response.read()
           assert screenshot[:3]==b'\xff\xd8\xff', 'Expected JPEG screenshot'
           assert len(screenshot)>2000
+          import json as _json
+          for route,payload in [
+              ('scroll', {'direction':'down'}),
+              ('key', {'value':'Tab'}),
+              ('home', {}),
+          ]:
+              req=urllib.request.Request('http://127.0.0.1:8765/'+route,
+                  data=_json.dumps(payload).encode('utf-8'),
+                  headers={'Content-Type':'application/json','Origin':'http://127.0.0.1:8765'},
+                  method='POST')
+              reply=urllib.request.urlopen(req, timeout=25)
+              assert _json.load(reply)['ok'] is True, route
           response=urllib.request.urlopen('http://127.0.0.1:8765/')
           assert 'Blueprint' in response.read().decode('utf-8')
           print('Private browser bridge: HTTP status, screenshot and mobile UI passed')
