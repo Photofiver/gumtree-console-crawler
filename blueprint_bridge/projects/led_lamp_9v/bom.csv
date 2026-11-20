@@ -1,0 +1,6 @@
+Reference,Quantity,Description,Specification
+BAT1,1,9 V battery with clip,6F22 or 6LR61
+S1,1,Normally open momentary pushbutton,Rated for at least 9 V DC
+R1,1,Resistor,470 ohm 0.25 W or higher
+D1,1,Red 5 mm LED,Typical forward voltage around 2 V
+W1,1,Connection wires,As required
