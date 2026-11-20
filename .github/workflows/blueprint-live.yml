@@ -43,6 +43,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
+          BLUEPRINT_MANUAL_ONLY: "1"
         run: |
           set -euo pipefail
           python -m blueprint_bridge.server > /tmp/blueprint-server.log 2>&1 &
