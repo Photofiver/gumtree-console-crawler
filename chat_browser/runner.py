@@ -137,7 +137,7 @@ def parse_task(body: str) -> dict:
     auth = task.get("auth")
     if auth not in (None, "blueprint"):
         raise ValueError("Unsupported authentication mode")
-    if auth == "blueprint" and not is_blueprint_host(urlsplit(task["url"]).hostname):
+    if auth == "blueprint" and urlsplit(task["url"]).hostname not in {"blueprint.io", "www.blueprint.io"}:
         raise ValueError("Blueprint authentication is only supported on blueprint.io")
     steps = task.get("steps", [])
     if not isinstance(steps, list) or len(steps) > MAX_STEPS:
