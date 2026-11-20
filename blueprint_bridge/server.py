@@ -226,7 +226,7 @@ async def control(request):
             x, y = payload.get("x"), payload.get("y")
             if type(x) is not int or type(y) is not int or not 0 <= x < WIDTH or not 0 <= y < HEIGHT:
                 return web.Response(status=400, text="Invalid coordinates")
-            await page.mouse.click(x, y, timeout=8000)
+            await page.mouse.click(x, y)
         elif action == "type":
             value = payload.get("value")
             if not isinstance(value, str) or len(value) > 1200:
