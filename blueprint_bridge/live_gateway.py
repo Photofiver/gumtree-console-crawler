@@ -48,7 +48,8 @@ async def gateway(request):
         raise web.HTTPRequestEntityTooLarge(max_size=4096, actual_size=len(payload))
     async with request.app["client"].request(request.method,
         "http://127.0.0.1:8765"+request.path,
-        data=payload,headers={"Content-Type":request.content_type},
+        data=payload,headers={"Content-Type":request.content_type,
+                              "Origin":"http://127.0.0.1:8765"},
         allow_redirects=False) as response:
         body = await response.read()
         # Do not forward arbitrary browser-origin or proxy headers.
