@@ -29,6 +29,9 @@ BACKFILL_START_SLOT = 5
 # dates intentionally produce only three UNIQUE original videos per UTC day.
 RECOVERY_START_DAY = dt.date(2026, 11, 17)
 RECOVERY_SLOTS = (0, 5, 10)  # 00:00, 08:00, 16:00 UTC
+# Retain two missed November 20 publication slots after midnight.
+RECOVERY_PRIORITY_BACKFILL_DAY = dt.date(2026, 11, 20)
+RECOVERY_PRIORITY_BACKFILL_SLOTS = (0, 5)
 MIN_STORY_SECONDS = 8.0
 
 # All actions are lighthearted, safe and friendly; none involve a person,
@@ -371,7 +374,18 @@ def next_due_slot(now: Optional[dt.datetime] = None):
                 any(item.glob("shot??.mp4"))):
                 print("RESUME_UNFINISHED_ORIGINAL_STORY", stamp, slot, flush=True)
                 return stamp, slot
-    # Do not regenerate historic short posts or fill old unstarted slots.
+    # Keep the two explicitly requested missed posting windows in the queue
+    # after UTC midnight, without resubmitting any already completed video.
+    if today >= RECOVERY_PRIORITY_BACKFILL_DAY:
+        catchup_stamp = RECOVERY_PRIORITY_BACKFILL_DAY.strftime("%Y%m%d")
+        for slot in RECOVERY_PRIORITY_BACKFILL_SLOTS:
+            if (catchup_stamp, slot) in existing:
+                continue
+            if today > RECOVERY_PRIORITY_BACKFILL_DAY or slot <= latest_due:
+                print("PRIORITY_BACKFILL_UNPUBLISHED_STORY",
+                      catchup_stamp, slot, flush=True)
+                return catchup_stamp, slot
+    # Do not regenerate historic short posts or fill other old unstarted slots.
     if today >= RECOVERY_START_DAY:
         for slot in RECOVERY_SLOTS:
             if slot <= latest_due and (date_stamp, slot) not in existing:
