@@ -43,7 +43,7 @@ def main():
     try:
         subprocess.run(
             ["gh", "secret", "set", SECRET_NAME, "--repo", REPO],
-            input=encoded + "\n",
+            input=encoded,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
