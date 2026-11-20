@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-20T10:06:22.916013Z",
+  "generated_at_utc": "2026-11-20T18:31:51.188962Z",
   "followers": 3,
-  "followers_checked_at_utc": "2026-11-20T10:06:22.916013Z",
+  "followers_checked_at_utc": "2026-11-20T18:31:51.188962Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -52,15 +52,34 @@
     {
       "utc": "2026-11-20T10:06:22.916013Z",
       "followers": 3
+    },
+    {
+      "utc": "2026-11-20T18:31:51.188962Z",
+      "followers": 3
     }
   ],
-  "posted_confirmed": 19,
+  "posted_confirmed": 20,
   "posted_24h": 1,
   "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-19T21:00:20.089920Z",
+  "posting_status_checked_at_utc": "2026-11-20T18:31:51.188962Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b007d38c9797a176531220c",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7710300498041064737",
+      "sent_at_utc": "2026-11-20T18:10:42.193Z",
+      "concept": "new ai cat 20261120 s00 baking pancakes",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 62,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+    },
     {
       "id": "6aff316d7218d2f8fc1e6016",
       "status": "sent",
@@ -71,10 +90,10 @@
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 471,
+        "views": 599,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T10:06:22.916013Z"
+      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
     },
     {
       "id": "6afea6dbb7fe0c41dda6bdf8",
@@ -86,10 +105,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 600,
+        "views": 603,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T10:06:22.916013Z"
+      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
     },
     {
       "id": "6afcd7b7b1f02ae62298907d",
@@ -104,7 +123,7 @@
         "views": 0,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T10:06:22.916013Z"
+      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
     },
     {
       "id": "6afcaf2dc595016b82b1bae5",
@@ -119,7 +138,7 @@
         "views": 1,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T10:06:22.916013Z"
+      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
     },
     {
       "id": "6afc8d6aa166de7b3ec4f3ce",
@@ -357,11 +376,11 @@
     "likes": 3,
     "comments": 0,
     "shares": 0,
-    "views": 1072,
+    "views": 1265,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-20T10:06:22.916013Z",
+    "last_checked_at_utc": "2026-11-20T18:31:51.188962Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
