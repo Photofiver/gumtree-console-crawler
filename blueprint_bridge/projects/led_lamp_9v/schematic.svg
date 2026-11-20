@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="530" viewBox="0 0 1080 530" role="img" aria-label="Schemat lampki LED 9 V: bateria, przycisk NO, rezystor 470 omów i czerwona dioda LED połączone szeregowo">
+<rect width="1080" height="530" fill="#fcfcfa"/>
+<style> .wire{stroke:#29333d;stroke-width:4;stroke-linecap:round;fill:none}.part{stroke:#29333d;stroke-width:4;fill:none;stroke-linecap:round;stroke-linejoin:round}.label{font:600 23px Arial,sans-serif;fill:#20262d}.desc{font:19px Arial,sans-serif;fill:#4f5964}.title{font:700 32px Arial,sans-serif;fill:#17242f}.small{font:17px Arial,sans-serif;fill:#4f5964}</style>
+<text x="65" y="63" class="title">Lampka LED 9 V — schemat połączeń</text>
+<text x="66" y="97" class="desc">Jedna bateria · przycisk chwilowy NO · rezystor 470 Ω · czerwona LED</text>
+<!-- Main upper loop -->
+<path class="wire" d="M156 180 H313 M385 180 H484 M596 180 H715 M797 180 H915 V398 H156"/>
+<!-- Battery symbol left vertical -->
+<path class="wire" d="M156 180 V268 M156 334 V398"/>
+<path class="part" d="M123 268 H189 M135 288 H177 M123 311 H189 M135 334 H177"/>
+<text x="96" y="255" class="label">+</text><text x="98" y="360" class="label">−</text>
+<text x="64" y="439" class="label">BAT1</text><text x="63" y="466" class="desc">9 V</text>
+<!-- Switch -->
+<circle cx="326" cy="180" r="10" fill="#fff" stroke="#29333d" stroke-width="4"/>
+<circle cx="372" cy="180" r="10" fill="#fff" stroke="#29333d" stroke-width="4"/>
+<path class="part" d="M336 176 L365 153 M349 150 V132"/>
+<text x="325" y="115" class="label">S1</text><text x="309" y="227" class="desc">Przycisk NO</text>
+<!-- resistor -->
+<path class="part" d="M484 180 H497 L508 165 L525 195 L542 165 L559 195 L576 165 L589 180 H596"/>
+<text x="519" y="115" class="label">R1</text><text x="491" y="227" class="desc">470 Ω / 0,25 W</text>
+<!-- diode -->
+<path class="part" d="M715 147 V213 L776 180 Z M779 147 V213"/>
+<path class="wire" d="M779 180 H797"/>
+<path d="M726 141 l-15 -20 m15 0 -15 0 m0 0 0 15 M751 134 l-15 -20 m15 0 -15 0 m0 0 0 15" stroke="#cc3e42" stroke-width="3" fill="none"/>
+<text x="747" y="115" class="label">D1</text><text x="713" y="229" class="desc">LED czerwona</text>
+<text x="704" y="263" class="small">Anoda (+)</text><text x="778" y="285" class="small">Katoda (−)</text>
+<!-- Wire labels -->
+<text x="221" y="169" class="small">+9 V</text><text x="466" y="425" class="small">Powrót do − baterii</text>
+<!-- annotations -->
+<rect x="66" y="485" width="950" height="1" fill="#dce1e4"/>
+<text x="66" y="511" class="small">Szacowany prąd LED przy 9 V i Vf ≈ 2 V: 14,9 mA. Uwaga: zachowaj polaryzację LED.</text>
+</svg>
