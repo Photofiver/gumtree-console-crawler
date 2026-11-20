@@ -18,6 +18,11 @@ OWNER = "Photofiver"
 REPO = "gumtree-console-crawler"
 PREFIX = "[blueprint-project]"
 URL = "https://www.blueprint.io/"
+LED_PROMPT = ("Create a simple 9 V battery powered red LED lamp: one 9 V battery, "
+              "one momentary normally-open pushbutton, one 470 ohm 0.25 W resistor, "
+              "one red 5 mm LED. Series wiring: positive battery to button, then resistor, "
+              "then LED anode, LED cathode to battery negative. Generate wiring diagram "
+              "and a short bill of materials, no microcontroller and no mains wiring.")
 WIDTH, HEIGHT = 1120, 800
 STATE = Path.home() / ".local" / "state" / "blueprint-bridge"
 PROFILE = Path.home() / ".local" / "share" / "blueprint-bridge" / "chromium"
@@ -52,7 +57,10 @@ class Bridge:
             await page.goto(URL, wait_until="domcontentloaded", timeout=45000)
         elif self.ctx.pages[0].url == "about:blank":
             await self.ctx.pages[0].goto(URL, wait_until="domcontentloaded", timeout=45000)
-        self.worker = asyncio.create_task(self.poll_issues())
+        if os.environ.get("BLUEPRINT_MANUAL_ONLY") == "1":
+            self.worker_status = "manual_confirmation_required"
+        else:
+            self.worker = asyncio.create_task(self.poll_issues())
 
     def page(self):
         live = [page for page in self.ctx.pages if not page.is_closed()]
@@ -93,7 +101,8 @@ class Bridge:
                 await composer.fill(prompt, timeout=12000)
                 await composer.press("Enter")
                 await home.wait_for_timeout(5500)
-                if await home.get_by_role("button", name="SIGN IN", exact=True).count():
+                if (await home.get_by_role("button", name="SIGN IN", exact=True).count()
+                        or await home.get_by_role("button", name="CONTINUE WITH GITHUB", exact=True).count()):
                     return "login_required"
                 return "prompt_submitted_unverified"
             except Exception:
@@ -212,12 +221,18 @@ async def status(request):
 
 async def control(request):
     action = request.match_info["action"]
-    if action not in {"click", "type", "key", "scroll", "home"}:
+    if action not in {"click", "type", "key", "scroll", "home", "submit"}:
         return web.Response(status=404)
     try:
         payload = await request.json()
     except (json.JSONDecodeError, ValueError):
         return web.Response(status=400, text="Invalid JSON")
+    if action == "submit":
+        if os.environ.get("BLUEPRINT_MANUAL_ONLY") != "1":
+            return web.Response(status=403)
+        outcome = await bridge.create_project(LED_PROMPT)
+        bridge.worker_status = "last_submission_" + outcome
+        return json_result({"outcome": outcome})
     async with bridge.lock:
         page = bridge.page()
         if not page:
