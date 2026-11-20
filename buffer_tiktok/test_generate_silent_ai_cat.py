@@ -176,6 +176,17 @@ class SilentCatScheduleAndMediaTests(unittest.TestCase):
             at_third = dt.datetime(2026, 11, 18, 16, 20, tzinfo=dt.timezone.utc)
             self.assertEqual(gen.next_due_slot(at_third), ("20261118", 10))
 
+    def test_two_nov20_missed_recovery_slots_survive_midnight(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(gen, "DEST", Path(folder)):
+            at_1430 = dt.datetime(2026, 11, 20, 14, 30, tzinfo=dt.timezone.utc)
+            self.assertEqual(gen.next_due_slot(at_1430), ("20261120", 0))
+            (Path(folder) / "new-ai-cat-20261120-s00-first.mp4").write_bytes(b"completed")
+            self.assertEqual(gen.next_due_slot(at_1430), ("20261120", 5))
+            tomorrow = dt.datetime(2026, 11, 21, 9, 5, tzinfo=dt.timezone.utc)
+            self.assertEqual(gen.next_due_slot(tomorrow), ("20261120", 5))
+            (Path(folder) / "new-ai-cat-20261120-s05-second.mp4").write_bytes(b"completed")
+            self.assertEqual(gen.next_due_slot(tomorrow), ("20261121", 0))
+
     def test_resume_partial_older_original_before_starting_new_day(self):
         with tempfile.TemporaryDirectory() as folder, patch.object(gen, "DEST", Path(folder)):
             previous = Path(folder) / "story-parts" / "new-ai-cat-20261117-s10-planting-tulip"
