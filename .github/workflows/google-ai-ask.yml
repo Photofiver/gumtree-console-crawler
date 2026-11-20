@@ -28,6 +28,10 @@ jobs:
         shell: bash
         run: |
           cp phone_google_ask/GoogleAskTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/GoogleAskTest.java
+          if jq -e '.issue.title | startswith("[google-ask] [review]")' "$GITHUB_EVENT_PATH" >/dev/null; then
+            python3 phone_google_ask/review.py prepare
+            exit 0
+          fi
           QUESTION_B64="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" | head -c 2000 | base64 -w0)"
           test -n "$QUESTION_B64"
           echo "QUESTION_B64=$QUESTION_B64" >> "$GITHUB_ENV"
@@ -66,12 +70,20 @@ jobs:
           retention-days: 7
       - name: Post Google AI result to issue
         if: always()
+        env:
+          REVIEW_RUN_OK: ${{ job.status }}
         uses: actions/github-script@v7
         with:
           script: |
             const fs=require('fs');
             let body='Google AI Mode did not return a readable result. See the workflow logs.';
-            if(fs.existsSync('google-ai-ask-result.json')){
+            if(context.payload.issue.title.startsWith('[google-ask] [review]')){
+              body='Google AI: NIEPOTWIERDZONE';
+              if(process.env.REVIEW_RUN_OK === 'success'){
+                const {execFileSync}=require('node:child_process');
+                body='Google AI: '+execFileSync('python3',['phone_google_ask/review.py','result'],{encoding:'utf8'}).trimEnd();
+              }
+            } else if(fs.existsSync('google-ai-ask-result.json')){
               const result=JSON.parse(fs.readFileSync('google-ai-ask-result.json','utf8'));
               const p=result.page||{};
               body='Google AI Mode answer (unverified, may contain mistakes):\n\nQUESTION: '+result.question+
