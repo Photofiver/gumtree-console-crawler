@@ -3,6 +3,7 @@ import unittest
 from unittest.mock import patch
 from chat_browser.runner import (parse_task, require_public_url,
     is_safe_browsing_url, is_safe_click, is_search_field, classify_page_failure)
+from chat_browser.blueprint_session import encode_state, decode_state, filter_blueprint_state
 
 
 class RunnerTests(unittest.TestCase):
@@ -139,6 +140,58 @@ class RunnerTests(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     parse_task(json.dumps({"url": "https://example.com", "steps": [step]}))
 
+
+    def test_blueprint_authenticated_task_is_restricted(self):
+        with patch("chat_browser.runner.require_public_url"):
+            valid = parse_task(json.dumps({
+                "url": "https://www.blueprint.io/",
+                "auth": "blueprint",
+                "steps": [{"action": "blueprint_prompt", "value": "Build a simple LED lamp"}]
+            }))
+            self.assertEqual(valid["auth"], "blueprint")
+            for bad in [
+                {"url": "https://example.com/", "auth": "blueprint", "steps": []},
+                {"url": "https://wrong.blueprint.io/", "auth": "blueprint", "steps": []},
+                {"url": "https://www.blueprint.io/", "auth": "blueprint",
+                 "steps": [{"action": "snapshot"}]},
+                {"url": "https://www.blueprint.io/", "auth": "blueprint",
+                 "steps": [{"action": "screenshot"}]},
+                {"url": "https://www.blueprint.io/", "auth": "blueprint",
+                 "steps": [{"action": "extract", "selector": "body"}]},
+                {"url": "https://www.blueprint.io/", "auth": "blueprint",
+                 "steps": [{"action": "blueprint_prompt", "value": "one"},
+                           {"action": "blueprint_prompt", "value": "two"}]},
+            ]:
+                with self.assertRaises(ValueError):
+                    parse_task(json.dumps(bad))
+
+    def test_blueprint_session_secret_roundtrip_and_domain_isolation(self):
+        state = {
+            "cookies": [
+                {"name": "session", "value": "some-session", "domain": ".blueprint.io",
+                 "path": "/", "secure": True, "httpOnly": True, "sameSite": "Lax"},
+                {"name": "github", "value": "do-not-transfer", "domain": ".github.com",
+                 "path": "/", "secure": True, "httpOnly": True, "sameSite": "Lax"}
+            ],
+            "origins": [
+                {"origin": "https://www.blueprint.io",
+                 "localStorage": [{"name": "example", "value": "blueprint-state"}]},
+                {"origin": "https://github.com",
+                 "localStorage": [{"name": "bad", "value": "do-not-transfer"}]}
+            ]
+        }
+        secret = encode_state(state)
+        extracted = decode_state(secret)
+        self.assertEqual(len(extracted["cookies"]), 1)
+        self.assertEqual(len(extracted["origins"]), 1)
+        self.assertEqual(extracted["cookies"][0]["name"], "session")
+        self.assertNotIn("github", str(extracted))
+
+    def test_blueprint_session_missing_and_empty_are_rejected(self):
+        with self.assertRaises(ValueError):
+            decode_state("")
+        with self.assertRaises(ValueError):
+            encode_state({"cookies": [], "origins": []})
 
 
 if __name__ == "__main__":
