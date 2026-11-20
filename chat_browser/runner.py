@@ -29,7 +29,7 @@ MUTATING_WORDS = re.compile(
 SAFE_BUTTON_WORDS = re.compile(
     r"^(?:search|find|next|previous|back|more|show|hide|read|view|open|"
     r"expand|collapse|load|filter|sort|details|learn|see|menu|close|"
-    r"refresh|retry|page|tab|go to|continue reading|try with your idea|"
+    r"refresh|retry|page|tab|go to|continue reading|try with your idea|draw|"
     r"szukaj|wyszukaj|dalej|nast[eę]pn|poprzedni|wstecz|wi[eę]cej|"
     r"poka[zż]|zobacz|czytaj|otw[oó]rz|rozwi[nń]|zwi[nń]|"
     r"filtr|sortuj|szczeg[oó][lł]y|od[sś]wie[zż]|zamknij)\b",
