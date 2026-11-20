@@ -29,6 +29,8 @@ jobs:
           python -m pip install --disable-pip-version-check 'playwright>=1.50,<2'
           python -m playwright install --with-deps chromium
       - name: Run browser task
+        env:
+          BLUEPRINT_STORAGE_STATE_ZB64: ${{ secrets.BLUEPRINT_STORAGE_STATE_ZB64 }}
         run: python chat_browser/runner.py --event "$GITHUB_EVENT_PATH" --result browser-result.json --screenshot browser-screenshot.png
       - name: Post result in issue
         if: always()
