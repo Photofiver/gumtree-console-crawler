@@ -33,9 +33,9 @@ PAGE = Path(__file__).with_name("index.html")
 def login_prompt_visible(body_text: str) -> bool:
     """Detect actual SIGN IN controls, not just absence of an accessible button."""
     return bool(
-        re.search(r"(?im)^\\s*SIGN\\s+IN\\s*$", body_text)
-        or re.search(r"(?im)^\\s*CONTINUE WITH GITHUB\\s*$", body_text)
-        or re.search(r"(?im)^\\s*CONTINUE WITH GOOGLE\\s*$", body_text)
+        re.search(r"(?im)^\s*SIGN\s+IN\s*$", body_text)
+        or re.search(r"(?im)^\s*CONTINUE WITH GITHUB\s*$", body_text)
+        or re.search(r"(?im)^\s*CONTINUE WITH GOOGLE\s*$", body_text)
     )
 
 
