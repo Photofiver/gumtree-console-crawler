@@ -81,7 +81,7 @@ jobs:
               body='Google AI: NIEPOTWIERDZONE';
               if(process.env.REVIEW_RUN_OK === 'success'){
                 const {execFileSync}=require('node:child_process');
-                body='Google AI: '+execFileSync('python3',['phone_google_ask/review.py','result'],{encoding:'utf8'}).trimEnd();
+                body='Google AI: '+execFileSync('python3',['phone_google_ask/review.py','result'],{encoding:'utf8'}).slice(0,-1);
               }
             } else if(fs.existsSync('google-ai-ask-result.json')){
               const result=JSON.parse(fs.readFileSync('google-ai-ask-result.json','utf8'));
