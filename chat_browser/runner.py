@@ -9,6 +9,7 @@ import re
 import socket
 import sys
 from pathlib import Path
+from chat_browser.blueprint_session import is_blueprint_host, load_state_from_environment
 from urllib.parse import unquote, urlsplit
 
 MAX_STEPS = 12
@@ -130,9 +131,14 @@ def parse_task(body: str) -> dict:
     if match:
         body = match.group(1)
     task = json.loads(body)
-    if not isinstance(task, dict) or set(task) - {"url", "steps"}:
+    if not isinstance(task, dict) or set(task) - {"url", "steps", "auth"}:
         raise ValueError("Task must contain only url and optional steps")
     require_public_url(task.get("url"))
+    auth = task.get("auth")
+    if auth not in (None, "blueprint"):
+        raise ValueError("Unsupported authentication mode")
+    if auth == "blueprint" and not is_blueprint_host(urlsplit(task["url"]).hostname):
+        raise ValueError("Blueprint authentication is only supported on blueprint.io")
     steps = task.get("steps", [])
     if not isinstance(steps, list) or len(steps) > MAX_STEPS:
         raise ValueError(f"Provide at most {MAX_STEPS} steps")
@@ -154,8 +160,13 @@ def parse_task(body: str) -> dict:
         if step["action"] == "scroll":
             if type(step.get("px", 650)) is not int or not 0 <= step.get("px", 650) <= 1600:
                 raise ValueError("Scrolling is restricted to 0–1600 pixels down")
-    if any(step["action"] == "blueprint_prompt" for step in steps) and urlsplit(task["url"]).hostname not in {"blueprint.io", "www.blueprint.io"}:
+    if any(step["action"] == "blueprint_prompt" for step in steps) and not is_blueprint_host(urlsplit(task["url"]).hostname):
         raise ValueError("Blueprint prompt action is restricted to blueprint.io")
+    if auth == "blueprint":
+        if any(step["action"] not in {"blueprint_prompt", "wait"} for step in steps):
+            raise ValueError("Authenticated Blueprint tasks only accept blueprint_prompt and wait")
+        if sum(step["action"] == "blueprint_prompt" for step in steps) > 1:
+            raise ValueError("Only one Blueprint project prompt per authenticated task")
     return task
 
 
@@ -165,9 +176,11 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
     screenshots = []
     action_results = []
     blueprint_mode = any(s["action"] == "blueprint_prompt" for s in task.get("steps", []))
+    authenticated = task.get("auth") == "blueprint"
+    saved_state = load_state_from_environment() if authenticated else None
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
-        context = browser.new_context(accept_downloads=False, permissions=[], service_workers="block", viewport={"width": 1280, "height": 800})
+        context = browser.new_context(accept_downloads=False, permissions=[], service_workers="block", viewport={"width": 1280, "height": 800}, **({"storage_state": saved_state} if authenticated else {}))
         page = context.new_page()
         page.set_default_timeout(10000)
         # All browser traffic is read-only: block POST/PUT/PATCH/DELETE and
@@ -178,7 +191,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
             try:
                 method = route.request.method.upper()
                 host = urlsplit(route.request.url).hostname
-                if method not in {"GET", "HEAD"} and not (blueprint_mode and method == "POST" and host in {"blueprint.io", "www.blueprint.io"}):
+                if method not in {"GET", "HEAD"} and not (blueprint_mode and method == "POST" and is_blueprint_host(host)):
                     raise UnsafeTarget("State-changing HTTP method blocked")
                 require_public_url(route.request.url)
                 if not is_safe_browsing_url(route.request.url):
@@ -189,6 +202,10 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
         context.route("**/*", route_request)
         try:
             page.goto(task["url"], wait_until="domcontentloaded", timeout=30000)
+            if authenticated:
+                page.wait_for_timeout(1200)
+                if page.get_by_role("button", name=re.compile(r"^SIGN IN$", re.I)).count():
+                    return {"ok": False, "auth_status": "login_required", "project_status": "not_started"}
             for i, step in enumerate(task.get("steps", []), 1):
                 action = step["action"]
                 selector = step.get("selector", "")
@@ -314,6 +331,13 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                 elif action == "extract":
                     item["text"] = page.locator(selector).first.inner_text(timeout=10000)[:4000]
                 action_results.append(item)
+            if authenticated:
+                # Never publish private account text, DOM, links, screenshots, or cookies.
+                if page.get_by_role("button", name=re.compile(r"^SIGN IN$", re.I)).count():
+                    return {"ok": False, "auth_status": "login_required", "project_status": "not_created"}
+                return {"ok": True, "auth_status": "signed_in",
+                        "project_status": "submission_attempted" if blueprint_mode else "not_requested",
+                        "saved_confirmed": False}
             title = page.title()
             text = page.locator("body").inner_text(timeout=12000)[:MAX_TEXT]
             links = page.locator("a[href]").evaluate_all("els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))")
@@ -335,12 +359,17 @@ def main():
     parser.add_argument("--screenshot", default="browser-screenshot.png")
     args = parser.parse_args()
     result = {"ok": False}
+    task = None
     try:
         event = json.loads(Path(args.event).read_text(encoding="utf-8"))
         task = parse_task(event["issue"]["body"])
         result = run_task(task, Path(args.screenshot))
     except Exception as exc:
-        result["error"] = f"{type(exc).__name__}: {str(exc)[:700]}"
+        if isinstance(task, dict) and task.get("auth") == "blueprint":
+            # Auth errors may contain sensitive URLs or state. Never emit their text.
+            result = {"ok": False, "auth_status": "setup_failed", "project_status": "not_verified"}
+        else:
+            result["error"] = f"{type(exc).__name__}: {str(exc)[:700]}"
     Path(args.result).write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"Task complete: {'success' if result['ok'] else 'error'}")
     return 0
