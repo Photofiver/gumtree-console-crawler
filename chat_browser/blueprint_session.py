@@ -4,6 +4,7 @@ Never write state to public issues, logs, screenshots or repository files.
 GitHub Actions reads only BLUEPRINT_STORAGE_STATE_ZB64 from Actions Secrets.
 """
 import base64
+import binascii
 import json
 import os
 from urllib.parse import urlsplit
@@ -63,7 +64,7 @@ def decode_state(encoded):
             raise ValueError("Invalid or oversized session data")
         state = json.loads(payload)
         return filter_blueprint_state(state)
-    except (ValueError, TypeError, zlib.error, json.JSONDecodeError) as exc:
+    except (ValueError, TypeError, binascii.Error, zlib.error, json.JSONDecodeError):
         raise ValueError("Invalid Blueprint session secret") from None
 
 
