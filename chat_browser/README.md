@@ -66,3 +66,31 @@ References:
 - Only issues created by repository owner Photofiver with a `[browser]` title trigger runs.
 - Does not edit or interact with BloFin, Stock-finder, or their workflows.
 - On public GitHub repositories, standard GitHub-hosted Actions runners are included at no charge under GitHub's current published billing rules.
+
+
+## Blueprint.io: optional authenticated project creation
+
+The GitHub browser has a narrowly scoped `"auth": "blueprint"` mode. It reads an **encrypted GitHub Actions Secret** called `BLUEPRINT_STORAGE_STATE_ZB64`. It is **not** your ChatGPT GitHub connector token or the login in Brave on your Android phone. Those sessions cannot be copied automatically.
+
+### One-time connection from your own computer
+
+1. Install Python 3, the official GitHub CLI (`gh`), and Playwright: `python -m pip install playwright` then `python -m playwright install chromium`.
+2. Authenticate GitHub CLI once with `gh auth login` (the repo owner must approve on GitHub).
+3. Download/clone this repository and run `python setup_blueprint_session.py` from its root.
+4. A local Chromium browser opens Blueprint. Sign in there with GitHub and complete onboarding; then press Enter in the terminal. The script uploads the Blueprint-only browser session **directly to GitHub Actions Secrets** using encrypted CLI transport. It never prints or commits session tokens, creates public issues, or writes a session file.
+
+The resulting secret can be checked (but not read back) under [Actions repository secrets](https://github.com/Photofiver/gumtree-console-crawler/settings/secrets/actions).
+
+**Security:** The session is as sensitive as a password. Do not paste it, email a cookie, copy it to an Issue or commit it to this public repository. GitHub may eventually expire the session. If so, rerun the local setup. Not all websites support Playwright storage-state restoration; IndexedDB is captured but sessionStorage is not.
+
+### Using the session
+
+Create a GitHub Issue with the exact title prefix `[browser]` and an innocuous, non-secret JSON body such as:
+
+```json
+{"url":"https://www.blueprint.io/","auth":"blueprint","steps":[{"action":"blueprint_prompt","value":"Build a simple 9V red LED lamp with a 470-ohm resistor and button."}]}
+```
+
+Authenticated mode accepts only one Blueprint prompt plus optional waits. It **does not publicly post** the account's page text, cookies, links, DOM or screenshot. The issue comment reports only whether login was available and whether submission was attempted — **not** whether Blueprint completed or saved the design. Verify any generated project in your account. The public Issue body includes the project idea itself, so do not submit confidential designs.
+
+If the secret is missing, authentication cannot succeed; a GitHub OAuth approval on your **phone** does not log in the **GitHub Actions** browser.
