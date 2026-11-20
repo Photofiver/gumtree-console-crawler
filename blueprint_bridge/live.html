@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer"><title>Blueprint — prywatna przeglądarka</title>
+<style>body{font-family:system-ui;background:#121418;color:#eee;margin:0;padding:10px}h1{font-size:18px}p{font-size:13px}#screen{width:100%;height:auto;border:1px solid #555;touch-action:manipulation;cursor:crosshair}button,input{padding:10px;margin:3px;background:#292b36;color:#fff;border:1px solid #595c69;border-radius:7px;font-size:15px}input{min-width:120px;width:55%}.detail{color:#bac5d3;font-size:12px;line-height:1.6;word-break:break-word}</style>
+</head><body><h1>Blueprint — darmowa sesja GitHub Actions</h1><p id="status">Łączenie…</p>
+<img id="screen" alt="Zdalna przeglądarka Blueprint">
+<div><button onclick="act('home',{})">Blueprint</button><button onclick="act('scroll',{direction:'up'})">↑</button><button onclick="act('scroll',{direction:'down'})">↓</button><button onclick="act('key',{value:'Tab'})">Tab</button><button onclick="act('key',{value:'Enter'})">Enter</button><button onclick="act('key',{value:'Backspace'})">⌫</button></div>
+<div><input id="typed" placeholder="Tekst do zaznaczonego pola" autocomplete="off"><button onclick="typeIt('typed')">Wpisz</button></div>
+<div><input id="password" type="password" placeholder="Hasło, jeśli potrzebne" autocomplete="off"><button onclick="typeIt('password')">Wpisz hasło</button></div>
+<p id="info" class="detail">Kliknij w ekran, aby wybrać pole lub przycisk. Zaloguj się przez CONTINUE WITH GITHUB. Po zalogowaniu zlecenie lampki LED zostanie automatycznie wysłane. Tajny kod nie jest publikowany w GitHub Issues.</p>
+<script>
+const token=location.hash.slice(1).replace(/^token=/,'');history.replaceState(null,'',location.pathname);
+const status=document.getElementById('status'),info=document.getElementById('info'),screen=document.getElementById('screen');
+if(!/^[0-9a-f]{64}$/.test(token)){status.textContent='Brak tajnego kodu w adresie. Użyj pełnego linku z rozmowy.';throw Error('Missing access token')}
+let busy=false,lastObject=null;
+async function req(path,body){const opts={headers:{'X-Bridge-Token':token},cache:'no-store'};if(body!==undefined){opts.method='POST';opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body)}const r=await fetch(path,opts);if(!r.ok)throw Error('HTTP '+r.status);return r}
+async function update(){if(busy)return;busy=true;try{
+ const ir=await req('/screen');const blob=await ir.blob();const url=URL.createObjectURL(blob);const old=lastObject;
+ screen.onload=()=>{if(old)URL.revokeObjectURL(old)};screen.src=url;lastObject=url;
+ const d=await (await req('/status')).json();status.textContent=(d.signed_in?'Blueprint: zalogowany':'Blueprint: zaloguj się')+' | GitHub: '+d.worker;
+ if(d.url&&d.url.includes('blueprint.io')&&d.url!=='https://www.blueprint.io/')info.textContent='Strona Blueprint: '+d.url;
+}catch(e){status.textContent='Brak połączenia: '+e.message}finally{busy=false}}
+async function act(op,body){try{await req('/'+op,body);await update()}catch(e){status.textContent='Błąd: '+e.message}}
+async function typeIt(id){const el=document.getElementById(id);if(!el.value)return;await act('type',{value:el.value});el.value=''}
+screen.addEventListener('click',async e=>{if(!screen.naturalWidth)return;const r=screen.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)*screen.naturalWidth/r.width),y=Math.floor((e.clientY-r.top)*screen.naturalHeight/r.height);await act('click',{x,y})});
+update();setInterval(update,2000);
+</script></body></html>
