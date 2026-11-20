@@ -12,7 +12,7 @@ import re
 from aiohttp import ClientSession, ClientTimeout, web
 from pathlib import Path
 
-ALLOWED = {"/screen","/status","/click","/type","/key","/scroll","/home"}
+ALLOWED = {"/screen","/status","/click","/type","/key","/scroll","/home","/submit"}
 FRONTEND = Path(__file__).with_name("live.html")
 EXPECTED = os.environ.get("BLUEPRINT_ACCESS_SHA256", "")
 if not re.fullmatch(r"[0-9a-f]{64}", EXPECTED):
@@ -66,6 +66,6 @@ app.add_routes([web.get("/",homepage),
                 web.get("/screen",gateway),web.get("/status",gateway),
                 web.post("/click",gateway),web.post("/type",gateway),
                 web.post("/key",gateway),web.post("/scroll",gateway),
-                web.post("/home",gateway)])
+                web.post("/home",gateway),web.post("/submit",gateway)])
 if __name__=="__main__":
     web.run_app(app,host="127.0.0.1",port=8766,access_log=None)
