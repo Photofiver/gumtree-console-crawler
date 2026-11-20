@@ -8,6 +8,7 @@ private account content is never returned in issue comments.
 import asyncio
 import json
 import os
+import re
 from pathlib import Path
 
 import aiohttp
@@ -28,6 +29,15 @@ STATE = Path.home() / ".local" / "state" / "blueprint-bridge"
 PROFILE = Path.home() / ".local" / "share" / "blueprint-bridge" / "chromium"
 PROCESSED = STATE / "processed.json"
 PAGE = Path(__file__).with_name("index.html")
+
+def login_prompt_visible(body_text: str) -> bool:
+    """Detect actual SIGN IN controls, not just absence of an accessible button."""
+    return bool(
+        re.search(r"(?im)^\\s*SIGN\\s+IN\\s*$", body_text)
+        or re.search(r"(?im)^\\s*CONTINUE WITH GITHUB\\s*$", body_text)
+        or re.search(r"(?im)^\\s*CONTINUE WITH GOOGLE\\s*$", body_text)
+    )
+
 
 
 class Bridge:
@@ -84,7 +94,14 @@ class Bridge:
         if home is None:
             return False
         try:
-            return not await home.get_by_role("button", name="SIGN IN", exact=True).count()
+            # Blueprint's SIGN IN may not be an accessible <button>.
+            # Do not infer successful login merely from a missing button role.
+            body_text = await home.locator("body").inner_text(timeout=7000)
+            if login_prompt_visible(body_text):
+                return False
+            if await home.get_by_text("SIGN IN", exact=True).count():
+                return False
+            return True
         except Exception:
             return False
 
@@ -101,8 +118,7 @@ class Bridge:
                 await composer.fill(prompt, timeout=12000)
                 await composer.press("Enter")
                 await home.wait_for_timeout(5500)
-                if (await home.get_by_role("button", name="SIGN IN", exact=True).count()
-                        or await home.get_by_role("button", name="CONTINUE WITH GITHUB", exact=True).count()):
+                if not await self.signed_in():
                     return "login_required"
                 return "prompt_submitted_unverified"
             except Exception:
