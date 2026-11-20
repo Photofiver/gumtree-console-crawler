@@ -17,7 +17,7 @@ async function req(path,body){const opts={headers:{'X-Bridge-Token':token},cache
 async function update(){if(busy)return;busy=true;try{
  const ir=await req('/screen');const blob=await ir.blob();const url=URL.createObjectURL(blob);const old=lastObject;
  screen.onload=()=>{if(old)URL.revokeObjectURL(old)};screen.src=url;lastObject=url;
- const d=await (await req('/status')).json();status.textContent=(d.signed_in?'Blueprint: zalogowany':'Blueprint: zaloguj się')+' | GitHub: '+d.worker;
+ const d=await (await req('/status')).json();status.textContent=(d.signed_in?'Blueprint: ekran logowania niewidoczny (wymaga sprawdzenia)':'Blueprint: niezalogowany — strona pokazuje SIGN IN')+' | Sterowanie: '+(d.worker==='manual_confirmation_required'?'gotowe':d.worker);
  if(d.url&&d.url.includes('blueprint.io')&&d.url!=='https://www.blueprint.io/')info.textContent='Strona Blueprint: '+d.url;
 }catch(e){status.textContent='Brak połączenia: '+e.message}finally{busy=false}}
 async function sendProject(){try{const r=await req('/submit',{});const d=await r.json();info.textContent='Wynik wysłania: '+d.outcome+'. Sprawdź widok projektu w Blueprint.';await update()}catch(e){status.textContent='Błąd wysyłania: '+e.message}}
