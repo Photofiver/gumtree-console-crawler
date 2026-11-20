@@ -1,0 +1,15 @@
+{
+  "name": "Blueprint private browser (phone)",
+  "image": "mcr.microsoft.com/devcontainers/python:1-3.12-bookworm",
+  "remoteUser": "vscode",
+  "postCreateCommand": "python -m pip install --disable-pip-version-check -r blueprint_bridge/requirements.txt && python -m playwright install --with-deps chromium",
+  "postStartCommand": "bash blueprint_bridge/start.sh",
+  "forwardPorts": [8765],
+  "portsAttributes": {
+    "8765": {
+      "label": "Blueprint private browser",
+      "onAutoForward": "notify",
+      "protocol": "http"
+    }
+  }
+}
