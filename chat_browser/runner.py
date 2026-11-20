@@ -9,7 +9,10 @@ import re
 import socket
 import sys
 from pathlib import Path
-from chat_browser.blueprint_session import is_blueprint_host, load_state_from_environment
+if __package__:
+    from .blueprint_session import is_blueprint_host, load_state_from_environment
+else:  # GitHub Actions invokes this file directly.
+    from blueprint_session import is_blueprint_host, load_state_from_environment
 from urllib.parse import unquote, urlsplit
 
 MAX_STEPS = 12
