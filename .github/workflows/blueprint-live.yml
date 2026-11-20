@@ -1,0 +1,97 @@
+name: Blueprint free temporary phone browser
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: blueprint-live-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  mobile-browser:
+    if: ${{ startsWith(github.event.issue.title, '[blueprint-live]') && github.event.issue.user.login == github.repository_owner }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate request and token hash
+        run: |
+          python - <<'PY'
+          import json,os,re
+          event=json.load(open(os.environ['GITHUB_EVENT_PATH']))
+          task=json.loads(event['issue']['body'])
+          assert set(task)=={'access_hash'}
+          assert re.fullmatch('[0-9a-f]{64}',task['access_hash'])
+          with open(os.environ['GITHUB_ENV'],'a') as f:
+              f.write('BLUEPRINT_ACCESS_SHA256='+task['access_hash']+'\n')
+          PY
+      - name: Install free temporary browser
+        run: |
+          python -m pip install --disable-pip-version-check -r blueprint_bridge/requirements.txt
+          python -m playwright install --with-deps chromium
+          curl --fail --location --silent --show-error https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 --output /tmp/cloudflared
+          chmod +x /tmp/cloudflared
+      - name: Start browser and private access gateway
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python -m blueprint_bridge.server > /tmp/blueprint-server.log 2>&1 &
+          browser_pid=$!
+          python -m blueprint_bridge.live_gateway > /tmp/blueprint-gateway.log 2>&1 &
+          gateway_pid=$!
+          echo "BROWSER_PID=$browser_pid" >> "$GITHUB_ENV"
+          echo "GATEWAY_PID=$gateway_pid" >> "$GITHUB_ENV"
+          for n in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:8766/ > /dev/null && curl --fail --silent http://127.0.0.1:8765/status > /dev/null; then
+              echo 'Temporary browser started.'
+              exit 0
+            fi
+            if ! kill -0 "$browser_pid" || ! kill -0 "$gateway_pid"; then
+              echo 'Browser startup failed, without exposing private logs.'
+              exit 1
+            fi
+            sleep 2
+          done
+          echo 'Browser unavailable.'
+          exit 1
+      - name: Open temporary free Cloudflare tunnel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          /tmp/cloudflared tunnel --no-autoupdate --url http://127.0.0.1:8766 > /tmp/blueprint-tunnel.log 2>&1 &
+          echo "TUNNEL_PID=$!" >> "$GITHUB_ENV"
+          url=''
+          for n in $(seq 1 70); do
+            url="$(grep -oE 'https://[a-zA-Z0-9-]+\.trycloudflare\.com' /tmp/blueprint-tunnel.log | head -1 || true)"
+            if [[ -n "$url" ]]; then
+              break
+            fi
+            sleep 2
+          done
+          if [[ -z "$url" ]]; then
+            gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Tunnel failed to start; no login was attempted."
+            exit 1
+          fi
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "Temporary protected browser: $url — use the **private** access link from ChatGPT (contains a secret in its URL fragment). This tunnel expires after the action finishes; never enter passwords into GitHub Issues."
+          echo "TUNNEL_URL=$url" >> "$GITHUB_ENV"
+      - name: Keep free temporary browser online for phone login
+        run: |
+          echo "Private mobile browser online; expiry in 14 minutes."
+          sleep 840
+      - name: Close and report (no session export)
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --repo "${{ github.repository }}" --body "The temporary session has ended. No cookies, passwords or project data were exported."
