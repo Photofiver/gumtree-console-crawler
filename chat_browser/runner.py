@@ -430,16 +430,26 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                         # Use one fixed DOM-only click on an exact, allowlisted
                         # public simulator button. Playwright's locator.click and
                         # dispatch_event both await actionability on WebGL and time out.
-                        activated = page.locator("button").evaluate_all("""(els, label) => {
-                            const norm = value => (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
-                            const target = els.find(el => norm(el.innerText || el.getAttribute('aria-label') || el.textContent) === norm(label));
-                            if (!target) return false;
-                            target.click();
-                            return true;
-                        }""", label)
-                        if not activated:
-                            raise ValueError("Robotics Lab button not found: " + label)
+                        # The workbench is mounted lazily after scrolling into
+                        # view; retry the exact control for up to 8 seconds.
+                        activation_state = "not_found"
+                        for attempt in range(16):
+                            activation_state = page.locator("button").evaluate_all("""(els, label) => {
+                                const norm = value => (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+                                const target = els.find(el =>
+                                    norm(el.innerText || el.getAttribute('aria-label') || el.textContent) === norm(label));
+                                if (!target) return 'not_found';
+                                if (target.disabled || target.getAttribute('aria-disabled') === 'true') return 'disabled';
+                                target.click();
+                                return 'clicked';
+                            }""", label)
+                            if activation_state == "clicked":
+                                break
+                            page.wait_for_timeout(500)
+                        if activation_state != "clicked":
+                            raise ValueError("Robotics Lab button unavailable: " + label + " (" + activation_state + ")")
                         item["control_method"] = "dom_element_click"
+                        item["control_attempts"] = attempt + 1
                         require_scene_host(page.url)
                         item["control_activated"] = label
                     else:
