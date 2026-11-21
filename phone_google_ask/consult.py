@@ -158,7 +158,7 @@ def google_research(data, result, ask):
               "retailer pages. Return one JSON object between standalone lines BEGIN-" + tag +
               " and END-" + tag + ". Keys: draft (revised complete answer), evidence (list of objects "
               "with index (zero based), status met/unknown/failed, finding, source URL, exact quote). "
-              "Never invent prices, quotes or approval. Preserve all requirements. Input: ")
+              "Keep draft under 380 characters. Plain text, no math formatting. Preserve all requirements. Input: ")
     evidence = [{"index": i, **c} for i, c in enumerate(data["checks"])]
     payload = json.dumps(dict(question=data["question"], previous=data["draft"],
                               feedback=result, checks=evidence), ensure_ascii=False)
@@ -178,12 +178,15 @@ def google_research(data, result, ask):
         if not match:
             raise ValueError("No complete structured research response")
         raw = match[1].strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        proposal = json.loads(raw)
+        # Google WebView renders line wraps inside JSON string literals.
+        proposal = json.loads(raw, strict=False)
         if not isinstance(proposal["draft"], str) or not proposal["draft"].strip():
             raise ValueError("Empty revision")
         drafts.append(proposal["draft"].strip())
         for entry in proposal.get("evidence", []):
             i = entry["index"]
+            if isinstance(i, str) and i.isdecimal():
+                i = int(i)
             if type(i) != int or not 0 <= i < len(evidence):
                 raise ValueError("Unknown requirement index")
             for key in ("status", "finding", "source", "quote"):
@@ -191,6 +194,34 @@ def google_research(data, result, ask):
                     updated["checks"][i][key] = entry[key]
     updated["draft"] = "\n".join(drafts)
     return updated
+
+
+def evidence_revision(data, result, read):
+    """Withdraw the disputed recommendation and re-open exact sources after a failed research parse."""
+    checks, facts, gaps = [], [], []
+    for check in data["checks"]:
+        item = dict(check)
+        url, quote = item.get("source"), " ".join(item.get("quote", "").split())
+        observed = False
+        if url and len(quote) >= 8:
+            try:
+                observed = quote in read(url)
+            except (OSError, ValueError, subprocess.SubprocessError):
+                pass
+        if observed:
+            facts.append(url + " — " + quote)
+        if item.get("status") != "failed" or not observed:
+            item["status"] = "unknown"
+        gaps.append(item["requirement"])
+        checks.append(item)
+    if not facts:
+        return None
+    criticism = " ".join(result.get("reason", "").split())
+    draft = ("Wycofuję wcześniejszą rekomendację. W źródłach odczytano: " + " | ".join(facts)
+             + ". Do potwierdzenia dla jednego rozwiązania: " + "; ".join(gaps) + ".")
+    if criticism:
+        draft += " Uwaga recenzenta do sprawdzenia: " + criticism
+    return dict(data, draft=draft, checks=checks)
 
 
 def solve(data, ask, read=source_text, research=google_research):
@@ -206,13 +237,16 @@ def solve(data, ask, read=source_text, research=google_research):
             break
         try:
             revised = research(data, result, ask)
-            if " ".join(revised["draft"].split()).casefold() in seen:
-                result["obstacle"] = "Research repeated a previously reviewed draft"
-                break
-            data = revised
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
-            result["obstacle"] = "Research: " + str(exc)[:400]
+            history[-1]["research_error"] = str(exc)[:400]
+            revised = evidence_revision(data, result, read)
+            if revised is None:
+                result["obstacle"] = "Research: " + str(exc)[:400]
+                break
+        if " ".join(revised["draft"].split()).casefold() in seen:
+            result["obstacle"] = "Research repeated a previously reviewed draft"
             break
+        data = revised
     return dict(result, status=result.get("status","NIEPOTWIERDZONE"),
                 history=history, checks=data["checks"], draft=history[-1]["draft"])
 

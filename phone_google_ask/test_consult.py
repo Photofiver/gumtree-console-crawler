@@ -98,12 +98,13 @@ class ConsultTests(unittest.TestCase):
             tag = re.search(r"BEGIN-([a-f0-9]+)",query)[1]
             packet = json.dumps(dict(draft="Corrected voltage",evidence=[dict(index=0,status="failed",
                 finding="24 V exceeded",source="https://example.org",quote="Rated 25 V")]))
+            packet = packet.replace("Corrected voltage", "Corrected\nvoltage")
             return dict(question=query,page=dict(url="https://www.google.com/search?"+
                         urlencode({"q":query,"udm":"50"}),text="BEGIN-"+tag+"\n"+packet+"\nEND-"+tag))
         revised = google_research(self.data,{"reason":"Check voltage"},research_response)
         self.assertEqual(revised["checks"][0]["status"],"failed")
         self.assertEqual(revised["checks"][0]["requirement"],"Voltage")
-        self.assertEqual(revised["draft"],"Corrected voltage")
+        self.assertEqual(revised["draft"],"Corrected\nvoltage")
 
     def test_timeout_while_fetching_sources(self):
         def inaccessible(url):
@@ -148,3 +149,14 @@ class ConsultTests(unittest.TestCase):
             raise TimeoutError("test transport")
         r=solve(packet,silent)
         self.assertEqual(r["review"],"NIEPOTWIERDZONE")
+
+    def test_bad_research_format_triggers_grounded_revision(self):
+        def broken(data,result,ask):
+            raise ValueError("Bad WebView JSON")
+        def ask(q):
+            return vote(q,"REVISE" if "draft one" in q else "PASS")
+        r=solve(self.data,ask,lambda _:"Rated 20 V",broken)
+        self.assertGreaterEqual(len(r["history"]),2)
+        self.assertIn("research_error",r["history"][0])
+        self.assertIn("Rated 20 V",r["draft"])
+        self.assertEqual(r["status"],"NIEPOTWIERDZONE")
