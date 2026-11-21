@@ -43,7 +43,8 @@ def source_text(url):
             or not re.fullmatch(r"[a-zA-Z0-9.-]+", u.hostname or "")):
         raise ValueError("Unsupported source URL")
     ips = [a[4][0] for a in socket.getaddrinfo(u.hostname, 443, type=socket.SOCK_STREAM)]
-    if not ips or not all(ipaddress.ip_address(ip).is_global for ip in ips):
+    addresses = [ipaddress.ip_address(ip) for ip in ips]
+    if not addresses or not all(ip.is_global and not ip.is_multicast for ip in addresses):
         raise ValueError("Expected public source")
     ip = ips[0] if ":" not in ips[0] else "[" + ips[0] + "]"
     # Pin the checked address, accept only a direct HTTP 200 HTML/text page.
@@ -75,7 +76,7 @@ def evaluate(data, ask, read=source_text):
     question, checks, draft = (data[k] for k in ("question", "checks", "draft"))
     if not question.strip() or not draft.strip() or not isinstance(checks, list) or not checks:
         raise ValueError("Missing question, draft or requirements")
-    blocked, pages = [], {}
+    blocked, pages, excerpts = [], {}, []
     for check in checks:
         requirement = check["requirement"]
         if not requirement.strip():
@@ -89,6 +90,10 @@ def evaluate(data, ask, read=source_text):
         if (check["status"] != "met" or not check.get("finding") or len(quote) < 8
                 or quote not in pages.get(url, "")):
             blocked.append(requirement)
+        else:
+            index = pages[url].index(quote)
+            excerpts.append(dict(requirement=requirement, url=url,
+                                 observed=pages[url][max(0,index-80):index+len(quote)+80]))
     context = "Question: " + question + "\nRequirements: " + " | ".join(c["requirement"] for c in checks)
     payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
     tag = secrets.token_hex(8)
@@ -119,7 +124,29 @@ def evaluate(data, ask, read=source_text):
             return dict(review="NIEPOTWIERDZONE", reason="Brak jednoznacznej oceny części "+str(i),
                         parts=len(chunks), reviewed=i, blocked=blocked)
     # Fragment approvals cannot establish consistency across separate model contexts.
-    solved = not blocked and len(votes) == 1
+    solved = False
+    if not blocked and len(votes) == len(chunks):
+        tag = secrets.token_hex(8)
+        final_prefix = ("Check ALL conditions of the original question against the same proposed solution "
+                       "and the observed page excerpts below. Look for missing conditions, wrong variants, "
+                       "unsupported claims and mixing different products. PASS only when each condition is "
+                       "demonstrated. End with exactly PASS or REVISE followed by a space and " + tag +
+                       " on a separate line.\n")
+        summary = json.dumps(dict(question=question, draft=draft, observed=excerpts), ensure_ascii=False)
+        coverage_parts = list(parts(summary, 2000-len(final_prefix.encode())))
+        for section in coverage_parts:
+            final_query = final_prefix + section
+            try:
+                coverage = decide(dict(query=final_query,tag=tag,draft=draft), ask(final_query))
+            except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
+                coverage = "NIEPOTWIERDZONE"
+            solved = coverage.startswith("SPRAWDZONE ·")
+            if not solved:
+                blocked.append("Kontrola wszystkich warunków: " + coverage)
+                break
+        if len(coverage_parts) > 1:
+            solved = False
+            blocked.append("Dowody oceniono częściami; brak jednej wspólnej oceny całego zestawu")
     return dict(review="SPRAWDZONE", status="POTWIERDZONE" if solved else "NIEPOTWIERDZONE",
                 parts=len(chunks), reviewed=len(votes), blocked=blocked)
 

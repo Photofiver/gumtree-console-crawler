@@ -16,6 +16,9 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Regression checks for consultation state transitions
+        if: startsWith(github.event.issue.title, '[consult]')
+        run: python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
       - name: Prepare question and isolated test
         if: steps.warm.outputs.served != 'true'
         shell: bash
@@ -108,6 +111,7 @@ jobs:
           name: google-ai-ask-result
           path: |
             google-ai-ask-result.json
+            consult-result.json
             google-ai-ask-instrumentation.txt
           if-no-files-found: warn
           retention-days: 7
@@ -125,8 +129,13 @@ jobs:
               const fallback = {issue:issue.number,sha256:crypto.createHash('sha256').update(issue.body).digest('hex'),
                 review:'NIEPOTWIERDZONE',status:'NIEPOTWIERDZONE',reason:'Workflow failed before receiving Google AI result'};
               const result = fs.existsSync('consult-result.json') ? JSON.parse(fs.readFileSync('consult-result.json','utf8')) : fallback;
+              let receipt = {...result,run:context.runId};
+              if (Buffer.byteLength(JSON.stringify(receipt),'utf8') > 57000) {
+                receipt = {issue:result.issue,sha256:result.sha256,run:context.runId,review:result.review,
+                  status:'NIEPOTWIERDZONE',reason:'Full review exceeds comment limit. Read artifact google-ai-ask-result/consult-result.json.'};
+              }
               await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:issue.number,
-                body:'Konsultant/2 '+JSON.stringify({...result,run:context.runId})});
+                body:'Konsultant/2 '+JSON.stringify(receipt)});
               return;
             }
             const existing = await github.rest.issues.listComments({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, per_page: 100});
