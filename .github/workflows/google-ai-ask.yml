@@ -16,9 +16,11 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Regression checks for consultation state transitions
+      - name: Regression checks for consultation and idea exploration
         if: startsWith(github.event.issue.title, '[consult]')
-        run: python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
+        run: |
+          python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
+          python3 -m unittest discover -s phone_google_ask -p test_explore.py -v
       - name: Screen 100 or 1000 source-listed configurations before AI review
         if: startsWith(github.event.issue.title, '[consult]')
         shell: bash
