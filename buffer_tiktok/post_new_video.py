@@ -128,6 +128,23 @@ def ready_video(source):
     commit_changes(str(target.relative_to(ROOT)))
     return target
 
+
+def is_eligible_original_story(meta):
+    """Reject old short/looped footage; accept explicitly labeled one-shot rescue."""
+    seconds = float(meta.get("validation", {}).get("seconds", 0))
+    original_shots = int(meta.get("unique_original_shots", 0))
+    if seconds < MIN_PUBLISH_SECONDS or seconds > 600:
+        return False
+    if original_shots >= 3:
+        return True
+    return (original_shots == 1
+            and meta.get("quota_rescue_slow_motion") is True
+            and meta.get("original_text_to_video") is True
+            and meta.get("no_repeated_or_looped_footage") is True
+            and meta.get("no_audio_verified") is True
+            and 2.8 <= float(meta.get("source_original_video_seconds", 0)) <= 8.0
+            and len(str(meta.get("source_original_sha256", ""))) == 64)
+
 def main():
     key = os.getenv("BUFFER_API_KEY", "").strip()
     channel_id = os.getenv("BUFFER_TIKTOK_CHANNEL_ID", "").strip()
@@ -160,8 +177,8 @@ def main():
             meta = json.loads(sidecar.read_text(encoding="utf-8"))
             seconds = float(meta.get("validation", {}).get("seconds", 0))
             unique_shots = int(meta.get("unique_original_shots", 0))
-            if seconds < MIN_PUBLISH_SECONDS or unique_shots < 3:
-                print("RECOVERY_SKIP_SHORT_OR_SINGLE_SHOT", src.name, seconds)
+            if not is_eligible_original_story(meta):
+                print("RECOVERY_SKIP_UNSAFE_OR_SHORT_VIDEO", src.name, seconds, unique_shots)
                 continue
         except (ValueError, TypeError, OSError):
             continue

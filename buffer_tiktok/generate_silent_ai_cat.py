@@ -403,6 +403,79 @@ def next_due_slot(now: Optional[dt.datetime] = None):
     return None
 
 
+
+def recover_one_fresh_shot_from_quota(source: Path, output: Path, sidecar: Path,
+                                       date_stamp: str, slot: int, prompt: str,
+                                       action: str, look: str, environment: str,
+                                       hook: str, tags: str):
+    """Emergency 9s slow-motion edit of one UNPUBLISHED original generated shot.
+
+    This does not loop footage or relabel a single shot as three shots.
+    Only a validated, silent, freshly staged original can be used.
+    """
+    if not source.is_file() or output.exists():
+        return False
+    try:
+        probe = json.loads(run(["ffprobe", "-v", "error", "-show_streams",
+                                "-show_format", "-of", "json", str(source)], timeout=30).stdout)
+        streams = probe.get("streams", [])
+        videos = [s for s in streams if s.get("codec_type") == "video"]
+        length = float(probe.get("format", {}).get("duration", 0))
+        if (len(videos) != 1 or any(s.get("codec_type") == "audio" for s in streams)
+                or videos[0].get("codec_name") != "h264"
+                or int(videos[0].get("width", 0)) != 720
+                or int(videos[0].get("height", 0)) != 1280
+                or not 2.8 <= length <= 8.0 or source.stat().st_size < 40000):
+            return False
+    except (ValueError, TypeError, KeyError, OSError):
+        return False
+
+    factor = 9.7 / length
+    intermediate = output.with_suffix(".rescue.tmp.mp4")
+    try:
+        # Motion-compensated temporal interpolation, NOT a freeze, replay or loop.
+        # 540px interpolation keeps CPU processing within GitHub Actions runtime.
+        run(["ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+             "-i", str(source), "-an", "-vf",
+             f"scale=540:960,setpts={factor:.6f}*(PTS-STARTPTS),"
+             "minterpolate=fps=25:mi_mode=mci:mc_mode=obmc:me_mode=bidir,"
+             "scale=720:1280",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "22",
+             "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+             str(intermediate)], timeout=180)
+        intermediate.replace(output)
+        report = validate_video(output)
+        sidecar.write_text(json.dumps({
+            "generated_with": ["saved_original_zeroGPU_AI_video", "FFmpeg_motion_interpolation"],
+            "unique_original_shots": 1,
+            "quota_rescue_slow_motion": True,
+            "source_original_video_seconds": round(length, 2),
+            "source_original_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "no_repeated_or_looped_footage": True,
+            "original_text_to_video": True,
+            "no_stock_footage": True,
+            "no_added_text_or_subtitles": True,
+            "no_audio_verified": True,
+            "concept": action,
+            "cat_appearance": look,
+            "environment_style": environment,
+            "caption": (hook.strip() + " " +
+                        CAPTION_ENDINGS[slot_number(date_stamp, slot) % len(CAPTION_ENDINGS)] +
+                        " " + tags + " #AIGenerated").strip(),
+            "prompt": prompt,
+            "utc_day": date_stamp, "scheduled_slot": slot,
+            "validation": report
+        }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print("ORIGINAL_UNPUBLISHED_QUOTA_RESCUE_SUCCESS", str(output),
+              "original_shots=1 slow_motion=True", flush=True)
+        return True
+    except Exception:
+        output.unlink(missing_ok=True)
+        sidecar.unlink(missing_ok=True)
+        raise
+    finally:
+        intermediate.unlink(missing_ok=True)
+
 def generate():
     due = next_due_slot()
     if due is None:
@@ -526,9 +599,22 @@ def generate():
             "video": str(output.relative_to(ROOT)), "metadata": str(sidecar.relative_to(ROOT)),
             "models": models, **report
         }), flush=True)
-    except Exception:
+    except Exception as exc:
         output.unlink(missing_ok=True)
         sidecar.unlink(missing_ok=True)
+        # When all shared free GPU providers hit quota, publish a NEW original
+        # shot as a truthful slow-motion edit rather than pretending it has
+        # three shots, looping footage, or leaving TikTok empty again.
+        if "quota" in str(exc).lower():
+            staged = part_dir / "shot00.mp4"
+            try:
+                if recover_one_fresh_shot_from_quota(
+                    staged, output, sidecar, date_stamp, slot, prompt,
+                    action, look, environment, hook, tags):
+                    return
+            except Exception as rescue_exc:
+                print("ORIGINAL_QUOTA_RESCUE_FAILED:", str(rescue_exc)[:240],
+                      file=sys.stderr, flush=True)
         raise
 
 if __name__ == "__main__":

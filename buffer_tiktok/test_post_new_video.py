@@ -17,6 +17,24 @@ class BufferTiktokSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "short clips"):
                 pub.ready_video(Path("social_videos/old-3-second.mp4"))
 
+    def test_new_single_shot_slow_motion_is_labeled_and_8_seconds(self):
+        good = {
+            "validation": {"seconds": 9.4}, "unique_original_shots": 1,
+            "quota_rescue_slow_motion": True,
+            "original_text_to_video": True,
+            "no_repeated_or_looped_footage": True, "no_audio_verified": True,
+            "source_original_video_seconds": 3.08,
+            "source_original_sha256": "a" * 64,
+        }
+        self.assertTrue(pub.is_eligible_original_story(good))
+        for bad in (
+            dict(good, quota_rescue_slow_motion=False),
+            dict(good, unique_original_shots=0),
+            dict(good, validation={"seconds": 3.08}),
+            dict(good, no_repeated_or_looped_footage=False),
+        ):
+            self.assertFalse(pub.is_eligible_original_story(bad))
+
     def test_connects_only_requested_handle(self):
         def response(key, query, variables=None):
             if "organizations" in query:
