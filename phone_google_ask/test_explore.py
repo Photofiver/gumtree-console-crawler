@@ -58,8 +58,46 @@ class ExploreTests(unittest.TestCase):
                if x["nameplate_w"] <= 200 and x["route"] not in ("other_input",)]
         self.assertTrue(low)
         self.assertTrue(all(x["screen"] in
-            ("fails_modelled_average_energy_even_without_clipping",
-             "needs_external_energy_not_solar_only") for x in low))
+            ("reject_average_energy_shortfall", "excluded_uses_grid")
+            for x in low))
+
+    def test_hard_budget_screen_on_documented_quote(self):
+        sample = sample_data()
+        for entry in sample["candidate_log"]:
+            entry.update(unit_price_gbp=59.49,
+                         retailer="amazon_uk",
+                         price_source="https://www.amazon.co.uk/example")
+        result = screen(sample, 1000)
+        costly = [c for c in result["combinations"] if c["count"] >= 2]
+        self.assertTrue(costly)
+        self.assertTrue(all(c["screen"] == "reject_known_price_over_budget" or
+                            c["screen"] == "excluded_uses_grid" for c in costly))
+        self.assertEqual(result["summary"]["verified_feasible_count"], 0)
+        self.assertEqual(result["summary"]["genuinely_verified_retail_products"], 0)
+
+    def test_voltage_limit_and_unproven_price(self):
+        models = [
+            dict(model="High Voc 500W", source="https://example.org/high",
+                 rated_watts=500, voc_stc_v=25.2, isc_a=4.5),
+            dict(model="Low Voc 500W", source="https://example.org/low",
+                 rated_watts=500, voc_stc_v=20, isc_a=4.5),
+        ]
+        r = screen({"candidate_log": models}, 1000)
+        direct_high = [x for x in r["combinations"] if x["route"] == "direct_panel"
+                       and x["model"] == "High Voc 500W"]
+        self.assertTrue(direct_high)
+        self.assertTrue(all(x["screen"] == "reject_direct_overvoltage" for x in direct_high))
+        direct_low = [x for x in r["combinations"] if x["route"] == "direct_panel"
+                      and x["model"] == "Low Voc 500W"]
+        self.assertTrue(direct_low)
+        self.assertTrue(all(x["screen"] == "unknown_price" for x in direct_low))
+
+    def test_legacy_candidates_never_pass_as_verified(self):
+        r = screen(sample_data(), 1000)
+        self.assertEqual(r["summary"]["verified_feasible_count"], 0)
+        self.assertEqual(r["summary"]["definitely_screened_out"] +
+                         r["summary"]["still_unverified"], 1000)
+        self.assertFalse(any(x["screen"] == "verified" for x in r["combinations"]))
 
     def test_no_external_energy_is_guaranteed(self):
         r = screen(sample_data(), 1000)
