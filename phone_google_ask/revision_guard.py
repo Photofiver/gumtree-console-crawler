@@ -2,11 +2,11 @@
 import json
 import re
 
-PRICE_RE = re.compile(r"(?:£|GBP\\s*)(\\d+(?:[.,]\\d{1,2})?)", re.IGNORECASE)
-BAD_TOPIC = re.compile(r"\\b(?:beton|cement|concrete|wapienny|prawie\\s+za\\s+darmo)\\b", re.I)
-FOREIGN_S700 = re.compile(r"\\b(?:ALLPOWERS\\s+)?(?:R600|S300|S500|S1500|S2000|S3000)\\b", re.I)
+PRICE_RE = re.compile(r"(?:£|GBP\s*)(\d+(?:[.,]\d{1,2})?)", re.IGNORECASE)
+BAD_TOPIC = re.compile(r"\b(?:beton|cement|concrete|wapienny|prawie\s+za\s+darmo)\b", re.I)
+FOREIGN_S700 = re.compile(r"\b(?:ALLPOWERS\s+)?(?:R600|S300|S500|S1500|S2000|S3000)\b", re.I)
 WRONG_VOC = re.compile(
-    r"25[.,]2\\s*V\\s*(?:<|<=|jest\\s+mniejsze\\s+niż|miesci\\s+sie\\s+w|mieści\\s+się\\s+w)\\s*24\\s*V",
+    r"25[.,]2\s*V\s*(?:<|<=|jest\s+mniejsze\s+niż|miesci\s+sie\s+w|mieści\s+się\s+w)\s*24\s*V",
     re.I,
 )
 
@@ -42,7 +42,7 @@ def guarded_patch(data, old, new):
 def tagged_json(page_text, tag):
     """Google AI WebView sometimes wraps JSON strings across multiple lines."""
     decoder = json.JSONDecoder(strict=False)
-    for match in re.finditer(r"\\{", page_text):
+    for match in re.finditer(r"\{", page_text):
         try:
             obj, _ = decoder.raw_decode(page_text[match.start():])
         except (ValueError, TypeError):
@@ -57,9 +57,9 @@ def safe_arithmetic_patch(data):
     """Only repair the explicit 25.2V < 24V test defect; do not invent sources."""
     original = data["draft"]
     variants = [
-        r"25[.,]2\\s*V\\s*(?:<|<=)\\s*24\\s*V",
-        r"25[.,]2\\s*V\\s+jest\\s+mniejsze\\s+niż\\s+24\\s*V",
-        r"25[.,]2\\s*V\\s+mieści\\s+się\\s+w\\s+(?:limicie\\s+)?24\\s*V",
+        r"25[.,]2\s*V\s*(?:<|<=)\s*24\s*V",
+        r"25[.,]2\s*V\s+jest\s+mniejsze\s+niż\s+24\s*V",
+        r"25[.,]2\s*V\s+mieści\s+się\s+w\s+(?:limicie\s+)?24\s*V",
     ]
     for variant in variants:
         m = re.search(variant, original, re.I)
