@@ -87,7 +87,8 @@ public class GoogleAskTest {
                 String unwrapped = new JSONArray("[" + raw.get() + "]").getString(0);
                 JSONObject snapshot = new JSONObject(unwrapped);
                 report.put("page", snapshot);
-                report.put("aiResponseReady", snapshot.optString("text").contains("AI Mode response is ready"));
+                report.put("aiResponseReady", snapshot.optString("text").contains("AI Mode response is ready")
+                        || snapshot.optString("text").contains("Odpowiedź trybu AI jest gotowa"));
             } catch (Exception error) { report.put("parseError", error.toString()); }
             try (FileOutputStream stream = new FileOutputStream(output[0])) {
                 stream.write(report.toString(2).getBytes(StandardCharsets.UTF_8));
