@@ -397,6 +397,55 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                         item["frames"].append(info)
                 elif action == "wait_for":
                     page.locator(selector).first.wait_for(state="visible", timeout=step.get("ms", 10000))
+                elif action in SCENE_ACTIONS:
+                    require_scene_host(page.url)
+                    if action == "scene_inspect":
+                        item["canvases"] = []
+                        canvases = page.locator("canvas")
+                        for index in range(min(canvases.count(), 8)):
+                            rect = canvases.nth(index).bounding_box(timeout=5000)
+                            item["canvases"].append({
+                                "index": index,
+                                "rect": {k: round(rect[k], 1) for k in ("x", "y", "width", "height")} if rect else None,
+                            })
+                        item["controls"] = page.get_by_role("button").all_inner_texts()[:40]
+                        item["viewport"] = page.viewport_size
+                    elif action == "scene_button":
+                        label = step["value"].strip()
+                        target = page.get_by_role("button", name=re.compile("^" + re.escape(label) + "$", re.I))
+                        if target.count() == 0:
+                            target = page.get_by_role("link", name=re.compile("^" + re.escape(label) + "$", re.I))
+                        if target.count() == 0:
+                            raise ValueError("Robotics Lab control not found: " + label)
+                        target.first.click(timeout=8000)
+                        require_scene_host(page.url)
+                        item["control_activated"] = label
+                    else:
+                        index = step.get("canvas_index", 0)
+                        canvas = page.locator("canvas").nth(index)
+                        canvas.scroll_into_view_if_needed(timeout=7000)
+                        rect = canvas.bounding_box(timeout=7000)
+                        if rect is None:
+                            raise ValueError("Canvas is not visible")
+                        viewport = page.viewport_size or {"width": 1280, "height": 800}
+                        x, y = point_in_canvas(rect, step["x"], step["y"], viewport)
+                        if action == "canvas_drag":
+                            to_x, to_y = point_in_canvas(rect, step["to_x"], step["to_y"], viewport)
+                            page.mouse.move(x, y, steps=3)
+                            page.mouse.down()
+                            try:
+                                page.mouse.move(to_x, to_y, steps=18)
+                            finally:
+                                page.mouse.up()
+                            item["pointer"] = {"start": [round(x), round(y)], "end": [round(to_x), round(to_y)], "canvas_index": index}
+                        elif action == "canvas_click":
+                            page.mouse.click(x, y)
+                            item["pointer"] = {"clicked": [round(x), round(y)], "canvas_index": index}
+                        else:
+                            page.mouse.move(x, y, steps=5)
+                            item["pointer"] = {"hovered": [round(x), round(y)], "canvas_index": index}
+                        item["event_dispatched"] = True
+                        item["result_verified"] = False
                 elif action == "scroll":
                     page.mouse.wheel(0, step.get("px", 650))
                     page.wait_for_timeout(250)
