@@ -63,8 +63,11 @@ def evaluate(event, read=fetch):
     title = "[consult] " + tag
     stamp = Path(tempfile.gettempdir()) / ("konsultant-" + str(os.getuid()) + "-" + tag)
 
-    instruction = ("Utwórz issue o tytule " + title + ". Użyj protokołu 1.7.1 z SKILL.md. "
-                   "Odbierz końcowy wynik, sprawdź dowody i wymagania. Podaj link do issue.")
+    instruction = ("Dla KAŻDEJ wiadomości, gdy wtyczka jest używana, utwórz issue o tytule " + title +
+                   " zgodnie z protokołem 1.8.3 z SKILL.md. Wyślij szkic do Google AI, "
+                   "pobierz faktyczny werdykt oraz wyślij KAŻDĄ poprawioną wersję do nowej recenzji Google AI. "
+                   "Bez faktycznej odpowiedzi Google AI nigdy nie pisz POTWIERDZONE: "
+                   "zgłoś NIEPOTWIERDZONE z linkiem do issue. Nie pomijaj recenzji.")
     if event.get("hook_event_name") == "UserPromptSubmit":
         try:
             with stamp.open("x") as handle:
