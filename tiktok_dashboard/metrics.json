@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-21T16:14:50.561344Z",
-  "followers": 4,
-  "followers_checked_at_utc": "2026-11-21T16:14:50.561344Z",
+  "generated_at_utc": "2026-11-21T21:02:31.872079Z",
+  "followers": 5,
+  "followers_checked_at_utc": "2026-11-21T21:02:31.872079Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -68,15 +68,34 @@
     {
       "utc": "2026-11-21T15:23:50.381649Z",
       "followers": 4
+    },
+    {
+      "utc": "2026-11-21T21:02:31.872079Z",
+      "followers": 5
     }
   ],
-  "posted_confirmed": 21,
+  "posted_confirmed": 22,
   "posted_24h": 2,
-  "pending": 1,
+  "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-21T16:14:50.561344Z",
+  "posting_status_checked_at_utc": "2026-11-21T21:02:31.872079Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b01c3618bd84d5966004744",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7710658924940184864",
+      "sent_at_utc": "2026-11-21T16:15:36.838Z",
+      "concept": "new ai cat 20261121 s00 making coffee",
+      "engagement": {
+        "likes": 2,
+        "comments": 0,
+        "shares": 0,
+        "views": 162,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-21T21:02:31.872079Z"
+    },
     {
       "id": "6b01b6ec8bd84d5966faa2d7",
       "status": "sent",
@@ -84,13 +103,13 @@
       "sent_at_utc": "2026-11-21T15:23:00.220Z",
       "concept": "new ai cat 20261120 s05 doing yoga",
       "engagement": {
-        "likes": 1,
+        "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 80,
+        "views": 228,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T16:14:50.561344Z"
+      "engagement_checked_at_utc": "2026-11-21T21:02:31.872079Z"
     },
     {
       "id": "6b007d38c9797a176531220c",
@@ -102,10 +121,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 214,
+        "views": 215,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T16:14:50.561344Z"
+      "engagement_checked_at_utc": "2026-11-21T21:02:31.872079Z"
     },
     {
       "id": "6aff316d7218d2f8fc1e6016",
@@ -117,10 +136,10 @@
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 599,
+        "views": 601,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T16:14:50.561344Z"
+      "engagement_checked_at_utc": "2026-11-21T21:02:31.872079Z"
     },
     {
       "id": "6afea6dbb7fe0c41dda6bdf8",
@@ -132,10 +151,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 603,
+        "views": 604,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T16:14:50.561344Z"
+      "engagement_checked_at_utc": "2026-11-21T21:02:31.872079Z"
     },
     {
       "id": "6afcd7b7b1f02ae62298907d",
@@ -391,15 +410,6 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
-    },
-    {
-      "id": "6b01c3618bd84d5966004744",
-      "status": "sending",
-      "url": null,
-      "sent_at_utc": null,
-      "concept": "new ai cat 20261121 s00 making coffee",
-      "engagement": null,
-      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -409,14 +419,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 4,
+    "likes": 7,
     "comments": 0,
     "shares": 0,
-    "views": 1498,
+    "views": 1810,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-21T16:14:50.561344Z",
+    "last_checked_at_utc": "2026-11-21T21:02:31.872079Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
