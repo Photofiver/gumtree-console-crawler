@@ -526,15 +526,28 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                 return {"ok": True, "auth_status": "signed_in",
                         "project_status": "submission_attempted" if blueprint_mode else "not_requested",
                         "saved_confirmed": False}
+            extraction_errors = []
             title = page.title()
-            text = page.locator("body").inner_text(timeout=12000)[:MAX_TEXT]
-            links = page.locator("a[href]").evaluate_all("els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))")
+            try:
+                text = page.locator("body").inner_text(timeout=4000)[:MAX_TEXT]
+            except Exception as exc:
+                extraction_errors.append("body: " + type(exc).__name__)
+                try:
+                    text = (page.evaluate("() => document.body ? document.body.innerText : ''") or "")[:MAX_TEXT]
+                except Exception as retry_exc:
+                    extraction_errors.append("body_fallback: " + type(retry_exc).__name__)
+                    text = ""
+            try:
+                links = page.locator("a[href]").evaluate_all("els => els.slice(0, 40).map(x => ({text: (x.innerText || '').trim().slice(0, 100), url: x.href}))")
+            except Exception as exc:
+                extraction_errors.append("links: " + type(exc).__name__)
+                links = []
             final_url = page.url
             issue = classify_page_failure(title, final_url, text)
             if issue:
                 return {"ok": False, "error": issue, "title": title,
                         "url": final_url, "text": text[:2000], "actions": action_results}
-            return {"ok": True, "title": title, "url": final_url, "text": text, "links": links, "actions": action_results, "screenshots": screenshots}
+            return {"ok": True, "title": title, "url": final_url, "text": text, "links": links, "actions": action_results, "screenshots": screenshots, "extraction_errors": extraction_errors}
         finally:
             context.close()
             browser.close()
