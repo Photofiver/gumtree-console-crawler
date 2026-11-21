@@ -27,6 +27,10 @@ def guarded_patch(data, old, new):
     patched = original.replace(old, new, 1)
     if patched == original:
         raise ValueError("No change in patched draft")
+    if "S700" in data.get("question", "").upper():
+        for token in ("S700", "606", "48", "Amazon", "Argos", "Belfa"):
+            if token.casefold() in original.casefold() and token.casefold() not in patched.casefold():
+                raise ValueError("Correction dropped original constraint: " + token)
     if "S700" in data["question"].upper():
         if FOREIGN_S700.search(patched) and not FOREIGN_S700.search(original):
             raise ValueError("Patch changed or introduced a different power station")
@@ -82,6 +86,10 @@ def validate_revision(before, after):
         if revised.get("status") == "met" and original.get("status") != "met":
             raise ValueError("AI cannot independently promote missing evidence to verified")
     previous, candidate = before["draft"], after["draft"]
+    if "S700" in before.get("question", "").upper():
+        for token in ("S700", "606", "48", "Amazon", "Argos", "Belfa"):
+            if token.casefold() in previous.casefold() and token.casefold() not in candidate.casefold():
+                raise ValueError("Correction dropped original constraint: " + token)
     if candidate == previous or not candidate.strip():
         raise ValueError("No valid change")
     if "S700" in before.get("question", "").upper():
