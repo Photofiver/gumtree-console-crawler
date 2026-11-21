@@ -99,6 +99,9 @@ def ask_emulator(question):
         data = json.loads(Path(f.name).read_text())
     if data.get("question") != question:
         raise RuntimeError("Mismatched Google AI response question")
+    page = data.get("page") or {}
+    if not str(page.get("url", "")).startswith("https://www.google.com/search?") or "net::ERR_" in str(page.get("text", "")):
+        raise RuntimeError("Google AI webpage did not load (Android DNS/network error)")
     print("Android answer read in", elapsed, "seconds", flush=True)
     return data
 
@@ -107,6 +110,8 @@ def format_result(result, req):
     if req is not None:
         return "Google AI: " + review.decide(req, result)
     page = result.get("page") or {}
+    if not result.get("aiResponseReady"):
+        return "Google AI: NIEPOTWIERDZONE\\n\\nGoogle AI response not ready or unavailable.".replace("\\n","\n")
     return (
         "Google AI Mode answer (unverified, may contain mistakes):\n\n"
         + "QUESTION: " + str(result.get("question", ""))
@@ -125,7 +130,15 @@ def handle(issue):
         question, req = format_question(issue)
         if not question:
             raise ValueError("Question body is empty")
-        answer = ask_emulator(question)
+        for attempt in range(2):
+            try:
+                answer = ask_emulator(question)
+                break
+            except RuntimeError:
+                if attempt == 1:
+                    raise
+                print("Warm Android answer failed, retrying once", flush=True)
+                time.sleep(5)
         text = format_result(answer, req)
     except Exception as exc:
         text = "Google AI: NIEPOTWIERDZONE\n\nWarm browser error: " + type(exc).__name__ + ": " + str(exc)[:700]
