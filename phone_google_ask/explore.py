@@ -22,7 +22,7 @@ CONNECTIONS = {
     "market_comparison": ("panel_cable_bundle", "regulated_bundle"),
 }
 MIN_WATTS_FOR_AVERAGE = 606 / (169.35 / 100 * 0.85)
-MAX_BUDGET_GBP = 100.0
+DEFAULT_LEGACY_BUDGET_GBP = 100.0
 MAX_SOLAR_VOC_V = 24.0
 MAX_SOLAR_INPUT_A = 5.0
 
@@ -31,6 +31,30 @@ def positive_number(value):
     if type(value) not in (int, float) or not 0 < value < 1_000_000:
         return None
     return float(value)
+
+
+def effective_budget(data):
+    """Honor the newest user budget instead of hardcoding the legacy GBP100."""
+    if "budget_gbp" in data:
+        value = data["budget_gbp"]
+        if value is None or (isinstance(value, str) and
+                             value.casefold() in ("unlimited", "no_limit", "none")):
+            return None
+        limit = positive_number(value)
+        if limit is None:
+            raise ValueError("budget_gbp must be a positive number or null")
+        return limit
+    prompt = str(data.get("question", "")) + " " + str(data.get("requirements", ""))
+    lowered = prompt.casefold()
+    uncapped = ("nie ograniczaj budżetu", "nie ograniczaj budzetu",
+                "bez górnego budżetu", "bez gornego budzetu", "bez limitu budżetu",
+                "bez limitu budzetu", "dowolny racjonalny budżet",
+                "dowolny racjonalny budzet", "może być więcej", "moze byc wiecej",
+                "no budget limit", "no budget cap", "not limited to £100",
+                "unlimited budget")
+    if any(term in lowered for term in uncapped):
+        return None
+    return DEFAULT_LEGACY_BUDGET_GBP
 
 
 def cold_voc(model):
@@ -54,6 +78,7 @@ def screen(data, target):
     """Quickly evaluate 100 or 1000 distinct *configurations*, not listings."""
     if target not in (100, 1000):
         raise ValueError("idea_target must be exactly 100 or 1000")
+    budget_gbp = effective_budget(data)
     catalog = []
     for entry in data.get("candidate_log", []):
         if not isinstance(entry, dict):
@@ -136,9 +161,9 @@ def screen(data, target):
         if wiring == "solar_plus_grid":
             status, why = ("excluded_uses_grid",
                            "Uses grid power, not a solar-only answer.")
-        elif lower_cost is not None and lower_cost > MAX_BUDGET_GBP:
+        elif budget_gbp is not None and lower_cost is not None and lower_cost > budget_gbp:
             status, why = ("reject_known_price_over_budget",
-                           "Quoted panel subtotal alone exceeds GBP100; verify quote before purchase.")
+                           "Quoted basket lower bound exceeds stated GBP budget; verify quote before purchase.")
         elif series and voc_per_panel and voc_per_panel * quantity > MAX_SOLAR_VOC_V:
             status, why = ("reject_direct_overvoltage",
                            "Series open-circuit voltage exceeds 24V without regulation.")
@@ -159,7 +184,7 @@ def screen(data, target):
         elif route == "buffer_or_hybrid":
             status, why = ("unknown_buffer_energy", "Buffer does not create energy; extra components unverified.")
         elif lower_cost is None:
-            status, why = ("unknown_price", "No sourced per-unit price; cannot establish GBP100 budget.")
+            status, why = ("unknown_price", "No sourced per-unit price; complete cost remains unknown.")
         elif candidate["retailer"] not in ("amazon_uk", "argos"):
             status, why = ("unknown_retailer", "Quote is not verified to be Amazon UK or Argos.")
         elif direct and (not voc_per_panel or not candidate["isc_a"]):
@@ -191,6 +216,7 @@ def screen(data, target):
     unknown = len(picked) - rejected
     summary = dict(
         mode="COMPUTATIONAL_PRE_SCREEN_ONLY",
+        budget_gbp=budget_gbp,
         requested=target, generated=len(pool), screened=len(picked),
         catalog_models=len(catalog), genuinely_verified_retail_products=0,
         google_ai_deep_reviews=0, by_route=route_counts, by_status=status_counts,
