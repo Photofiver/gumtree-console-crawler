@@ -225,6 +225,52 @@ class ConsultTests(unittest.TestCase):
         self.assertEqual(r["draft"], "draft one")
         self.assertEqual(r["status"], "NIEPOTWIERDZONE")
 
+    def test_google_must_recheck_every_revision(self):
+        # A local patch is not confirmation: every revised draft must trigger a
+        # separate Google AI query with the amended text.
+        packet = dict(question="Charge existing ALLPOWERS S700.",
+                      draft="25,2 V mieści się w 24 V",
+                      checks=[dict(requirement="Voltage", status="met",
+                                   finding="Limit 24 V",
+                                   source="https://example.org/voltage",
+                                   quote="The maximum rated input is 24 V")])
+        calls = []
+        def google(query):
+            calls.append(query)
+            return vote(query, "REVISE" if "mieści się" in query else "PASS")
+        def patch(data, result, ask):
+            self.assertEqual(result["review"], "DO POPRAWY")
+            return dict(data, draft="25,2 V przekracza limit 24 V")
+        receipt = solve(packet, google, lambda _:"The maximum rated input is 24 V", patch)
+        self.assertEqual(receipt["status"], "POTWIERDZONE")
+        self.assertEqual(len(receipt["history"]), 2)
+        self.assertTrue(receipt["history"][1]["correction_rechecked_by_google"])
+        self.assertEqual(receipt["google_ai_edits_rechecked"], 1)
+        self.assertTrue(any("25,2 V przekracza" in q for q in calls))
+        self.assertEqual(receipt["google_ai_responses_received"], len(calls))
+        self.assertEqual(receipt["google_ai_queries_sent"], len(calls))
+
+    def test_no_google_verdict_after_patch_discards_the_patch(self):
+        packet = dict(question="Charge ALLPOWERS S700.",
+                      draft="25,2 V mieści się w 24 V",
+                      checks=[dict(requirement="Voltage", status="unknown")])
+        calls = []
+        def google(query):
+            calls.append(query)
+            if "przekracza limit" in query:
+                raise TimeoutError("Google AI unavailable")
+            return vote(query, "REVISE")
+        def patch(data, result, ask):
+            return dict(data, draft="25,2 V przekracza limit 24 V")
+        receipt = solve(packet, google, lambda _: "", patch)
+        self.assertEqual(receipt["review"], "NIEPOTWIERDZONE")
+        self.assertEqual(receipt["status"], "NIEPOTWIERDZONE")
+        self.assertEqual(receipt["draft"], packet["draft"])
+        self.assertEqual(receipt["google_ai_edits_rechecked"], 1)
+        self.assertEqual(receipt["history"][1]["correction_status"], "BLOCKED_NO_GOOGLE_VERDICT")
+        self.assertGreaterEqual(receipt["google_ai_queries_sent"], 3)
+        self.assertGreaterEqual(len(calls), 3)
+
     def test_stop_hook_waits_and_routes_rejection_to_next_round(self):
         from unittest.mock import patch
         import hashlib
