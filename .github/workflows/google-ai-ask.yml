@@ -1,4 +1,5 @@
 name: Google AI Mode ask (isolated)
+run-name: "Google AI issue #${{ github.event.issue.number }}"
 on:
   issues:
     types: [opened]
@@ -10,9 +11,9 @@ permissions:
 
 jobs:
   ask:
-    if: ${{ startsWith(github.event.issue.title, '[google-ask]') && github.event.issue.user.login == github.repository_owner }}
+    if: ${{ (startsWith(github.event.issue.title, '[google-ask]') || startsWith(github.event.issue.title, '[consult]')) && github.event.issue.user.login == github.repository_owner }}
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Prepare question and isolated test
@@ -20,6 +21,7 @@ jobs:
         shell: bash
         run: |
           cp phone_google_ask/GoogleAskTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/GoogleAskTest.java
+          if jq -e '.issue.title | startswith("[consult]")' "$GITHUB_EVENT_PATH" >/dev/null; then exit 0; fi
           if jq -e '.issue.title | startswith("[google-ask] [review]")' "$GITHUB_EVENT_PATH" >/dev/null; then
             python3 phone_google_ask/review.py prepare
             exit 0
@@ -28,6 +30,7 @@ jobs:
           test -n "$QUESTION_B64"
           echo "QUESTION_B64=$QUESTION_B64" >> "$GITHUB_ENV"
       - name: Prefer already running Google AI warm worker
+        if: ${{ !startsWith(github.event.issue.title, '[consult]') }}
         id: warm
         uses: actions/github-script@v7
         with:
@@ -97,10 +100,7 @@ jobs:
           script: |
             adb install -r android_browser/app/build/outputs/apk/debug/app-debug.apk
             adb install -r android_browser/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            timeout -k 5s 125s adb shell am instrument -w -r -e q_b64 "$QUESTION_B64" -e class com.photofiver.phonebrowser.GoogleAskTest com.photofiver.phonebrowser.test/androidx.test.runner.AndroidJUnitRunner | tee google-ai-ask-instrumentation.txt
-            grep -q 'OK (1 test)' google-ai-ask-instrumentation.txt
-            adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/google-ai-ask-result.json google-ai-ask-result.json
-            cat google-ai-ask-result.json
+            if jq -e '.issue.title | startswith("[consult]")' "$GITHUB_EVENT_PATH" >/dev/null; then python3 phone_google_ask/consult.py; else bash phone_google_ask/cold_ask.sh; fi
       - name: Upload Google AI answer
         if: always() && steps.warm.outputs.served != 'true'
         uses: actions/upload-artifact@v4
@@ -118,6 +118,17 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            if(context.payload.issue.title.startsWith('[consult]')) {
+              const fs = require('fs');
+              const crypto = require('crypto');
+              const issue = context.payload.issue;
+              const fallback = {issue:issue.number,sha256:crypto.createHash('sha256').update(issue.body).digest('hex'),
+                review:'NIEPOTWIERDZONE',status:'NIEPOTWIERDZONE',reason:'Workflow failed before receiving Google AI result'};
+              const result = fs.existsSync('consult-result.json') ? JSON.parse(fs.readFileSync('consult-result.json','utf8')) : fallback;
+              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:issue.number,
+                body:'Konsultant/2 '+JSON.stringify({...result,run:context.runId})});
+              return;
+            }
             const existing = await github.rest.issues.listComments({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, per_page: 100});
             if(existing.data.some(c => c.user?.login === 'github-actions[bot]' && (c.body?.startsWith('Google AI: SPRAWDZONE') || c.body?.startsWith('Google AI: DO POPRAWY') || (c.body?.startsWith('Google AI Mode answer') && /AI RESPONSE READY: (True|true)/.test(c.body))))) {
               core.info('Already answered by warm Android session; do not post duplicate result.');

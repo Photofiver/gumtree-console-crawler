@@ -19,7 +19,7 @@ from urllib.request import Request, urlopen
 import review
 
 REPO = os.environ["GITHUB_REPOSITORY"]
-TOKEN = os.environ["GITHUB_TOKEN"]
+TOKEN = os.environ.get("GITHUB_TOKEN")
 OWNER = REPO.split("/", 1)[0]
 ROOT = "https://api.github.com/repos/" + REPO
 APP_FILES = "/sdcard/Android/data/com.photofiver.phonebrowser/files/"
