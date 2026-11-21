@@ -357,3 +357,55 @@ class ConsultTests(unittest.TestCase):
                 title=title, review="SPRAWDZONE", status="POTWIERDZONE",
                 draft="test", google_ai_responses_received=0)):
             self.assertEqual(waiter.evaluate(event)["decision"], "block")
+
+
+    def test_overlong_google_patch_reduces_to_one_safe_exact_change(self):
+        from revision_guard import focused_patch
+        original = ("S700 606 Wh Belfast Amazon Argos 48 h. " +
+                    "These details remain explicitly uncertain. " * 20 +
+                    "Adapter polarity is confirmed without testing.")
+        revised = original.replace("Adapter polarity is confirmed without testing.",
+                                   "Adapter polarity remains unverified.")
+        self.assertGreater(len(original), 480)
+        packet = dict(self.data, draft=original)
+        self.assertEqual(focused_patch(packet, original, revised), revised)
+        with self.assertRaises(ValueError):
+            focused_patch(packet, original, revised + " 100 GBP")
+
+    def test_bare_revise_is_retried_but_never_automatically_patched(self):
+        calls = []
+        def ask(q):
+            calls.append(q)
+            page = vote(q, "REVISE")
+            page["page"]["text"] = page["page"]["text"].splitlines()[-1]
+            return page
+        result = solve(self.data, ask, lambda _: "Rated 20 V")
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(result["review"], "DO POPRAWY")
+        self.assertEqual(result["history"][0]["correction_status"], "BLOCKED_NO_REASON")
+        self.assertEqual(result["draft"], self.data["draft"])
+        self.assertEqual(result["google_ai_edits_rechecked"], 0)
+
+    def test_research_can_patch_a_late_claim_in_long_draft(self):
+        from consult import google_research
+        from urllib.parse import urlencode
+        import json
+        original = ("S700 606 Wh 48 h Amazon Argos Belfast. " +
+                    "Photovoltaic evidence remains uncertain. " * 30 +
+                    "Adapter polarity is confirmed without testing.")
+        data = dict(self.data, draft=original)
+        calls = []
+        def ask(q):
+            calls.append(q)
+            payload = json.loads(q[q.rfind('{"tag":'):])
+            self.assertIn("Adapter polarity", payload["draft_excerpt"])
+            text = json.dumps(dict(tag=payload["tag"],
+                old="Adapter polarity is confirmed without testing.",
+                new="Adapter polarity remains unverified."))
+            return dict(question=q, page=dict(url="https://www.google.com/search?" +
+                        urlencode(dict(q=q, udm="50")), text=text))
+        patched = google_research(data, dict(reason="Adapter polarity was not verified"), ask)
+        self.assertIn("Adapter polarity remains unverified.", patched["draft"])
+        self.assertEqual(patched["checks"], data["checks"])
+        self.assertEqual(len(calls), 1)
+
