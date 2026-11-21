@@ -117,7 +117,7 @@ jobs:
         with:
           script: |
             const existing = await github.rest.issues.listComments({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, per_page: 100});
-            if(existing.data.some(c => c.user && c.user.login === 'github-actions[bot]')) {
+            if(existing.data.some(c => c.user && c.user.login === 'github-actions[bot]' && !(c.body || '').startsWith('Google AI: NIEPOTWIERDZONE') && !(c.body || '').startsWith('Google AI Mode did not return'))) {
               core.info('Already answered by warm Android session; do not post duplicate result.');
               return;
             }
