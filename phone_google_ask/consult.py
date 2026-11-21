@@ -88,64 +88,51 @@ def evaluate(data, ask, read=source_text):
                 pages[url] = read(url)
             except (OSError, ValueError, subprocess.SubprocessError):
                 pages[url] = ""
-        # Fetch and match the actual source BEFORE calling Google. A claimed
-        # citation or check status alone is not evidence of an opened URL.
-        matched = bool(url and len(quote) >= 8 and quote in pages.get(url, ""))
-        if check["status"] != "met" or not check.get("finding") or not matched:
+        if (check["status"] != "met" or not check.get("finding") or len(quote) < 8
+                or quote not in pages.get(url, "")):
             blocked.append(requirement)
-        if matched:
+        else:
             index = pages[url].index(quote)
-            excerpts.append(dict(requirement=requirement, url=url, quote=quote,
-                                 observed=pages[url][max(0, index-65):index+len(quote)+65]))
-
-    # The previous reviewer only saw user-supplied quotes, so it repeatedly
-    # hallucinated "file not found" even though the engine had opened the file.
-    # Send independently fetched excerpts in the FIRST Google request.
-    claims = []
-    for c in checks:
-        url = c.get("source")
-        quote = " ".join(c.get("quote", "").split())
-        verified = bool(url and len(quote) >= 8 and quote in pages.get(url, ""))
-        claim = dict(requirement=c["requirement"], status=c.get("status", "unknown"),
-                     finding=c.get("finding", ""), source=url, quote=quote,
-                     source_quote_verified=verified)
-        if verified:
-            index = pages[url].index(quote)
-            claim["observed_from_source"] = pages[url][
-                max(0, index-55):index+len(quote)+55]
-        claims.append(claim)
+            excerpts.append(dict(requirement=requirement, url=url,
+                                 observed=pages[url][max(0,index-80):index+len(quote)+80]))
+    context = "Question: " + question + "\nRequirements: " + " | ".join(c["requirement"] for c in checks)
+    # Full search_log/candidate_log/feasibility remain in the GitHub issue and
+    # exploration artifact. Feeding that entire packet to Google split an ordinary
+    # S700 draft into 7 arbitrary JSON fragments, losing all useful context.
+    claims = [dict(requirement=c["requirement"], status=c.get("status", "unknown"),
+                   finding=c.get("finding", ""), quote=c.get("quote", ""))
+              for c in checks]
     payload = json.dumps(dict(question=question, draft=draft, checks=claims),
                          ensure_ascii=False, separators=(",", ":"))
     tag = secrets.token_hex(8)
-    prefix = (
-        "Audit this complete factual draft and the supplied evidence. "
-        "source_quote_verified=true means the exact quote was independently "
-        "fetched from source URL and matched by our source reader, not merely "
-        "asserted by the author. Do not invent 'file missing' when source evidence "
-        "is present. REVISE for false claims or unsupported conclusions; "
-        "PASS only if the entire supplied claim is supported. "
-        "End with ONE separate line: REVISE " + tag + " OR PASS " + tag + ".\n"
-    )
-    chunks = list(parts(payload, 2000 - len(prefix.encode()) - 45))
+    prefix = ("Audit this complete draft against the stated requirements. "
+              "REVISE if any claim is false or lacks evidence. Give a specific reason. "
+              "End with ONE exact separate line: REVISE " + tag +
+              " OR PASS " + tag + ".\n")
+    # Repeat context if it fits. Otherwise the entire original remains in the fragments.
+    if len(context.encode()) <= 800:
+        prefix += context + "\n"
+    chunks = list(parts(payload, 2000 - len(prefix.encode()) - 40))
     votes = []
     for i, chunk in enumerate(chunks, 1):
         query = prefix + f"Part {i}/{len(chunks)}\n" + chunk
         answer = "NIEPOTWIERDZONE"
+        # A second, independently phrased prompt helps when Google's HTML answer
+        # omitted the exact decision line. Do not fabricate a verdict.
         for attempt in range(2):
             if attempt == 0:
                 probe = query
             else:
-                retry_prefix = (
-                    "Check this claim against the source_quote_verified fields "
-                    "and observed_from_source evidence. Do not ignore verified "
-                    "source excerpts. End with exactly ONE line: REVISE " + tag +
-                    " OR PASS " + tag + ".\n"
-                )
+                retry_prefix = ("Check this claim for factual errors and missing proof. "
+                                "End with exactly ONE line: REVISE " + tag +
+                                " OR PASS " + tag + ".\n")
                 probe = retry_prefix + f"Part {i}/{len(chunks)}\n" + chunk
             if len(probe.encode()) > 2000:
+                # Never silently truncate evidence to obtain a convenient PASS.
                 continue
+            req = dict(query=probe, tag=tag, draft=draft)
             try:
-                answer = decide(dict(query=probe, tag=tag, draft=draft), ask(probe))
+                answer = decide(req, ask(probe))
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
                 continue
             if answer != "NIEPOTWIERDZONE":
@@ -155,42 +142,33 @@ def evaluate(data, ask, read=source_text):
             return dict(review="DO POPRAWY", reason=answer.partition("\n\n")[2],
                         parts=len(chunks), reviewed=i, blocked=blocked)
         if not answer.startswith("SPRAWDZONE ·"):
-            return dict(review="NIEPOTWIERDZONE",
-                        reason="Google AI did not return an authenticated PASS/REVISE marker for part " +
-                               str(i) + " after two distinct prompts",
+            return dict(review="NIEPOTWIERDZONE", reason="Google AI did not return an authenticated PASS/REVISE marker for part "+str(i)+" after two distinct prompts",
                         parts=len(chunks), reviewed=i, blocked=blocked)
-
-    # A one-part review already covers the complete draft, every check and the
-    # fetched citations. Repeating an evidence-free final Google prompt caused
-    # false NIEPOTWIERDZONE on correct, source-verified one-part reviews.
-    solved = not blocked and len(chunks) == 1 and len(votes) == 1
-    if not blocked and len(chunks) > 1:
-        # Multiple independent PASS votes cannot establish consistency across
-        # fragmented contexts: keep an explicit independent combined audit.
+    # Fragment approvals cannot establish consistency across separate model contexts.
+    solved = False
+    if not blocked and len(votes) == len(chunks):
         tag = secrets.token_hex(8)
-        final_prefix = (
-            "Check ALL conditions against the SAME draft and the independently "
-            "retrieved source excerpts. PASS only if every condition is proved. "
-            "End with exactly PASS or REVISE followed by a space and " + tag +
-            " on a separate line.\n"
-        )
-        summary = json.dumps(dict(question=question, draft=draft,
-                                  observed=excerpts), ensure_ascii=False)
-        coverage_parts = list(parts(summary, 2000-len(final_prefix.encode())-30))
-        if len(coverage_parts) == 1:
-            final_query = final_prefix + coverage_parts[0]
+        final_prefix = ("Check ALL conditions of the original question against the same proposed solution "
+                       "and the observed page excerpts below. Look for missing conditions, wrong variants, "
+                       "unsupported claims and mixing different products. PASS only when each condition is "
+                       "demonstrated. End with exactly PASS or REVISE followed by a space and " + tag +
+                       " on a separate line.\n")
+        summary = json.dumps(dict(question=question, draft=draft, observed=excerpts), ensure_ascii=False)
+        coverage_parts = list(parts(summary, 2000-len(final_prefix.encode())))
+        for section in coverage_parts:
+            final_query = final_prefix + section
             try:
-                coverage = decide(dict(query=final_query, tag=tag, draft=draft),
-                                  ask(final_query))
+                coverage = decide(dict(query=final_query,tag=tag,draft=draft), ask(final_query))
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
                 coverage = "NIEPOTWIERDZONE"
             solved = coverage.startswith("SPRAWDZONE ·")
             if not solved:
                 blocked.append("Kontrola wszystkich warunków: " + coverage)
-        else:
-            blocked.append("Dowody nie mieszczą się w jednej wspólnej recenzji")
-    return dict(review="SPRAWDZONE",
-                status="POTWIERDZONE" if solved else "NIEPOTWIERDZONE",
+                break
+        if len(coverage_parts) > 1:
+            solved = False
+            blocked.append("Dowody oceniono częściami; brak jednej wspólnej oceny całego zestawu")
+    return dict(review="SPRAWDZONE", status="POTWIERDZONE" if solved else "NIEPOTWIERDZONE",
                 parts=len(chunks), reviewed=len(votes), blocked=blocked)
 
 
@@ -316,11 +294,8 @@ def solve(data, ask, read=source_text, research=google_research):
                 data = dict(data, draft=last_reviewed)
                 break
         last_reviewed = data["draft"]
-        # A Google PASS ends text corrections even when evidence is incomplete.
-        # Missing/failed checks cannot be fixed by rewriting a passed answer:
-        # they require independent new evidence, not another speculative patch.
-        if (result["review"] in ("SPRAWDZONE", "NIEPOTWIERDZONE")
-                or result.get("status") == "POTWIERDZONE"
+        if (result.get("status") == "POTWIERDZONE"
+                or result["review"] == "NIEPOTWIERDZONE"
                 or attempt == 3):
             break
         try:
