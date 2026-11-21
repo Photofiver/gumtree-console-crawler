@@ -415,6 +415,15 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                                 "rect": {k: round(rect[k], 1) for k in ("x", "y", "width", "height")},
                             })
                         item["controls"] = page.get_by_role("button").evaluate_all("els => els.slice(0, 40).map(x => (x.innerText || x.getAttribute(\'aria-label\') || x.title || \'\').trim().slice(0, 100))")
+                        item["workbench_controls"] = page.locator("#lab button, #lab [role='button'], #lab [data-action]").evaluate_all("""els => els.slice(0, 70).map(el => ({
+                            tag: el.tagName.toLowerCase(),
+                            text: (el.innerText || el.textContent || '').trim().slice(0, 100),
+                            aria: el.getAttribute('aria-label') || '',
+                            title: el.getAttribute('title') || '',
+                            id: el.id || '',
+                            action: el.getAttribute('data-action') || '',
+                            disabled: el.disabled === true,
+                        }))""")
                         item["viewport"] = page.viewport_size
                     elif action == "scene_button":
                         label = step["value"].strip()
