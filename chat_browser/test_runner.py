@@ -220,10 +220,11 @@ class RunnerTests(unittest.TestCase):
                     {"action": "canvas_click", "x": 0.5, "y": 0.5, "canvas_index": 0},
                     {"action": "canvas_drag", "x": 0.2, "y": 0.2, "to_x": 0.8, "to_y": 0.8},
                     {"action": "scene_button", "value": "Open on the workbench"},
-                    {"action": "scene_button", "value": "Run"}
+                    {"action": "scene_button", "value": "Run"},
+                    {"action": "scene_button", "value": "Wire it for me"}
                 ]
             }))
-        self.assertEqual(len(task["steps"]), 6)
+        self.assertEqual(len(task["steps"]), 7)
 
     def test_scene_controls_restricted_to_robotics_lab(self):
         with patch("chat_browser.runner.require_public_url"):
