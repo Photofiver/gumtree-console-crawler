@@ -18,7 +18,10 @@ from urllib.parse import unquote, urlsplit
 MAX_STEPS = 12
 MAX_TEXT = 14000
 # No arbitrary form submission, checkbox changes, or modifying commands.
-ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot", "blueprint_prompt"}
+ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot", "blueprint_prompt", "scene_inspect", "scene_button", "canvas_hover", "canvas_click", "canvas_drag"}
+ROBOTICS_HOST = "robotics-lab-app.vercel.app"
+SCENE_ACTIONS = {"scene_inspect", "scene_button", "canvas_hover", "canvas_click", "canvas_drag"}
+SCENE_BUTTONS = {"open on the workbench", "workbench", "free build", "run", "stop", "reset", "start", "pause", "add component", "add led", "led", "rotate", "labels", "top", "bottom", "front", "assemble it", "find the part", "fullscreen", "full screen"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
@@ -124,6 +127,41 @@ def require_public_url(raw: str) -> str:
     if not records or any(not ipaddress.ip_address(item[4][0]).is_global for item in records):
         raise UnsafeTarget("Private, reserved and loopback addresses are prohibited")
     return raw
+
+
+def require_scene_host(url: str) -> None:
+    """Canvas controls are allowed only on the user-requested public 3D simulator."""
+    parts = urlsplit(url)
+    if parts.scheme != "https" or parts.hostname != ROBOTICS_HOST or parts.username or parts.password:
+        raise UnsafeTarget("3D canvas controls are restricted to public Robotics Lab")
+
+
+def point_in_canvas(rect: dict, x: float, y: float, viewport: dict) -> tuple[float, float]:
+    """Normalized canvas coordinates; refuse clicks on off-screen or tiny canvases."""
+    if rect["width"] < 40 or rect["height"] < 40:
+        raise ValueError("Canvas too small to interact with")
+    px = rect["x"] + rect["width"] * x
+    py = rect["y"] + rect["height"] * y
+    if not 0 <= px < viewport["width"] or not 0 <= py < viewport["height"]:
+        raise ValueError("Requested canvas point is outside the visible viewport")
+    return px, py
+
+
+def validate_scene_step(step: dict) -> None:
+    action = step["action"]
+    if action in {"canvas_hover", "canvas_click", "canvas_drag"}:
+        index = step.get("canvas_index", 0)
+        if type(index) is not int or not 0 <= index < 8:
+            raise ValueError("canvas_index must be an integer from 0 to 7")
+        fields = ("x", "y", "to_x", "to_y") if action == "canvas_drag" else ("x", "y")
+        for field in fields:
+            value = step.get(field)
+            if type(value) not in (int, float) or not 0 <= value <= 1:
+                raise ValueError(field + " must be a normalized number from 0 to 1")
+    elif action == "scene_button":
+        value = step.get("value")
+        if not isinstance(value, str) or value.strip().casefold() not in SCENE_BUTTONS:
+            raise ValueError("Only known, local Robotics Lab simulator controls are supported")
 
 
 def parse_task(body: str) -> dict:
