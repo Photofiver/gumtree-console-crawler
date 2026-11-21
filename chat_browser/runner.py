@@ -247,7 +247,7 @@ def observed_safe_link(actions: list, target: str) -> str | None:
 
 
 def run_task(task: dict, screenshot_path: Path) -> dict:
-    from playwright.sync_api import sync_playwright
+    from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
     screenshots = []
     action_results = []
@@ -423,7 +423,14 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                             target = page.get_by_role("link", name=re.compile("^" + re.escape(label) + "$", re.I))
                         if target.count() == 0:
                             raise ValueError("Robotics Lab control not found: " + label)
-                        target.first.click(timeout=8000)
+                        try:
+                            target.first.click(timeout=3500)
+                            item["control_method"] = "pointer"
+                        except PlaywrightTimeout:
+                            # WebGL animation may block pointer actionability; dispatch
+                            # a local click event only on this allowlisted public site.
+                            target.first.dispatch_event("click", timeout=7000)
+                            item["control_method"] = "dom_dispatch"
                         require_scene_host(page.url)
                         item["control_activated"] = label
                     else:
