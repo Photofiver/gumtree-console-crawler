@@ -131,16 +131,43 @@ class ConsultTests(unittest.TestCase):
         from consult import google_research
         import json
         def research_response(query):
-            tag = re.search(r"BEGIN-([a-f0-9]+)",query)[1]
-            packet = json.dumps(dict(draft="Corrected voltage",evidence=[dict(index=0,status="failed",
-                finding="24 V exceeded",source="https://example.org",quote="Rated 25 V")]))
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            packet = json.dumps(dict(tag=tag, old="draft one", new="Corrected voltage"))
             packet = packet.replace("Corrected voltage", "Corrected\nvoltage")
-            return dict(question=query,page=dict(url="https://www.google.com/search?"+
-                        urlencode({"q":query,"udm":"50"}),text="BEGIN-"+tag+"\n"+packet+"\nEND-"+tag))
-        revised = google_research(self.data,{"reason":"Check voltage"},research_response)
-        self.assertEqual(revised["checks"][0]["status"],"failed")
-        self.assertEqual(revised["checks"][0]["requirement"],"Voltage")
-        self.assertEqual(revised["draft"],"Corrected\nvoltage")
+            return dict(question=query, page=dict(url="https://www.google.com/search?"+
+                        urlencode({"q":query, "udm":"50"}), text="Answer:\n"+packet))
+        revised = google_research(self.data, {"reason":"Check voltage"}, research_response)
+        self.assertEqual(revised["checks"][0]["status"], "met")
+        self.assertEqual(revised["checks"][0]["requirement"], "Voltage")
+        self.assertEqual(revised["draft"], "Corrected\nvoltage")
+
+    def test_s700_research_disallows_station_swaps_prices_and_unrelated_claims(self):
+        from consult import google_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh, max £100", 
+                    draft="Nie znaleziono kompletnego potwierdzonego zestawu.",
+                    checks=[dict(requirement="Budget", status="unknown")])
+        for attempted in ("ALLPOWERS R600 jest lepszy.",
+                          "Kup panel za £29.99.",
+                          "Beton wapienny sam się naprawia."):
+            with self.subTest(attempted=attempted):
+                def answer(query):
+                    tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+                    packet = json.dumps(dict(tag=tag, old=data["draft"],
+                                             new=attempted), ensure_ascii=False)
+                    return dict(question=query, page=dict(url="https://www.google.com/search?"+
+                                urlencode({"q":query, "udm":"50"}), text=packet))
+                with self.assertRaisesRegex(ValueError, "No safe patch accepted"):
+                    google_research(data, {"reason":"DO POPRAWY"}, answer)
+        self.assertEqual(data["checks"][0]["status"], "unknown")
+
+    def test_s700_deterministic_correction_of_false_voltage(self):
+        from consult import evidence_revision
+        data = dict(question="ALLPOWERS S700", draft="25,2 V mieści się w 24 V",
+                    checks=[dict(requirement="Voltage", status="failed")])
+        r = evidence_revision(data, {"reason":"DO POPRAWY"}, lambda _: "")
+        self.assertIn("przekracza limit 24 V", r["draft"])
+        self.assertEqual(r["checks"], data["checks"])
 
     def test_timeout_while_fetching_sources(self):
         def inaccessible(url):
@@ -192,10 +219,11 @@ class ConsultTests(unittest.TestCase):
         def ask(q):
             return vote(q,"REVISE" if "draft one" in q else "PASS")
         r=solve(self.data,ask,lambda _:"Rated 20 V",broken)
-        self.assertGreaterEqual(len(r["history"]),2)
-        self.assertIn("research_error",r["history"][0])
-        self.assertIn("Rated 20 V",r["draft"])
-        self.assertEqual(r["status"],"NIEPOTWIERDZONE")
+        self.assertEqual(len(r["history"]), 1)
+        self.assertIn("research_error", r["history"][0])
+        self.assertEqual(r["history"][0]["correction_status"], "BLOCKED_UNVERIFIED")
+        self.assertEqual(r["draft"], "draft one")
+        self.assertEqual(r["status"], "NIEPOTWIERDZONE")
 
     def test_stop_hook_waits_and_routes_rejection_to_next_round(self):
         from unittest.mock import patch
