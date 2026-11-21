@@ -4,6 +4,8 @@ on:
     # Check at offset minutes to avoid GitHub's busiest minute.
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+  issues:
+    types: [opened]
 
 permissions:
   actions: write
@@ -11,6 +13,7 @@ permissions:
 
 jobs:
   revive:
+    if: ${{ github.event_name != 'issues' || (startsWith(github.event.issue.title, '[google-warm-restart]') && github.event.issue.user.login == github.repository_owner) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -21,6 +24,24 @@ jobs:
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const workflow_id = 'google-ai-warm-watchdog.yml';
+            if (context.eventName === 'issues') {
+              const {data: runs} = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, status: 'in_progress', per_page: 30
+              });
+              for (const run of runs.workflow_runs) {
+                if (run.event === 'schedule' || run.event === 'workflow_dispatch' ||
+                    (run.event === 'issues' && run.display_title?.startsWith('[google-warm-start]'))) {
+                  await github.rest.actions.cancelWorkflowRun({owner, repo, run_id: run.id});
+                  core.info('Stopped old warm session ' + run.id);
+                }
+              }
+              const {data: repository} = await github.rest.repos.get({owner, repo});
+              await github.rest.actions.createWorkflowDispatch({
+                owner, repo, workflow_id, ref: repository.default_branch
+              });
+              core.info('Started new warm session after owner restart request');
+              return;
+            }
             const statuses = ['in_progress', 'queued', 'waiting', 'requested', 'pending'];
             let alive = false;
             for (const status of statuses) {
