@@ -64,7 +64,7 @@ def evaluate(event, read=fetch):
     stamp = Path(tempfile.gettempdir()) / ("konsultant-" + str(os.getuid()) + "-" + tag)
 
     instruction = ("Dla KAŻDEJ wiadomości, gdy wtyczka jest używana, utwórz issue o tytule " + title +
-                   " zgodnie z protokołem 1.8.3 z SKILL.md. Wyślij szkic do Google AI, "
+                   " zgodnie z protokołem 1.8.4 z SKILL.md. Wyślij szkic do Google AI, "
                    "pobierz faktyczny werdykt oraz wyślij KAŻDĄ poprawioną wersję do nowej recenzji Google AI. "
                    "Bez faktycznej odpowiedzi Google AI nigdy nie pisz POTWIERDZONE: "
                    "zgłoś NIEPOTWIERDZONE z linkiem do issue. Nie pomijaj recenzji.")
@@ -78,14 +78,8 @@ def evaluate(event, read=fetch):
     message = event.get("last_assistant_message") or ""
     matches = re.findall(re.escape(LINK) + r"([1-9]\d*)",message)
     match = matches[-1] if matches else None
-    if message.startswith("NIEPOTWIERDZONE"):
-        if not match and "Brak dostępu:" in message:
-            return {}
-        try:
-            if "Timeout:" in message and time.time() - float(stamp.read_text()) >= 1620:
-                return {}
-        except (OSError, ValueError):
-            pass
+    if not match:
+        return {"decision":"block","reason":instruction+" Brak zgłoszenia GitHub dla bieżącej tury."}
     if match:
         try:
             receipt = lookup(int(match), read)
@@ -98,9 +92,15 @@ def evaluate(event, read=fetch):
                     return {"decision":"block","reason":("Sprawdź uzasadnienie: " + receipt.get("reason","")
                             + f". Popraw analizę i wyślij zmieniony szkic jako {title} /{attempt+1}, parent_issue={match}.")}
                 status = receipt.get("status")
-                if status in ("POTWIERDZONE","NIEPOTWIERDZONE") and status in message.split():
-                    if status == "POTWIERDZONE" and receipt.get("draft","").strip() not in message:
+                if status == "POTWIERDZONE":
+                    if receipt.get("review") != "SPRAWDZONE" or receipt.get("google_ai_responses_received",0) < 1:
+                        return {"decision":"block","reason":"Brak rzeczywistego pozytywnego werdyktu Google AI."}
+                    if status not in message.split() or "NIEPOTWIERDZONE" in message.split():
+                        return {"decision":"block","reason":"Niezgodny status końcowy."}
+                    if receipt.get("draft","").strip() not in message:
                         return {"decision":"block","reason":"Dołącz dokładny zatwierdzony szkic do odpowiedzi."}
+                    return {}
+                if status == "NIEPOTWIERDZONE" and status in message.split() and "POTWIERDZONE" not in message.split():
                     return {}
         except (ValueError, KeyError, OSError):
             pass
