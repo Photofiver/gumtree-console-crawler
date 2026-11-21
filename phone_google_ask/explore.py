@@ -25,7 +25,7 @@ MIN_WATTS_FOR_AVERAGE = 606 / (169.35 / 100 * 0.85)
 
 
 def nameplate_watts(model):
-    match = re.search(r"(?<!\\d)(\\d{2,4})\\s*w(?:att)?(?:s)?\\b", model, flags=re.I)
+    match = re.search(r"(?<!\d)(\d{2,4})\s*w(?:att)?(?:s)?\b", model, flags=re.I)
     return int(match.group(1)) if match else None
 
 
