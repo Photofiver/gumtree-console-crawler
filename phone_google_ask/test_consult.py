@@ -302,6 +302,30 @@ class ConsultTests(unittest.TestCase):
         self.assertGreaterEqual(receipt["google_ai_queries_sent"], 3)
         self.assertGreaterEqual(len(calls), 3)
 
+    def test_google_pass_with_failed_evidence_does_not_trigger_more_edits(self):
+        packet = dict(self.data, checks=[dict(self.data["checks"][0], status="failed")])
+        calls = []
+        def ask(q):
+            calls.append(q)
+            return vote(q, "REVISE" if "draft one" in q else "PASS")
+        def research(data, result, _ask):
+            return dict(data, draft="draft two")
+        receipt = solve(packet, ask, lambda _: "Rated 20 V", research)
+        self.assertEqual([h["review"] for h in receipt["history"]],
+                         ["DO POPRAWY", "SPRAWDZONE"])
+        self.assertEqual(receipt["status"], "NIEPOTWIERDZONE")
+        self.assertEqual(receipt["google_ai_edits_rechecked"], 1)
+
+    def test_reviewer_marker_cannot_replace_an_answer(self):
+        from revision_guard import guarded_patch, validate_revision
+        packet = dict(self.data, draft="Substantive factual answer.")
+        for marker in ("PASS", "REVISE", "NIEPOTWIERDZONE"):
+            with self.subTest(marker=marker):
+                with self.assertRaisesRegex(ValueError, "Bare reviewer verdict"):
+                    guarded_patch(packet, packet["draft"], marker)
+                with self.assertRaisesRegex(ValueError, "Bare reviewer verdict"):
+                    validate_revision(packet, dict(packet, draft=marker))
+
     def test_stop_hook_waits_and_routes_rejection_to_next_round(self):
         from unittest.mock import patch
         import hashlib
