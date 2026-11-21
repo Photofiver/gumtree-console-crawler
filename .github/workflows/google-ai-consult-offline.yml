@@ -1,0 +1,23 @@
+name: Google AI Consultant offline regression
+on:
+  push:
+    paths:
+      - 'phone_google_ask/consult.py'
+      - 'phone_google_ask/revision_guard.py'
+      - 'phone_google_ask/explore.py'
+      - 'phone_google_ask/test_consult.py'
+      - 'phone_google_ask/test_explore.py'
+      - '.github/workflows/google-ai-consult-offline.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Review, corrections and 1000-idea screening
+        run: |
+          python3 -m unittest discover -s phone_google_ask -p 'test_consult.py' -v
+          python3 -m unittest discover -s phone_google_ask -p 'test_explore.py' -v
