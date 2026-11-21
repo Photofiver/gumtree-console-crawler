@@ -186,7 +186,7 @@ def parse_task(body: str) -> dict:
     for i, step in enumerate(steps):
         if not isinstance(step, dict) or step.get("action") not in ACTIONS:
             raise ValueError(f"Unsupported action at step {i + 1}")
-        if set(step) - {"action", "selector", "value", "ms", "px"}:
+        if set(step) - {"action", "selector", "value", "ms", "px", "x", "y", "to_x", "to_y", "canvas_index"}:
             raise ValueError("Unsupported step property")
         if step["action"] in {"click", "fill", "press", "extract", "wait_for"}:
             if not isinstance(step.get("selector"), str) or not 1 <= len(step["selector"]) <= 300:
@@ -198,6 +198,11 @@ def parse_task(body: str) -> dict:
             ms = step.get("ms", 10000 if step["action"] == "wait_for" else None)
             if type(ms) is not int or not 0 <= ms <= (12000 if step["action"] == "wait_for" else 5000):
                 raise ValueError("Invalid wait duration")
+        if step["action"] in SCENE_ACTIONS:
+            require_scene_host(task["url"])
+            if auth is not None:
+                raise ValueError("3D interactions cannot be authenticated")
+            validate_scene_step(step)
         if step["action"] == "scroll":
             if type(step.get("px", 650)) is not int or not 0 <= step.get("px", 650) <= 1600:
                 raise ValueError("Scrolling is restricted to 0–1600 pixels down")
