@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   warm-session:
-    if: ${{ github.event_name != 'issues' || (startsWith(github.event.issue.title, '[google-warm-test]') && github.event.issue.user.login == github.repository_owner) }}
+    if: ${{ github.event_name != 'issues' || ((startsWith(github.event.issue.title, '[google-warm-test]') || startsWith(github.event.issue.title, '[google-warm-start]')) && github.event.issue.user.login == github.repository_owner) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 345
     steps:
@@ -43,8 +43,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WARM_RUNTIME_MINUTES: ${{ github.event_name == 'issues' && '4' || '315' }}
-          WARM_TEST_ISSUE: ${{ github.event.issue.number || '0' }}
+          WARM_RUNTIME_MINUTES: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && '4' || '315' }}
+          WARM_TEST_ISSUE: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && github.event.issue.number || '0' }}
         with:
           api-level: 35
           target: google_apis
