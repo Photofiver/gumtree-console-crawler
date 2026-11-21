@@ -238,32 +238,89 @@ def evidence_revision(data, result, read):
 
 
 def solve(data, ask, read=source_text, research=google_research):
+    """Every attempted correction MUST receive a fresh, independent Google AI review.
+
+    Corrections are never silently accepted when the reviewer is unreachable or
+    returns an unverifiable response. Attempted calls and completed verdicts are
+    reported separately, including the original draft and every revised draft.
+    """
     history, seen = [], set()
+    audit = []
+    edits_rechecked = 0
+    def audited_ask(query):
+        record = dict(query_sha256=digest(query), state="sent")
+        audit.append(record)
+        try:
+            answer = ask(query)
+        except Exception as exc:
+            record["state"] = "transport_error"
+            record["error"] = type(exc).__name__
+            raise
+        if not isinstance(answer, dict):
+            record["state"] = "invalid_response"
+            return answer
+        page = answer.get("page", {})
+        u = urlsplit(page.get("url", ""))
+        params = parse_qs(u.query)
+        if (answer.get("question") == query and u.scheme == "https"
+                and u.hostname == "www.google.com" and u.path == "/search"
+                and params.get("q") == [query] and params.get("udm") == ["50"]
+                and bool(page.get("text", "").strip())):
+            record["state"] = "response_received"
+        else:
+            record["state"] = "invalid_response"
+        return answer
+
+    waiting_for_recheck = False
+    last_reviewed = data["draft"]
+    result = dict(review="NIEPOTWIERDZONE", status="NIEPOTWIERDZONE",
+                  reason="Google AI review was not performed")
     for attempt in range(1, 4):
         key = " ".join(data["draft"].split()).casefold()
         if key in seen:
+            result["obstacle"] = "Repeated draft cannot skip independent review"
             break
         seen.add(key)
-        result = evaluate(data, ask, read)
-        history.append(dict(round=attempt, draft=data["draft"], **result))
-        if result.get("status") == "POTWIERDZONE" or result["review"] == "NIEPOTWIERDZONE" or attempt == 3:
+        result = evaluate(data, audited_ask, read)
+        step = dict(round=attempt, draft=data["draft"], **result)
+        history.append(step)
+        if waiting_for_recheck:
+            edits_rechecked += 1
+            step["correction_rechecked_by_google"] = result["review"] != "NIEPOTWIERDZONE"
+            if result["review"] == "NIEPOTWIERDZONE":
+                step["correction_status"] = "BLOCKED_NO_GOOGLE_VERDICT"
+                result["obstacle"] = "Corrected draft not independently reviewed by Google AI"
+                # Never output a correction as accepted when no model verdict was read.
+                data = dict(data, draft=last_reviewed)
+                break
+        last_reviewed = data["draft"]
+        if (result.get("status") == "POTWIERDZONE"
+                or result["review"] == "NIEPOTWIERDZONE"
+                or attempt == 3):
             break
         try:
-            revised = validate_revision(data, research(data, result, ask))
+            revised = validate_revision(data, research(data, result, audited_ask))
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
-            history[-1]["research_error"] = str(exc)[:400]
+            step["research_error"] = str(exc)[:400]
             revised = evidence_revision(data, result, read)
             if revised is None:
-                history[-1]["correction_status"] = "BLOCKED_UNVERIFIED"
+                step["correction_status"] = "BLOCKED_UNVERIFIED"
                 result["obstacle"] = "No safe, evidenced revision: " + str(exc)[:300]
                 break
             revised = validate_revision(data, revised)
         if " ".join(revised["draft"].split()).casefold() in seen:
             result["obstacle"] = "Research repeated a previously reviewed draft"
             break
+        # Next loop MUST call Google AI for the amended draft, or it is discarded.
         data = revised
-    return dict(result, status=result.get("status","NIEPOTWIERDZONE"),
-                history=history, checks=data["checks"], draft=history[-1]["draft"])
+        waiting_for_recheck = True
+
+    return dict(result, status=result.get("status", "NIEPOTWIERDZONE"),
+                history=history, checks=data["checks"], draft=data["draft"],
+                google_ai_queries_sent=len(audit),
+                google_ai_responses_received=sum(x["state"] == "response_received" for x in audit),
+                google_ai_edits_rechecked=edits_rechecked,
+                google_ai_audit=audit)
 
 
 def main():
