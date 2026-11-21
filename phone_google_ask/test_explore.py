@@ -82,15 +82,12 @@ class ExploreTests(unittest.TestCase):
             dict(model="Low Voc 500W", source="https://example.org/low",
                  rated_watts=500, voc_stc_v=20, isc_a=4.5),
         ]
-        r = screen({"candidate_log": models}, 1000)
-        direct_high = [x for x in r["combinations"] if x["route"] == "direct_panel"
-                       and x["model"] == "High Voc 500W"]
-        self.assertTrue(direct_high)
-        self.assertTrue(all(x["screen"] == "reject_direct_overvoltage" for x in direct_high))
-        direct_low = [x for x in r["combinations"] if x["route"] == "direct_panel"
-                      and x["model"] == "Low Voc 500W"]
-        self.assertTrue(direct_low)
-        self.assertTrue(all(x["screen"] == "unknown_price" for x in direct_low))
+        for item, expected in ((models[0], "reject_direct_overvoltage"),
+                               (models[1], "unknown_price")):
+            r = screen({"candidate_log": [item]}, 1000)
+            direct = [x for x in r["combinations"] if x["route"] == "direct_panel"]
+            self.assertTrue(direct)
+            self.assertTrue(all(x["screen"] == expected for x in direct))
 
     def test_legacy_candidates_never_pass_as_verified(self):
         r = screen(sample_data(), 1000)
