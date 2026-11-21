@@ -370,7 +370,7 @@ class ConsultTests(unittest.TestCase):
         packet = dict(self.data, draft=original)
         self.assertEqual(focused_patch(packet, original, revised), revised)
         with self.assertRaises(ValueError):
-            focused_patch(packet, original, revised + " 100 GBP")
+            focused_patch(packet, original, revised + " £100")
 
     def test_bare_revise_is_retried_but_never_automatically_patched(self):
         calls = []
