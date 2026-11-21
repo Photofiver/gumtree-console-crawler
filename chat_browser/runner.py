@@ -414,7 +414,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                                 "index": rect["index"],
                                 "rect": {k: round(rect[k], 1) for k in ("x", "y", "width", "height")},
                             })
-                        item["controls"] = page.get_by_role("button").all_inner_texts()[:40]
+                        item["controls"] = page.get_by_role("button").evaluate_all("els => els.slice(0, 40).map(x => (x.innerText || x.getAttribute(\'aria-label\') || x.title || \'\').trim().slice(0, 100))")
                         item["viewport"] = page.viewport_size
                     elif action == "scene_button":
                         label = step["value"].strip()
