@@ -9,7 +9,7 @@ import socket
 import subprocess
 from html.parser import HTMLParser
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from review import decide
 
@@ -103,7 +103,14 @@ def evaluate(data, ask, read=source_text):
     for i, chunk in enumerate(chunks, 1):
         query = prefix + f"Part {i}/{len(chunks)}\n" + chunk
         req = dict(query=query, tag=tag, draft=draft)
-        answer = decide(req, ask(query))
+        answer = "NIEPOTWIERDZONE"
+        for _ in range(2):
+            try:
+                answer = decide(req, ask(query))
+            except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
+                continue
+            if answer != "NIEPOTWIERDZONE":
+                break
         votes.append(answer.split("\n\n", 1)[0])
         if answer.startswith("DO POPRAWY"):
             return dict(review="DO POPRAWY", reason=answer.partition("\n\n")[2],
@@ -117,12 +124,78 @@ def evaluate(data, ask, read=source_text):
                 parts=len(chunks), reviewed=len(votes), blocked=blocked)
 
 
+def google_research(data, result, ask):
+    """Ask for changed findings in context. Treat suggested quotes as unverified."""
+    tag = secrets.token_hex(6)
+    prompt = ("Search for a different concrete solution. Check the criticism against manufacturer and "
+              "retailer pages. Return one JSON object between standalone lines BEGIN-" + tag +
+              " and END-" + tag + ". Keys: draft (revised complete answer), evidence (list of objects "
+              "with index (zero based), status met/unknown/failed, finding, source URL, exact quote). "
+              "Never invent prices, quotes or approval. Preserve all requirements. Input: ")
+    evidence = [{"index": i, **c} for i, c in enumerate(data["checks"])]
+    payload = json.dumps(dict(question=data["question"], previous=data["draft"],
+                              feedback=result, checks=evidence), ensure_ascii=False)
+    # Research each fragment if necessary; merge proposed evidence by original index.
+    updated = dict(data, checks=[dict(c) for c in data["checks"]])
+    drafts = []
+    for piece in parts(payload, 2000-len(prompt.encode())):
+        query = prompt + piece
+        page = ask(query)
+        u = urlsplit(page.get("page", {}).get("url", ""))
+        params = parse_qs(u.query)
+        if (page.get("question") != query or u.scheme != "https" or u.hostname != "www.google.com"
+                or u.path != "/search" or params.get("q") != [query] or params.get("udm") != ["50"]):
+            raise ValueError("Research response did not match query")
+        match = re.search(r"(?ms)^BEGIN-" + tag + r"[ \t]*\n(.*?)^END-" + tag + r"[ \t]*$",
+                          page["page"]["text"])
+        if not match:
+            raise ValueError("No complete structured research response")
+        raw = match[1].strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+        proposal = json.loads(raw)
+        if not isinstance(proposal["draft"], str) or not proposal["draft"].strip():
+            raise ValueError("Empty revision")
+        drafts.append(proposal["draft"].strip())
+        for entry in proposal.get("evidence", []):
+            i = entry["index"]
+            if type(i) != int or not 0 <= i < len(evidence):
+                raise ValueError("Unknown requirement index")
+            for key in ("status", "finding", "source", "quote"):
+                if key in entry and isinstance(entry[key], str):
+                    updated["checks"][i][key] = entry[key]
+    updated["draft"] = "\n".join(drafts)
+    return updated
+
+
+def solve(data, ask, read=source_text, research=google_research):
+    history, seen = [], set()
+    for attempt in range(1, 4):
+        key = " ".join(data["draft"].split()).casefold()
+        if key in seen:
+            break
+        seen.add(key)
+        result = evaluate(data, ask, read)
+        history.append(dict(round=attempt, draft=data["draft"], **result))
+        if result.get("status") == "POTWIERDZONE" or result["review"] == "NIEPOTWIERDZONE" or attempt == 3:
+            break
+        try:
+            revised = research(data, result, ask)
+            if " ".join(revised["draft"].split()).casefold() in seen:
+                result["obstacle"] = "Research repeated a previously reviewed draft"
+                break
+            data = revised
+        except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
+            result["obstacle"] = "Research: " + str(exc)[:400]
+            break
+    return dict(result, status=result.get("status","NIEPOTWIERDZONE"),
+                history=history, checks=data["checks"], draft=history[-1]["draft"])
+
+
 def main():
     from warm_worker import ask_emulator
     issue = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["issue"]
     body = issue["body"]
     try:
-        result = evaluate(json.loads(body), ask_emulator)
+        result = solve(json.loads(body), ask_emulator)
     except Exception as exc:
         result = dict(review="NIEPOTWIERDZONE", reason=type(exc).__name__ + ": " + str(exc)[:500])
     result.setdefault("status", "NIEPOTWIERDZONE")

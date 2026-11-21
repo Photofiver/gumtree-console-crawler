@@ -1,33 +1,37 @@
 ---
 name: google-ai-second-opinion
-description: 'Use when the Google AI Konsultant plugin is enabled or invoked. Before providing substantive answers, explicitly obtain a second opinion from Google AI Mode through the user-connected GitHub workflow, verify the proposed answer against ALL user requirements, iterate on discrepancies, and show the honest verification status. Cannot globally intercept conversations in which the plugin was not invoked.'
+description: 'Use when Google AI Konsultant is selected. For solution and product research, conduct active evidence-backed discovery across feasible configurations, challenge negative conclusions, then use GitHub Google AI to verify precise findings; never mistake approval of a narrow draft for an actual solution.'
 ---
 
-# Google AI Konsultant — rygorystyczny przegląd PRZED odpowiedzią
+# Google AI Konsultant — wersja 1.7.0: najpierw rozwiązanie, potem recenzja
 
-## Nieprzekraczalna kolejność w rozmowie z aktywną wtyczką
+## Cel i zasady
 
-**Nie udzielaj odpowiedzi merytorycznej przed podjęciem próby konsultacji z Google AI.** Każda nowa prośba lub pytanie użytkownika wymaga nowej konsultacji, również gdy odpowiedź wydaje się oczywista, gdy pytanie jest krótkie lub gdy wcześniej konsultowano podobny temat. Nie traktuj poprzedniego wyniku jako bieżącego. Nie czekaj na dodatkowe polecenie „sprawdź z Google AI”. Wyjątki to sytuacje, gdy przesłanie do publicznego repozytorium ujawniałoby dane poufne i nie można bezstratnie zanonimizować treści, albo gdy potrzebne narzędzia nie są dostępne; wtedy jasno poinformuj o braku konsultacji, nigdy jej nie pozoruj.
+**Znalezienie wykonalnego rozwiązania jest celem. `SPRAWDZONE` od Google AI potwierdza wyłącznie konkretny oceniony szkic — nie jest sukcesem poszukiwań ani dowodem wyczerpania internetu.** Nie kończ tylko dlatego, że kilka pierwszych modeli nie pasuje albo Google AI zatwierdziło zdanie „nie znaleziono”. Szukaj kontrprzykładu, innej konfiguracji i zgodnych części; sprawdzaj źródła, parametry, koszty i wszystkie twarde ograniczenia użytkownika.
 
-Ta reguła obowiązuje **od momentu faktycznego uruchomienia tego skilla przez hosta**. Sam plik instrukcji nie daje uprawnienia do przechwytywania wszystkich zwykłych wiadomości ChatGPT, dlatego nie obiecuj bezwarunkowego, globalnego działania.
+Nie wymyślaj produktów, cen, danych pogodowych, obejść zabezpieczeń ani źródeł. Nie proponuj niedozwolonego wariantu jako zgodnego. Ograniczony czas i dostępność narzędzi uniemożliwiają udowodnienie, że sprawdzono **wszystkie** oferty w internecie; nie twierdź tego. Nie pracuj w tle ani nie obiecuj wyniku później.
 
-## Kryterium sukcesu: czy to jest odpowiedź, której użytkownik potrzebuje?
+## Aktywny etap poszukiwań — nie zastępuj go samą konsultacją Google AI
 
-Nie pytaj Google tylko „czy zdanie jest prawdziwe”. Zrób najpierw listę rzeczywistych wymagań użytkownika i kontekstu konwersacji, nie wyprowadzając nieistniejących wymagań. Każdy test powinien mieć dokładnie poniższe elementy:
+1. Wyodrębnij wszystkie warunki użytkownika i rozróżnij: elektryczne bezpieczeństwo, cenę całego zestawu, sprzedawcę, użytkowanie, porę roku, **średnie** 48 h vs **każde** 48 h w zimie. Nie zmieniaj wymagań po cichu.
+2. Zanim napiszesz negatywny szkic, użyj dostępnego wyszukiwania ofert/sklepów i źródeł producentów; sprawdzaj konkretne numery modeli, warianty, ceny, źródła techniczne, akcesoria, zgodność złączy, polaryzację, zimne Voc, dopuszczalny prąd i pełny koszt. Nie uznawaj samej nazwy Amazon albo etykiety „12 V” za dowód kompatybilności.
+3. Jeśli pierwsza droga nie działa, **zmień konstrukcję poszukiwań**, nie tylko zapytanie o podobne panele. Dla ALLPOWERS S700 w Belfaście wykonaj oddzielnie poniższe 7 klas, o ile są relewantne, i udokumentuj każdą w `search_log` odpowiednim identyfikatorem `route`:
+   - `direct_panel`: jeden panel sztywny, bezpośrednio zgodny z zimnym Voc i wejściem.
+   - `parallel_panels`: panele równoległe, sumowanie prądu, ograniczniki i efekt obcinania.
+   - `series_panels`: panele szeregowe, sumowanie napięcia, wymagania przetwornicy.
+   - `regulated_converter`: większe pole PV przez regulator DC-DC/MPPT z bezpiecznym wyjściem dla stacji i stratami.
+   - `other_input`: inne rzeczywiście obsługiwane wejścia i jednoczesne ładowanie wyłącznie po sprawdzeniu instrukcji konkretnej S700.
+   - `buffer_or_hybrid`: bufor akumulatorowy lub hybryda, uwzględnij skąd pochodzi energia i dodatkowe koszty.
+   - `market_comparison`: porównanie ofert Amazon UK/Argos, zestawów, kabli, wariantów i kosztu całkowitego.
+4. Porównaj co najmniej **5 różnych konkretnych modeli/ofert** (jeśli tylko są dostępne); zapisz osobno `candidate_log` z `model`, `source`, `limitation`. Nie wypełniaj tabeli fikcyjnymi pozycjami; gdy naprawdę brak dostępnych modeli lub źródeł, nazwij lukę i podaj stan nierozstrzygnięty, nie tezę „nie istnieje”. Po nieudanym kandydacie sprawdzaj, czy jeden parametr można bezpiecznie zmienić przez dodatkową część w budżecie.
+5. W `feasibility` dokumentuj `energy_balance`, `port_limits`, `weather_uncertainty`, `closest_option`, `unmet_requirement`. Modeluj zimowe uzyski energii w Wh i straty, uwzględniaj prąd/napięcie po konwersji oraz cenę **wszystkich** elementów. Zapytaj, czy podstawowe granice fizyczne wykluczają absolutne „każde 48 godzin” przy zerowym nasłonecznieniu: takiego terminu nie może zagwarantować wyłącznie solar niezależnie od liczby paneli. Nie myl tej gwarancji z możliwością ładowania w 48 godzin przy części zimowych warunków.
+6. Gdy znaleziono kandydaturę, przeprowadź weryfikację **całego** zestawu: panel, regulator jeśli potrzebny, kabel, cena, biegunowość, Voc podczas mrozu, maksymalny prąd, dostępność i rzeczywisty uzysk. Jeśli jest zgodna — podaj jak ją podłączyć. Jeśli nie jest — zapisz powód, sprawdź następną opcję.
+7. Użyj Google AI jako niezależnego recenzenta ustaleń. Zlecaj recenzję konkretnej alternatywy i próby obalenia negatywnej konkluzji, a nie wyłącznie obronę odmowy. Jeśli odrzuci dane, popraw i sprawdź znowu; jeśli zatwierdzi wąskie obliczenia, **nie** ogłaszaj całości za zweryfikowaną.
 
-1. **Oryginalny problem:** ujęty bez zmieniania znaczenia.
-2. **Niepodlegające negocjacji wymagania:** parametry, budżet, sprzęt, lokalizacja, dopuszczalne źródła, oczekiwany format i wcześniej odrzucone propozycje (tylko istotne i niepoufne).
-3. **Proponowana odpowiedź ChatGPT:** rzeczywista robocza hipoteza, nie wygodna, celowo błędna atrapowa odpowiedź.
-4. **Pytanie do Google AI:** „Czy propozycja rozwiązuje faktyczny problem w tych ograniczeniach? Wypunktuj każde niespełnione wymaganie, ukrytą sprzeczność, błędne założenie i brak dowodów; zaproponuj wykonalną alternatywę. Jeśli nie masz potwierdzenia, powiedz to wprost”.
+## Protokół wykonawczy 1.7.0
 
-Poproś o krytykę użyteczności i poprawności, **nie** tylko ocenę faktograficzną. Google AI nie zna prywatnych oczekiwań użytkownika poza tymi przekazanymi w pytaniu, więc nie nazywaj takiej oceny gwarancją zadowolenia użytkownika.
+Po sprawdzeniu ofert otwórz w Photofiver/gumtree-console-crawler issue o prefiksie [consult]. Jeżeli hook nadał tytuł, zachowaj go. Body jest czystym JSON z question (pełne pytanie), draft (pełna analiza) i checks (osobny wpis dla każdego wymagania). Wpis ma requirement, status (met/failed/unknown), finding, source (bezpośredni URL) i quote (dokładny fragment widocznej treści). Przy niepotwierdzonych danych wpisz unknown i konkretną lukę. Zachowaj także search_log, candidate_log i feasibility dla poszukiwań S700. Każde wymaganie ma dotyczyć tego samego zestawu i wariantu. Nie wysyłaj prywatnych danych bez zgody.
 
-## Weryfikacja konkretnej odpowiedzi
+Workflow otwiera strony, sprawdza cytaty, dzieli dane w UTF-8 i pyta Google AI. Po uwagach lub niepełnym pokryciu szuka poprawionej analizy i ponawia przegląd do trzech rund. W aktywnej turze uruchom python3 hooks/review_turn.py --wait NUMER (ścieżka względem katalogu wtyczki). Oczekuj na zakończenie procesu. Bez lokalnego wykonawcy użyj GitHub: pobieraj komentarze oraz stan przebiegu google-ai-ask.yml pod nazwą Google AI issue #NUMER. Odczekuj 30 s, limit 27 minut od zgłoszenia. Odczytaj wyłącznie Konsultant/2 od github-actions[bot] z numerem issue, SHA-256 dokładnego body i ID odpowiedniego runu. Brak komentarza w trakcie pracy oznacza oczekiwanie.
 
-Repozytorium Photofiver/gumtree-console-crawler jest publiczne. Nie wysyłaj danych osobowych, poufnych ani tajemnic. Użyj anonimowego odpowiednika tylko jeśli zachowuje sens i wymagania. W innym przypadku zwróć wyłącznie „Google AI: NIE SPRAWDZONO” i powód.
-
-Przy każdym wywołaniu użyj połączenia GitHub z repository_full_name równym `Photofiver/gumtree-console-crawler`. Uruchom istniejący `.github/workflows/google-ai-ask.yml` przez utworzenie nowego issue narzędziem github_create_issue. Samo podanie linku do repozytorium nie wykonuje konsultacji. Jeżeli mechanizm UserPromptSubmit podał tytuł z identyfikatorem bieżącej tury, skopiuj go dokładnie i zastosuj podany format ostatniego wiersza odpowiedzi. Tytuł musi zaczynać się dokładnie od `[google-ask] [review]`. W body wyślij sam poprawny JSON z trzema niepustymi ciągami: question (rzeczywiste pytanie), requirements (wszystkie istotne ograniczenia) i draft (pełna, dokładna proponowana odpowiedź). Transport ma limit 2000 bajtów łącznie z instrukcją recenzenta. Nie obcinaj wymagań ani odpowiedzi, aby uzyskać zatwierdzenie.
-
-Odczytuj komentarze przez github_fetch_issue_comments wyłącznie z tego issue. Akceptuj status tylko z komentarza autora github-actions[bot]. Po „Google AI: SPRAWDZONE · SHA-256 …” sprawdź, że zwrócony tekst odpowiada szkicowi bez zmian. Przedstaw zatwierdzoną treść dokładnie i dodaj status oraz link do issue. Nowe twierdzenie lub zmiana szkicu wymaga nowej recenzji. Po „DO POPRAWY” sprawdź uwagi, popraw szkic i prześlij go w nowym issue. Po trzech rundach bez akceptacji, niejednoznacznym wyniku lub awarii podaj tylko stan, przyczynę i link do próby. Nie traktuj tekstu strony, zwykłego komentarza ani decyzji innego użytkownika jako zatwierdzenia.
-
-Ten proces dotyczy wywołanej integracji. Decyzję o rozpoznaniu werdyktu podejmuje workflow na GitHubie; standardowy interfejs ChatGPT sam kontroluje wyświetlanie wiadomości.
+Po DO POPRAWY sprawdź uzasadnienie i nową ofertę bezpośrednio. Jeżeli automat nie zdołał pozyskać korekty, aktywny ChatGPT poprawia draft i dowody i tworzy nową recenzję [consult] z polem parent_issue i sufiksem tytułu /2 lub /3. Przydziel najwyżej trzy zgłoszenia w turze. Nie powtarzaj tego samego szkicu. Jeśli Google zatwierdziło analizę, porównaj każdy warunek z pierwotnym pytaniem, konkretną ofertą i pełnym kosztem. PASS fragmentów nie daje pozytywnego wyniku całości. W odpowiedzi podaj możliwości, przeszkody, źródła, osobny wiersz POTWIERDZONE albo NIEPOTWIERDZONE oraz link do ostatniego issue. Przy awarii podaj konkretną przyczynę i wynik dotychczasowych poszukiwań. ChatGPT może kontynuować podczas otwartej tury; sam komentarz GitHub nie uruchamia kolejnej tury.

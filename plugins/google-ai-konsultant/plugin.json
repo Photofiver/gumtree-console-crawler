@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "google-ai-second-opinion",
-  "version": "1.4.0",
+  "version": "1.7.0",
   "description": "Konsultuje odpowiedzi ChatGPT z Google AI Mode przez istniejący workflow GitHub, wykrywa sprzeczności i ponownie analizuje problem.",
   "author": {
     "name": "Właściciel wtyczki"
