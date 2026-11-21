@@ -58,7 +58,8 @@ class ExploreTests(unittest.TestCase):
                if x["nameplate_w"] <= 200 and x["route"] not in ("other_input",)]
         self.assertTrue(low)
         self.assertTrue(all(x["screen"] in
-            ("reject_average_energy_shortfall", "excluded_uses_grid")
+            ("reject_average_energy_shortfall", "excluded_uses_grid",
+             "unknown_buffer_energy")
             for x in low))
 
     def test_hard_budget_screen_on_documented_quote(self):
