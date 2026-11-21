@@ -15,11 +15,15 @@ def negative_product_discovery(data):
     q = (data.get("question") or "").lower()
     draft = (data.get("draft") or "").lower()
     discovery = ("znajd", "szukaj", "czy istnieje", "zestaw", "kupic",
-                 "kupić", "find ", "buy ", "shopping", "purchase")
+                 "kupić", "find ", "buy ", "shopping", "purchase",
+                 "panel", "solar", "fotowolt", "s700")
     negative = ("nie znaleziono", "nie znalaz", "nie ma zestawu",
-                "nie udało się znaleźć", "brak potwierdzonego zestawu",
-                "nie mozna potwierdzic kompletnego", "nie można potwierdzić kompletnego",
-                "no verified kit", "no suitable kit", "cannot find")
+                "nie istnieje", "nie udało się znaleźć", "nie udalo sie znalezc",
+                "brak potwierdzonego", "brak zgodnego", "nie potwierdzono",
+                "nie da się", "nie da sie", "żaden zestaw", "zaden zestaw",
+                "nie mozna potwierdzic", "nie można potwierdzić",
+                "no verified kit", "no suitable kit", "cannot find",
+                "none found", "not found", "no compatible solution")
     return any(term in q for term in discovery) and any(term in draft for term in negative)
 
 
