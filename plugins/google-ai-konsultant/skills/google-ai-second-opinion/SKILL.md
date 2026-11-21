@@ -3,7 +3,7 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. For solution and product research, conduct active evidence-backed discovery across feasible configurations, challenge negative conclusions, then use GitHub Google AI to verify precise findings; never mistake approval of a narrow draft for an actual solution.'
 ---
 
-# Google AI Konsultant — wersja 1.7.0: najpierw rozwiązanie, potem recenzja
+# Google AI Konsultant — wersja 1.7.1: najpierw rozwiązanie, potem recenzja
 
 ## Cel i zasady
 
@@ -28,10 +28,10 @@ Nie wymyślaj produktów, cen, danych pogodowych, obejść zabezpieczeń ani źr
 6. Gdy znaleziono kandydaturę, przeprowadź weryfikację **całego** zestawu: panel, regulator jeśli potrzebny, kabel, cena, biegunowość, Voc podczas mrozu, maksymalny prąd, dostępność i rzeczywisty uzysk. Jeśli jest zgodna — podaj jak ją podłączyć. Jeśli nie jest — zapisz powód, sprawdź następną opcję.
 7. Użyj Google AI jako niezależnego recenzenta ustaleń. Zlecaj recenzję konkretnej alternatywy i próby obalenia negatywnej konkluzji, a nie wyłącznie obronę odmowy. Jeśli odrzuci dane, popraw i sprawdź znowu; jeśli zatwierdzi wąskie obliczenia, **nie** ogłaszaj całości za zweryfikowaną.
 
-## Protokół wykonawczy 1.7.0
+## Protokół wykonawczy 1.7.1
 
 Po sprawdzeniu ofert otwórz w Photofiver/gumtree-console-crawler issue o prefiksie [consult]. Jeżeli hook nadał tytuł, zachowaj go. Body jest czystym JSON z question (pełne pytanie), draft (pełna analiza) i checks (osobny wpis dla każdego wymagania). Wpis ma requirement, status (met/failed/unknown), finding, source (bezpośredni URL) i quote (dokładny fragment widocznej treści). Przy niepotwierdzonych danych wpisz unknown i konkretną lukę. Zachowaj także search_log, candidate_log i feasibility dla poszukiwań S700. Każde wymaganie ma dotyczyć tego samego zestawu i wariantu. Nie wysyłaj prywatnych danych bez zgody.
 
 Workflow otwiera strony, sprawdza cytaty, dzieli dane w UTF-8 i pyta Google AI. Po uwagach lub niepełnym pokryciu szuka poprawionej analizy i ponawia przegląd do trzech rund. W aktywnej turze uruchom python3 hooks/review_turn.py --wait NUMER (ścieżka względem katalogu wtyczki). Oczekuj na zakończenie procesu. Bez lokalnego wykonawcy użyj GitHub: pobieraj komentarze oraz stan przebiegu google-ai-ask.yml pod nazwą Google AI issue #NUMER. Odczekuj 30 s, limit 27 minut od zgłoszenia. Odczytaj wyłącznie Konsultant/2 od github-actions[bot] z numerem issue, SHA-256 dokładnego body i ID odpowiedniego runu. Brak komentarza w trakcie pracy oznacza oczekiwanie.
 
-Po DO POPRAWY sprawdź uzasadnienie i nową ofertę bezpośrednio. Jeżeli automat nie zdołał pozyskać korekty, aktywny ChatGPT poprawia draft i dowody i tworzy nową recenzję [consult] z polem parent_issue i sufiksem tytułu /2 lub /3. Przydziel najwyżej trzy zgłoszenia w turze. Nie powtarzaj tego samego szkicu. Jeśli Google zatwierdziło analizę, porównaj każdy warunek z pierwotnym pytaniem, konkretną ofertą i pełnym kosztem. PASS fragmentów nie daje pozytywnego wyniku całości. W odpowiedzi podaj możliwości, przeszkody, źródła, osobny wiersz POTWIERDZONE albo NIEPOTWIERDZONE oraz link do ostatniego issue. Przy awarii podaj konkretną przyczynę i wynik dotychczasowych poszukiwań. ChatGPT może kontynuować podczas otwartej tury; sam komentarz GitHub nie uruchamia kolejnej tury.
+Po DO POPRAWY sprawdź uzasadnienie i nową ofertę bezpośrednio. Jeżeli automat nie zdołał pozyskać korekty, aktywny ChatGPT poprawia draft i dowody i tworzy nową recenzję [consult] z polem parent_issue i sufiksem tytułu /2 lub /3. Przydziel najwyżej trzy zgłoszenia w turze. Nie powtarzaj tego samego szkicu. Jeśli Google zatwierdziło analizę, porównaj każdy warunek z pierwotnym pytaniem, konkretną ofertą i pełnym kosztem. PASS fragmentów nie daje pozytywnego wyniku całości. Przy pozytywnym wyniku dołącz dokładny zaakceptowany szkic. W odpowiedzi podaj możliwości, przeszkody, źródła, osobny wiersz POTWIERDZONE albo NIEPOTWIERDZONE oraz link do ostatniego issue. Przy awarii podaj konkretną przyczynę i wynik dotychczasowych poszukiwań. ChatGPT może kontynuować podczas otwartej tury; sam komentarz GitHub nie uruchamia kolejnej tury.

@@ -63,7 +63,7 @@ def evaluate(event, read=fetch):
     title = "[consult] " + tag
     stamp = Path(tempfile.gettempdir()) / ("konsultant-" + str(os.getuid()) + "-" + tag)
 
-    instruction = ("Utwórz issue o tytule " + title + ". Użyj protokołu 1.7.0 z SKILL.md. "
+    instruction = ("Utwórz issue o tytule " + title + ". Użyj protokołu 1.7.1 z SKILL.md. "
                    "Odbierz końcowy wynik, sprawdź dowody i wymagania. Podaj link do issue.")
     if event.get("hook_event_name") == "UserPromptSubmit":
         try:
@@ -75,20 +75,31 @@ def evaluate(event, read=fetch):
     message = event.get("last_assistant_message") or ""
     matches = re.findall(re.escape(LINK) + r"([1-9]\d*)",message)
     match = matches[-1] if matches else None
-    if match:
-        try:
-            receipt = lookup(int(match), read)
-            if (receipt.get("title") == title or re.fullmatch(re.escape(title) + r" /[23]",receipt.get("title",""))) and receipt.get("status") in ("POTWIERDZONE","NIEPOTWIERDZONE") and receipt["status"] in message.split():
-                return {}
-        except (ValueError, KeyError, OSError):
-            pass
     if message.startswith("NIEPOTWIERDZONE"):
         if not match and "Brak dostępu:" in message:
             return {}
         try:
-            if time.time() - float(stamp.read_text()) >= 1620:
+            if "Timeout:" in message and time.time() - float(stamp.read_text()) >= 1620:
                 return {}
         except (OSError, ValueError):
+            pass
+    if match:
+        try:
+            receipt = lookup(int(match), read)
+            current = re.fullmatch(re.escape(title) + r"(?: /([23]))?", receipt.get("title", ""))
+            if current:
+                attempt = int(current[1] or "1")
+                if "pending" in receipt:
+                    return {"decision":"block","reason":f"Trwa workflow issue #{match}. Oczekuj na to samo zgłoszenie przez --wait {match}."}
+                if receipt.get("review") == "DO POPRAWY" and attempt < 3 and len(receipt.get("history", [])) < 3:
+                    return {"decision":"block","reason":("Sprawdź uzasadnienie: " + receipt.get("reason","")
+                            + f". Popraw analizę i wyślij zmieniony szkic jako {title} /{attempt+1}, parent_issue={match}.")}
+                status = receipt.get("status")
+                if status in ("POTWIERDZONE","NIEPOTWIERDZONE") and status in message.split():
+                    if status == "POTWIERDZONE" and receipt.get("draft","").strip() not in message:
+                        return {"decision":"block","reason":"Dołącz dokładny zatwierdzony szkic do odpowiedzi."}
+                    return {}
+        except (ValueError, KeyError, OSError):
             pass
     return {"decision":"block","reason":instruction}
 

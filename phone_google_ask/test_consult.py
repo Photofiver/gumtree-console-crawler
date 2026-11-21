@@ -160,3 +160,18 @@ class ConsultTests(unittest.TestCase):
         self.assertIn("research_error",r["history"][0])
         self.assertIn("Rated 20 V",r["draft"])
         self.assertEqual(r["status"],"NIEPOTWIERDZONE")
+
+    def test_stop_hook_waits_and_routes_rejection_to_next_round(self):
+        from unittest.mock import patch
+        import hashlib
+        title = "[consult] " + hashlib.sha256(b"session\x00turn").hexdigest()[:24]
+        event = dict(session_id="session",turn_id="turn",hook_event_name="Stop",
+                     last_assistant_message="NIEPOTWIERDZONE\n"+waiter.LINK+"132")
+        with patch.object(waiter,"lookup",return_value=dict(title=title,pending="in_progress")):
+            self.assertIn("--wait 132",waiter.evaluate(event)["reason"])
+        with patch.object(waiter,"lookup",return_value=dict(title=title,review="DO POPRAWY",
+                status="NIEPOTWIERDZONE",reason="Napięcie",history=[{}])):
+            self.assertIn(title+" /2",waiter.evaluate(event)["reason"])
+        with patch.object(waiter,"lookup",return_value=dict(title=title+" /3",review="DO POPRAWY",
+                status="NIEPOTWIERDZONE",reason="Napięcie",history=[{}])):
+            self.assertEqual(waiter.evaluate(event),{})
