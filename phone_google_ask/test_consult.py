@@ -52,6 +52,39 @@ class ConsultTests(unittest.TestCase):
         r = solve(self.data,lambda q:vote(q,"REVISE"),lambda _:"",lambda d,r,a:dict(d,draft=d["draft"]+"x"))
         self.assertEqual(len(r["history"]),3)
 
+    def test_review_ignores_massive_exploration_logs(self):
+        packet = dict(self.data, search_log=[{"route":"bulk-noise"}] * 1000,
+                      candidate_log=[{"model":"bulk-noise"}] * 1000,
+                      feasibility={"bulk-noise":"not a proof"})
+        prompts = []
+        def ask(q):
+            prompts.append(q)
+            return vote(q, "PASS")
+        result = evaluate(packet, ask, lambda _: "Rated 20 V")
+        self.assertEqual(result["parts"], 1)
+        self.assertEqual(result["review"], "SPRAWDZONE")
+        self.assertFalse(any("bulk-noise" in p for p in prompts))
+        self.assertTrue(all(len(p.encode()) <= 2000 for p in prompts))
+
+    def test_ambiguous_google_answer_retried_with_focused_prompt(self):
+        prompts = []
+        def ask(q):
+            prompts.append(q)
+            if q.startswith("Audit this complete"):
+                return vote(q, "ambiguous")
+            return vote(q, "PASS")
+        result = evaluate(self.data, ask, lambda _: "Rated 20 V")
+        self.assertEqual(result["review"], "SPRAWDZONE")
+        self.assertEqual(len(prompts), 3)
+        self.assertTrue(prompts[1].startswith("Check this claim"))
+
+    def test_unreadable_google_verdict_is_never_fake_pass(self):
+        def ask(q):
+            return vote(q, "ambiguous")
+        result = evaluate(self.data, ask, lambda _: "Rated 20 V")
+        self.assertEqual(result["review"], "NIEPOTWIERDZONE")
+        self.assertIn("after two distinct prompts", result["reason"])
+
     def test_utf8(self):
         original = "ząb 🌞 " * 1400
         self.assertEqual("".join(parts(original, 1357)),original)
