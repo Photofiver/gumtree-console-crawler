@@ -5,6 +5,7 @@ import re
 PRICE_RE = re.compile(r"(?:£|GBP\s*)(\d+(?:[.,]\d{1,2})?)", re.IGNORECASE)
 BAD_TOPIC = re.compile(r"\b(?:beton|cement|concrete|wapienny|prawie\s+za\s+darmo)\b", re.I)
 FOREIGN_S700 = re.compile(r"\b(?:ALLPOWERS\s+)?(?:R600|S300|S500|S1500|S2000|S3000)\b", re.I)
+BARE_VERDICT = re.compile(r"\\s*(?:PASS|REVISE|DO POPRAWY|SPRAWDZONE|POTWIERDZONE|NIEPOTWIERDZONE)(?:\\s+[a-f0-9]{16})?\\s*", re.I)
 WRONG_VOC = re.compile(
     r"25[.,]2\s*V\s*(?:<|<=|jest\s+mniejsze\s+niż|miesci\s+sie\s+w|mieści\s+się\s+w)\s*24\s*V",
     re.I,
@@ -27,6 +28,8 @@ def guarded_patch(data, old, new):
     patched = original.replace(old, new, 1)
     if patched == original:
         raise ValueError("No change in patched draft")
+    if BARE_VERDICT.fullmatch(patched):
+        raise ValueError("Bare reviewer verdict is not a substantive answer")
     if "S700" in data.get("question", "").upper():
         for token in ("S700", "606", "48", "Amazon", "Argos", "Belfa"):
             if token.casefold() in original.casefold() and token.casefold() not in patched.casefold():
@@ -92,6 +95,8 @@ def validate_revision(before, after):
                 raise ValueError("Correction dropped original constraint: " + token)
     if candidate == previous or not candidate.strip():
         raise ValueError("No valid change")
+    if BARE_VERDICT.fullmatch(candidate):
+        raise ValueError("Bare reviewer verdict is not a substantive answer")
     if "S700" in before.get("question", "").upper():
         if FOREIGN_S700.search(candidate) and not FOREIGN_S700.search(previous):
             raise ValueError("Research changed the model of the user's existing station")
