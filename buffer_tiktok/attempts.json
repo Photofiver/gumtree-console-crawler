@@ -153,8 +153,14 @@
       "attempted_at": "2026-11-21T16:14:23.685448+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b01c3618bd84d5966004744"
+    },
+    "c36ee2056fa8ade11a086410301b202700f983fb93af09d296cecacb6a341116": {
+      "source": "social_videos/new-ai-cat-20261121-s05-taking-selfie.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261121-s05-taking-selfie.mp4",
+      "attempted_at": "2026-11-21T21:43:35.141944+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
-  "buffer_channel_last_verified_utc": "2026-11-20T17:02:46.156482+00:00"
+  "buffer_channel_last_verified_utc": "2026-11-21T21:43:35.141944+00:00"
 }
