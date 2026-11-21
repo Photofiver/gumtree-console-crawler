@@ -28,7 +28,7 @@ jobs:
                 owner, repo, workflow_id, status, per_page: 20
               });
               const active = data.workflow_runs.filter(run =>
-                run.event === 'schedule' || run.event === 'workflow_dispatch'
+                run.event === 'schedule' || run.event === 'workflow_dispatch' || (run.event === 'issues' && run.display_title?.startsWith('[google-warm-start]'))
               );
               if (active.length > 0) {
                 alive = true;
