@@ -95,11 +95,19 @@ def evaluate(data, ask, read=source_text):
             excerpts.append(dict(requirement=requirement, url=url,
                                  observed=pages[url][max(0,index-80):index+len(quote)+80]))
     context = "Question: " + question + "\nRequirements: " + " | ".join(c["requirement"] for c in checks)
-    payload = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    # Full search_log/candidate_log/feasibility remain in the GitHub issue and
+    # exploration artifact. Feeding that entire packet to Google split an ordinary
+    # S700 draft into 7 arbitrary JSON fragments, losing all useful context.
+    claims = [dict(requirement=c["requirement"], status=c.get("status", "unknown"),
+                   finding=c.get("finding", ""), quote=c.get("quote", ""))
+              for c in checks]
+    payload = json.dumps(dict(question=question, draft=draft, checks=claims),
+                         ensure_ascii=False, separators=(",", ":"))
     tag = secrets.token_hex(8)
-    prefix = ("Independently verify this analysis, seek counterexamples. Distinguish missing evidence "
-              "from a false claim. Review only the visible material. Give reasons and finish with "
-              "exactly PASS or REVISE followed by a space and " + tag + " on a separate line.\n")
+    prefix = ("Audit this complete draft against the stated requirements. "
+              "REVISE if any claim is false or lacks evidence. Give a specific reason. "
+              "End with ONE exact separate line: REVISE " + tag +
+              " OR PASS " + tag + ".\n")
     # Repeat context if it fits. Otherwise the entire original remains in the fragments.
     if len(context.encode()) <= 800:
         prefix += context + "\n"
@@ -107,11 +115,23 @@ def evaluate(data, ask, read=source_text):
     votes = []
     for i, chunk in enumerate(chunks, 1):
         query = prefix + f"Part {i}/{len(chunks)}\n" + chunk
-        req = dict(query=query, tag=tag, draft=draft)
         answer = "NIEPOTWIERDZONE"
-        for _ in range(2):
+        # A second, independently phrased prompt helps when Google's HTML answer
+        # omitted the exact decision line. Do not fabricate a verdict.
+        for attempt in range(2):
+            if attempt == 0:
+                probe = query
+            else:
+                retry_prefix = ("Check this claim for factual errors and missing proof. "
+                                "End with exactly ONE line: REVISE " + tag +
+                                " OR PASS " + tag + ".\n")
+                probe = retry_prefix + f"Part {i}/{len(chunks)}\n" + chunk
+            if len(probe.encode()) > 2000:
+                # Never silently truncate evidence to obtain a convenient PASS.
+                continue
+            req = dict(query=probe, tag=tag, draft=draft)
             try:
-                answer = decide(req, ask(query))
+                answer = decide(req, ask(probe))
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
                 continue
             if answer != "NIEPOTWIERDZONE":
@@ -121,7 +141,7 @@ def evaluate(data, ask, read=source_text):
             return dict(review="DO POPRAWY", reason=answer.partition("\n\n")[2],
                         parts=len(chunks), reviewed=i, blocked=blocked)
         if not answer.startswith("SPRAWDZONE ·"):
-            return dict(review="NIEPOTWIERDZONE", reason="Brak jednoznacznej oceny części "+str(i),
+            return dict(review="NIEPOTWIERDZONE", reason="Google AI did not return an authenticated PASS/REVISE marker for part "+str(i)+" after two distinct prompts",
                         parts=len(chunks), reviewed=i, blocked=blocked)
     # Fragment approvals cannot establish consistency across separate model contexts.
     solved = False
