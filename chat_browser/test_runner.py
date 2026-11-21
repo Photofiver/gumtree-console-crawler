@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 from chat_browser.runner import (parse_task, require_public_url,
     is_safe_browsing_url, is_safe_click, is_search_field, classify_page_failure,
-    observed_safe_link)
+    observed_safe_link, point_in_canvas)
 from chat_browser.blueprint_session import encode_state, decode_state, filter_blueprint_state
 
 
@@ -209,6 +209,48 @@ class RunnerTests(unittest.TestCase):
             decode_state("")
         with self.assertRaises(ValueError):
             encode_state({"cookies": [], "origins": []})
+
+    def test_robotics_lab_canvas_controls(self):
+        with patch("chat_browser.runner.require_public_url"):
+            task = parse_task(json.dumps({
+                "url": "https://robotics-lab-app.vercel.app/#rpi4",
+                "steps": [
+                    {"action": "scene_inspect"},
+                    {"action": "canvas_hover", "x": 0.2, "y": 0.3},
+                    {"action": "canvas_click", "x": 0.5, "y": 0.5, "canvas_index": 0},
+                    {"action": "canvas_drag", "x": 0.2, "y": 0.2, "to_x": 0.8, "to_y": 0.8},
+                    {"action": "scene_button", "value": "Open on the workbench"},
+                    {"action": "scene_button", "value": "Run"}
+                ]
+            }))
+        self.assertEqual(len(task["steps"]), 6)
+
+    def test_scene_controls_restricted_to_robotics_lab(self):
+        with patch("chat_browser.runner.require_public_url"):
+            for url in ("https://example.com", "https://robotics-lab-app.vercel.app.evil.com",
+                        "http://robotics-lab-app.vercel.app"):
+                with self.assertRaises(ValueError):
+                    parse_task(json.dumps({"url": url, "steps": [{"action": "canvas_click", "x": 0.5, "y": 0.5}]}))
+
+    def test_scene_rejects_out_of_bounds_coordinates_and_actions(self):
+        with patch("chat_browser.runner.require_public_url"):
+            for step in [
+                {"action": "canvas_click", "x": -0.1, "y": 0.5},
+                {"action": "canvas_click", "x": 1.1, "y": 0.5},
+                {"action": "canvas_click", "x": True, "y": 0.5},
+                {"action": "canvas_drag", "x": 0.2, "y": 0.2, "to_x": 1.2, "to_y": 0.6},
+                {"action": "canvas_click", "x": 0.5, "y": 0.5, "canvas_index": -1},
+                {"action": "scene_button", "value": "Buy"},
+            ]:
+                with self.subTest(step=step), self.assertRaises(ValueError):
+                    parse_task(json.dumps({"url": "https://robotics-lab-app.vercel.app",
+                                          "steps": [step]}))
+
+    def test_scene_mouse_pointer_remains_inside_viewport(self):
+        rect = {"x": 50, "y": 50, "width": 200, "height": 100}
+        self.assertEqual(point_in_canvas(rect, 0.5, 0.5, {"width": 500, "height": 500}), (150, 100))
+        with self.assertRaises(ValueError):
+            point_in_canvas(rect, 1, 1, {"width": 190, "height": 100})
 
 
 if __name__ == "__main__":
