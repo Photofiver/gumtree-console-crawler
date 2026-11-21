@@ -345,12 +345,30 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                             item["screenshot_result"] = "viewport_fallback"
                             item["full_page_error"] = type(first_error).__name__
                         except Exception as second_error:
-                            item["screenshot_result"] = "failed"
-                            item["screenshot_error"] = (
-                                type(first_error).__name__ + ": " + str(first_error)[:220]
-                                + "; fallback " + type(second_error).__name__
-                                + ": " + str(second_error)[:220]
-                            )
+                            # Direct Chrome DevTools capture bypasses Playwright's
+                            # screenshot layout/animation wait, which may stall
+                            # on continuously rendered WebGL scenes.
+                            try:
+                                import base64
+                                cdp = context.new_cdp_session(page)
+                                image_data = cdp.send("Page.captureScreenshot", {
+                                    "format": "png", "fromSurface": True,
+                                    "captureBeyondViewport": False,
+                                }).get("data")
+                                if not image_data:
+                                    raise ValueError("Chrome DevTools returned no screenshot")
+                                screenshot_path.write_bytes(base64.b64decode(image_data, validate=True))
+                                screenshots.append(screenshot_path.name)
+                                item["screenshot_result"] = "cdp_fallback"
+                            except Exception as third_error:
+                                item["screenshot_result"] = "failed"
+                                item["screenshot_error"] = (
+                                    type(first_error).__name__ + ": " + str(first_error)[:180]
+                                    + "; viewport " + type(second_error).__name__
+                                    + ": " + str(second_error)[:180]
+                                    + "; CDP " + type(third_error).__name__
+                                    + ": " + str(third_error)[:180]
+                                )
                 elif action == "extract":
                     item["text"] = page.locator(selector).first.inner_text(timeout=10000)[:4000]
                 action_results.append(item)
