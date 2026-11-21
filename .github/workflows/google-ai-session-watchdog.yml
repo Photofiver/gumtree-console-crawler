@@ -1,0 +1,46 @@
+name: Google AI session watchdog (self-healing)
+on:
+  schedule:
+    # Check at offset minutes to avoid GitHub's busiest minute.
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  revive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Restart warm Google AI worker if no session is running or queued
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflow_id = 'google-ai-warm-watchdog.yml';
+            const statuses = ['in_progress', 'queued', 'waiting', 'requested', 'pending'];
+            let alive = false;
+            for (const status of statuses) {
+              const { data } = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, status, per_page: 20
+              });
+              const active = data.workflow_runs.filter(run =>
+                run.event === 'schedule' || run.event === 'workflow_dispatch'
+              );
+              if (active.length > 0) {
+                alive = true;
+                core.info('Warm session already active or scheduled: ' + active[0].html_url);
+                break;
+              }
+            }
+            if (!alive) {
+              const { data: repository } = await github.rest.repos.get({owner, repo});
+              await github.rest.actions.createWorkflowDispatch({
+                owner, repo, workflow_id,
+                ref: repository.default_branch
+              });
+              core.info('Warm session restarted by watchdog');
+            }
