@@ -19,6 +19,27 @@ jobs:
       - name: Regression checks for consultation state transitions
         if: startsWith(github.event.issue.title, '[consult]')
         run: python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
+      - name: Screen 100 or 1000 source-listed configurations before AI review
+        if: startsWith(github.event.issue.title, '[consult]')
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          from phone_google_ask.explore import screen
+          try:
+              data = json.loads(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["issue"]["body"])
+              if data.get("idea_target") in (100, 1000):
+                  report = screen(data, data["idea_target"])
+                  Path("exploration-report.json").write_text(json.dumps(report, ensure_ascii=False))
+                  print(json.dumps(report["summary"], ensure_ascii=False))
+              else:
+                  print("No idea_target: standard review; no artificial idea count.")
+          except (ValueError, KeyError, TypeError) as error:
+              Path("exploration-error.txt").write_text(str(error))
+              print("Exploration unavailable:", error)
+          PY
       - name: Prepare question and isolated test
         if: steps.warm.outputs.served != 'true'
         shell: bash
@@ -112,6 +133,8 @@ jobs:
           path: |
             google-ai-ask-result.json
             consult-result.json
+            exploration-report.json
+            exploration-error.txt
             google-ai-ask-instrumentation.txt
           if-no-files-found: warn
           retention-days: 7
