@@ -12,7 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from review import decide
-from revision_guard import focused_patch, tagged_json, safe_arithmetic_patch, validate_revision
+from revision_guard import guarded_patch, tagged_json, safe_arithmetic_patch, validate_revision
 
 
 def digest(value):
@@ -148,17 +148,11 @@ def evaluate(data, ask, read=source_text):
                 answer = decide(dict(query=probe, tag=tag, draft=draft), ask(probe))
             except (OSError, ValueError, KeyError, RuntimeError, subprocess.SubprocessError):
                 continue
-            if (answer.startswith("DO POPRAWY") and
-                    answer.partition("\n\n")[2].strip() == "Brak odczytanego uzasadnienia." and
-                    attempt == 0):
-                continue  # Bare REVISE is not enough context for a safe edit.
             if answer != "NIEPOTWIERDZONE":
                 break
         votes.append(answer.split("\n\n", 1)[0])
         if answer.startswith("DO POPRAWY"):
-            reason = answer.partition("\n\n")[2]
-            return dict(review="DO POPRAWY", reason=reason,
-                        reason_unavailable=(reason.strip() == "Brak odczytanego uzasadnienia."),
+            return dict(review="DO POPRAWY", reason=answer.partition("\n\n")[2],
                         parts=len(chunks), reviewed=i, blocked=blocked)
         if not answer.startswith("SPRAWDZONE ·"):
             return dict(review="NIEPOTWIERDZONE",
@@ -214,41 +208,31 @@ def google_research(data, result, ask):
         "criticism": criticism,
         "instructions": "Keep the exact same equipment and user constraints.",
     }
-    # Long drafts must be revised at the criticized claim, not always at
-    # their first 850 characters (which may discuss an unrelated requirement).
-    draft = data["draft"]
-    tokens = {w for w in re.findall(r"[\w/-]{5,}", criticism.casefold())
-              if w not in {"could", "would", "should", "therefore", "draft", "claims",
-                           "without", "verified", "missing", "source", "google"}}
-    windows = [draft[i:i + 560] for i in range(0, len(draft), 440)]
-    windows = [w for w in windows if w.strip()] or [draft]
-    windows.sort(key=lambda w: (sum(len(t) for t in tokens if t in w.casefold()),
-                                 -draft.find(w)), reverse=True)
     errors = []
     for attempt in range(2):
         prefix = (
-            'Correct ONE specifically identified factual error using draft_excerpt. '
-            'Reply ONLY as JSON: {"tag":"<exact input tag>","old":"<exact quote>",'
-            '"new":"<replacement>"}. Copy the tag exactly from input. '
-            'old MUST be contiguous literal text from draft_excerpt, 5-200 characters. '
-            'new MUST be 1-200 characters. Never invent evidence, products or prices. '
+            "Correct ONE factual error in the DRAFT below. "
+            "Return ONLY one JSON object with fields tag, old, new, where tag is the "
+            "same tag, old is an EXACT substring of DRAFT and new is a short replacement "
+            "(under 480 characters). No new products, stations, prices or claims. "
+            "Do not replace the entire draft. If evidence is missing, state that "
+            "it remains unverified; never invent proof. "
         )
         if attempt:
             prefix = (
-                "The prior response was not a valid safe correction. Return JSON ONLY, "
-                "including the exact input tag and one exact 5-200 character old quote "
-                "from draft_excerpt, then a 1-200 character new quote. "
-                "Do not add unverifiable claims. "
+                "Your previous response could not be safely parsed or applied. "
+                "Respond ONLY with a valid JSON object with fields tag, old, new; "
+                "old must exactly match the draft and new must not invent claims. "
             )
         query = None
-        for excerpt_length in (560, 440, 320, 220, 120):
-            packet = dict(base, draft_excerpt=windows[0][:excerpt_length])
+        for excerpt_length in (850, 650, 450, 250, 100):
+            packet = dict(base, draft_excerpt=data["draft"][:excerpt_length])
             candidate = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
             if len(candidate.encode()) <= 2000:
                 query = candidate
                 break
         if query is None:
-            raise ValueError("Could not fit a bounded targeted patch request")
+            raise ValueError("Could not fit a complete bounded patch request")
         page = ask(query)
         u = urlsplit(page.get("page", {}).get("url", ""))
         params = parse_qs(u.query)
@@ -261,7 +245,7 @@ def google_research(data, result, ask):
             errors.append("No tagged structured JSON patch")
             continue
         try:
-            patched = focused_patch(data, proposal["old"], proposal["new"])
+            patched = guarded_patch(data, proposal["old"], proposal["new"])
         except ValueError as exc:
             errors.append(str(exc))
             continue
@@ -338,10 +322,6 @@ def solve(data, ask, read=source_text, research=google_research):
         if (result["review"] in ("SPRAWDZONE", "NIEPOTWIERDZONE")
                 or result.get("status") == "POTWIERDZONE"
                 or attempt == 3):
-            break
-        if result.get("reason_unavailable"):
-            step["correction_status"] = "BLOCKED_NO_REASON"
-            result["obstacle"] = "Google AI returned REVISE without a usable explanation"
             break
         try:
             revised = validate_revision(data, research(data, result, audited_ask))
