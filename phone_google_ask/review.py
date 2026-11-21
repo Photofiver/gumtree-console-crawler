@@ -45,8 +45,12 @@ def decide(req, result):
         return "SPRAWDZONE · SHA-256 " + digest + "\n\n" + req["draft"]
     if votes == ["REVISE " + req["tag"]]:
         i = lines.index(votes[0])
-        reason = "\n".join(lines[max(0, i-5):i]).strip()
-        return "DO POPRAWY\n\n" + reason[:1500]
+        # Ignore the echoed search prompt and Google navigation above the answer.
+        echoed = [part.strip() for part in req["query"].splitlines() if part.strip()]
+        boundary = max((j for j, line in enumerate(lines[:i])
+                        if any(part in line for part in echoed)), default=-1)
+        reason = "\n".join(lines[boundary + 1:i]).strip()
+        return "DO POPRAWY\n\n" + (reason[-1500:] or "Brak odczytanego uzasadnienia.")
     return "NIEPOTWIERDZONE"
 
 
