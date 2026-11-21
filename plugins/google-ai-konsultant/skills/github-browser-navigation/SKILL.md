@@ -44,3 +44,13 @@ Issue example:
 ```
 
 Important: coordinates must be chosen after reading current canvas geometry and screenshot, not guessed as evidence. To connect wires, obtain an observed pin placement before trying `canvas_click` on both endpoints (or `canvas_drag` if the application requires dragging). Always distinguish simulated pointer activity from a confirmed connected circuit. The GitHub task is single-session within an issue; a new issue starts a new browser with no saved simulation state. Never claim a persisted project unless the site provides and confirms saving.
+
+## Lazy-mounted workbench controls
+
+After `Open on the workbench`, the local simulator mounts controls asynchronously. The runner retries allowlisted `scene_button` labels for up to 8 seconds. On this public demo it permits `Wire it for me`, `Run`, `Remove wires`, and `Clear the bench`; the following is a supported task syntax:
+
+```json
+{"url":"https://robotics-lab-app.vercel.app/#rpi4","steps":[{"action":"scene_button","value":"Open on the workbench"},{"action":"scene_button","value":"Wire it for me"},{"action":"scene_button","value":"Run"},{"action":"scene_inspect"}]}
+```
+
+Never confuse a sent click with a connected or running circuit; verify visible result. A task keeps one browser session only until the issue workflow finishes; a later issue starts a new fresh simulator. Do not claim that a Raspberry Pi project was wired when the bench actually uses an Arduino demo.
