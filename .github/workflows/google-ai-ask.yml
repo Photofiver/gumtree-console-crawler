@@ -126,10 +126,13 @@ jobs:
             const fs=require('fs');
             let body='Google AI Mode did not return a readable result. See the workflow logs.';
             if(fs.existsSync('review-transport-error.txt')){
-              body='Google AI: NIEPOTWIERDZONE — zapytanie nie zostało wysłane. '+fs.readFileSync('review-transport-error.txt','utf8');
+              body='Google AI: NIE SPRAWDZONO — zapytanie nie zostało wysłane. '+fs.readFileSync('review-transport-error.txt','utf8');
+            }
+            if(fs.existsSync('review-research-error.txt')){
+              body='Kontrola poszukiwań: WYMAGA DALSZEGO SZUKANIA — '+fs.readFileSync('review-research-error.txt','utf8')+' Google AI nie zostało jeszcze zapytane.';
             }
             if(context.payload.issue.title.startsWith('[google-ask] [review]')){
-              if(!fs.existsSync('review-transport-error.txt')) body='Google AI: NIEPOTWIERDZONE';
+              if(!fs.existsSync('review-transport-error.txt') && !fs.existsSync('review-research-error.txt')) body='Google AI: NIEPOTWIERDZONE';
               if(process.env.REVIEW_RUN_OK === 'success'){
                 const {execFileSync}=require('node:child_process');
                 body='Google AI: '+execFileSync('python3',['phone_google_ask/review.py','result'],{encoding:'utf8'}).slice(0,-1);
