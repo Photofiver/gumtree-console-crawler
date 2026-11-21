@@ -21,7 +21,7 @@ MAX_TEXT = 14000
 ACTIONS = {"click", "click_text", "dismiss_cookies", "fill", "press", "wait", "wait_for", "scroll", "screenshot", "extract", "inspect", "snapshot", "blueprint_prompt", "scene_inspect", "scene_button", "canvas_hover", "canvas_click", "canvas_drag"}
 ROBOTICS_HOST = "robotics-lab-app.vercel.app"
 SCENE_ACTIONS = {"scene_inspect", "scene_button", "canvas_hover", "canvas_click", "canvas_drag"}
-SCENE_BUTTONS = {"open on the workbench", "workbench", "free build", "run", "stop", "reset", "start", "pause", "add component", "add led", "led", "rotate", "labels", "top", "bottom", "front", "assemble it", "find the part", "fullscreen", "full screen"}
+SCENE_BUTTONS = {"open on the workbench", "workbench", "free build", "run", "stop", "reset", "start", "pause", "add component", "add led", "led", "rotate", "labels", "top", "bottom", "front", "assemble it", "find the part", "fullscreen", "full screen", "wire it for me", "remove wires", "clear the bench", "show me", "top view", "missions", "steps", "code", "serial"}
 MUTATING_WORDS = re.compile(
     r"(?<![a-z])(?:delete|remove|erase|destroy|drop|reset|purge|"
     r"unsubscribe|logout|signout|cancel|purchase|buy|checkout|pay|"
