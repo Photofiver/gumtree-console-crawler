@@ -5,7 +5,7 @@ import re
 PRICE_RE = re.compile(r"(?:£|GBP\s*)(\d+(?:[.,]\d{1,2})?)", re.IGNORECASE)
 BAD_TOPIC = re.compile(r"\b(?:beton|cement|concrete|wapienny|prawie\s+za\s+darmo)\b", re.I)
 FOREIGN_S700 = re.compile(r"\b(?:ALLPOWERS\s+)?(?:R600|S300|S500|S1500|S2000|S3000)\b", re.I)
-BARE_VERDICT = re.compile(r"\\s*(?:PASS|REVISE|DO POPRAWY|SPRAWDZONE|POTWIERDZONE|NIEPOTWIERDZONE)(?:\\s+[a-f0-9]{16})?\\s*", re.I)
+BARE_VERDICT = re.compile(r"\s*(?:PASS|REVISE|DO POPRAWY|SPRAWDZONE|POTWIERDZONE|NIEPOTWIERDZONE)(?:\\s+[a-f0-9]{16})?\s*", re.I)
 WRONG_VOC = re.compile(
     r"25[.,]2\s*V\s*(?:<|<=|jest\s+mniejsze\s+niż|miesci\s+sie\s+w|mieści\s+się\s+w)\s*24\s*V",
     re.I,
