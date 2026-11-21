@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-20T18:31:51.188962Z",
-  "followers": 3,
-  "followers_checked_at_utc": "2026-11-20T18:31:51.188962Z",
+  "generated_at_utc": "2026-11-21T00:08:53.590498Z",
+  "followers": 4,
+  "followers_checked_at_utc": "2026-11-21T00:08:53.590498Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -56,6 +56,10 @@
     {
       "utc": "2026-11-20T18:31:51.188962Z",
       "followers": 3
+    },
+    {
+      "utc": "2026-11-21T00:08:53.590498Z",
+      "followers": 4
     }
   ],
   "posted_confirmed": 20,
@@ -75,10 +79,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 62,
+        "views": 212,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+      "engagement_checked_at_utc": "2026-11-21T00:08:53.590498Z"
     },
     {
       "id": "6aff316d7218d2f8fc1e6016",
@@ -93,7 +97,7 @@
         "views": 599,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+      "engagement_checked_at_utc": "2026-11-21T00:08:53.590498Z"
     },
     {
       "id": "6afea6dbb7fe0c41dda6bdf8",
@@ -108,7 +112,7 @@
         "views": 603,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+      "engagement_checked_at_utc": "2026-11-21T00:08:53.590498Z"
     },
     {
       "id": "6afcd7b7b1f02ae62298907d",
@@ -120,10 +124,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 0,
+        "views": 2,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+      "engagement_checked_at_utc": "2026-11-21T00:08:53.590498Z"
     },
     {
       "id": "6afcaf2dc595016b82b1bae5",
@@ -138,7 +142,7 @@
         "views": 1,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-20T18:31:51.188962Z"
+      "engagement_checked_at_utc": "2026-11-21T00:08:53.590498Z"
     },
     {
       "id": "6afc8d6aa166de7b3ec4f3ce",
@@ -376,11 +380,11 @@
     "likes": 3,
     "comments": 0,
     "shares": 0,
-    "views": 1265,
+    "views": 1417,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-20T18:31:51.188962Z",
+    "last_checked_at_utc": "2026-11-21T00:08:53.590498Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
