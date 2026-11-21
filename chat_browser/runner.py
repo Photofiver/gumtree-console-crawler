@@ -329,8 +329,28 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                     page.wait_for_timeout(step["ms"])
                 elif action == "screenshot":
                     screenshot_path.parent.mkdir(parents=True, exist_ok=True)
-                    page.screenshot(path=str(screenshot_path), full_page=True)
-                    screenshots.append(screenshot_path.name)
+                    try:
+                        page.screenshot(path=str(screenshot_path), full_page=True,
+                                        timeout=15000, animations="disabled", caret="hide")
+                        screenshots.append(screenshot_path.name)
+                        item["screenshot_result"] = "full_page"
+                    except Exception as first_error:
+                        # Animated WebGL/three.js pages can exceed the full-page
+                        # screenshot timeout. Preserve the rest of the browser
+                        # inspection even if a screenshot cannot be captured.
+                        try:
+                            page.screenshot(path=str(screenshot_path), full_page=False,
+                                            timeout=15000, animations="disabled", caret="hide")
+                            screenshots.append(screenshot_path.name)
+                            item["screenshot_result"] = "viewport_fallback"
+                            item["full_page_error"] = type(first_error).__name__
+                        except Exception as second_error:
+                            item["screenshot_result"] = "failed"
+                            item["screenshot_error"] = (
+                                type(first_error).__name__ + ": " + str(first_error)[:220]
+                                + "; fallback " + type(second_error).__name__
+                                + ": " + str(second_error)[:220]
+                            )
                 elif action == "extract":
                     item["text"] = page.locator(selector).first.inner_text(timeout=10000)[:4000]
                 action_results.append(item)
