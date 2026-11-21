@@ -147,6 +147,14 @@ def point_in_canvas(rect: dict, x: float, y: float, viewport: dict) -> tuple[flo
     return px, py
 
 
+def scene_canvas_rectangles(page) -> list[dict]:
+    """Fixed, read-only DOM geometry avoids Playwright bounding_box stalls on WebGL."""
+    return page.locator("canvas").evaluate_all("""elements => elements.slice(0, 8).map((el, index) => {
+        const r = el.getBoundingClientRect();
+        return {index, x:r.left, y:r.top, width:r.width, height:r.height};
+    })""")
+
+
 def validate_scene_step(step: dict) -> None:
     action = step["action"]
     if action in {"canvas_hover", "canvas_click", "canvas_drag"}:
@@ -401,12 +409,10 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                     require_scene_host(page.url)
                     if action == "scene_inspect":
                         item["canvases"] = []
-                        canvases = page.locator("canvas")
-                        for index in range(min(canvases.count(), 8)):
-                            rect = canvases.nth(index).bounding_box(timeout=5000)
+                        for rect in scene_canvas_rectangles(page):
                             item["canvases"].append({
-                                "index": index,
-                                "rect": {k: round(rect[k], 1) for k in ("x", "y", "width", "height")} if rect else None,
+                                "index": rect["index"],
+                                "rect": {k: round(rect[k], 1) for k in ("x", "y", "width", "height")},
                             })
                         item["controls"] = page.get_by_role("button").all_inner_texts()[:40]
                         item["viewport"] = page.viewport_size
@@ -422,11 +428,12 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                         item["control_activated"] = label
                     else:
                         index = step.get("canvas_index", 0)
-                        canvas = page.locator("canvas").nth(index)
-                        canvas.scroll_into_view_if_needed(timeout=7000)
-                        rect = canvas.bounding_box(timeout=7000)
-                        if rect is None:
-                            raise ValueError("Canvas is not visible")
+                        rectangles = scene_canvas_rectangles(page)
+                        if index >= len(rectangles):
+                            raise ValueError("Canvas index not found; use scene_inspect first")
+                        rect = rectangles[index]
+                        # Do not auto-scroll unpredictably on animated 3D pages.
+                        # Use an explicit scroll step, then inspect geometry again.
                         viewport = page.viewport_size or {"width": 1280, "height": 800}
                         x, y = point_in_canvas(rect, step["x"], step["y"], viewport)
                         if action == "canvas_drag":
