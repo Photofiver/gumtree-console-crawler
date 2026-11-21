@@ -2,7 +2,8 @@ import json
 import unittest
 from unittest.mock import patch
 from chat_browser.runner import (parse_task, require_public_url,
-    is_safe_browsing_url, is_safe_click, is_search_field, classify_page_failure)
+    is_safe_browsing_url, is_safe_click, is_search_field, classify_page_failure,
+    observed_safe_link)
 from chat_browser.blueprint_session import encode_state, decode_state, filter_blueprint_state
 
 
@@ -100,6 +101,22 @@ class RunnerTests(unittest.TestCase):
                         {"action": action, "selector": "form"}
                     ]}))
 
+
+
+    def test_snapshot_link_navigation_is_guarded(self):
+        actions = [{"frames": [{"links": [
+            {"text": "Workbench", "url": "https://example.com/#lab"},
+            {"text": "Delete my data", "url": "https://example.com/delete"},
+            {"text": "Continue", "url": "https://example.com/withdraw"},
+        ]}]}]
+        with patch("chat_browser.runner.require_public_url", side_effect=lambda u: u):
+            self.assertEqual(
+                observed_safe_link(actions, "Workbench"),
+                "https://example.com/#lab"
+            )
+            self.assertIsNone(observed_safe_link(actions, "Delete"))
+            self.assertIsNone(observed_safe_link(actions, "Continue"))
+            self.assertIsNone(observed_safe_link(actions, "Missing"))
 
 
     def test_ebay_failure_is_not_success(self):
