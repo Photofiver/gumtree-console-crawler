@@ -1,0 +1,6 @@
+interface:
+  display_name: Google AI Konsultant
+  short_description: Sprawdza odpowiedź w Google AI
+  default_prompt: Sprawdź to pytanie z Google AI, porównaj rozwiązania i usuń sprzeczności.
+policy:
+  allow_implicit_invocation: true
