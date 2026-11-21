@@ -13,7 +13,10 @@ spec.loader.exec_module(waiter)
 
 
 def vote(query, decision):
-    tag = re.search("space and ([0-9a-f]+)", query)[1]
+    match = re.search(r"(?:REVISE |PASS |space and )([0-9a-f]{12,16})", query)
+    if not match:
+        raise AssertionError("Review prompt is missing a deterministic verdict tag")
+    tag = match[1]
     return {"question":query, "page":{"url":"https://www.google.com/search?" +
         urlencode({"q":query,"udm":"50"}), "text":"Evidence: voltage exceeds port limit\n"+decision+" "+tag}}
 
