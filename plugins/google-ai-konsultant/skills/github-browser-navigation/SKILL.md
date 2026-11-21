@@ -23,7 +23,24 @@ This skill complements `google-ai-second-opinion`, not replaces it. A `[browser]
 ## Non-negotiable limits
 
 - The GitHub runner is remote Playwright Chromium, not ChatGPT's live Cloud Browser and not the user's Android or laptop browser. It cannot click their device screen or inherit their logins.
-- `snapshot` and text extraction are not proof that a three.js/WebGL canvas rendered correctly. For 3D sites, obtain a screenshot artifact and inspect it; canvas element interaction is not currently supported by the runner. Say so explicitly rather than reporting that the model was manipulated.
+- `snapshot` and text extraction are not proof that a three.js/WebGL canvas rendered correctly. For Robotics Lab, dedicated `canvas_hover`, `canvas_click`, `canvas_drag`, `scene_button` and `scene_inspect` commands dispatch local browser events. An event-dispatched result is NOT proof that the desired 3D interaction succeeded; examine the resulting scene, status and screenshots.
 - Some sites, including Google Search, may challenge datacenter traffic. Google AI Mode verification uses the separate Android/WebView workflow, which may itself fail. Do not claim unrestricted Google access.
 - Browser results are collected via GitHub issue comments and screenshots via short-lived Actions artifacts; ensure they come from the expected workflow. Do not present a public GitHub Issue as private.
 - Plugin instructions alone cannot force every ChatGPT turn to call tools. If tools are unavailable, report that limitation clearly.
+
+## Robotics Lab 3D input (site-restricted)
+
+GitHub runner supports mouse control **only** on `https://robotics-lab-app.vercel.app` and does not provide arbitrary universal webpage writing. These are ephemeral, public simulator actions, not access to the user's device:
+
+- `scene_inspect`: lists visible `canvas` geometry, indexes, viewport dimensions, and simulator button text.
+- `canvas_hover` / `canvas_click`: require `x` and `y` normalized from 0 to 1 inside the selected canvas. `canvas_index` defaults to 0.
+- `canvas_drag`: requires `x`, `y`, `to_x`, `to_y` (all normalized 0..1). Uses true mouse down, smooth movement, then mouse up. The runner rejects coordinates outside visible canvas/viewport.
+- `scene_button`: clicks strictly known Robotics Lab control labels (e.g. `Open on the workbench`, `Free build`, `Run`, `Stop`, `Reset`) after exact accessible-name matching; it cannot click arbitrary buttons elsewhere.
+
+Issue example:
+
+```json
+{"url":"https://robotics-lab-app.vercel.app/#rpi4","steps":[{"action":"scene_inspect"},{"action":"scene_button","value":"Open on the workbench"},{"action":"scene_inspect"},{"action":"canvas_hover","canvas_index":0,"x":0.5,"y":0.5},{"action":"canvas_drag","canvas_index":0,"x":0.4,"y":0.4,"to_x":0.6,"to_y":0.6},{"action":"screenshot"}]}
+```
+
+Important: coordinates must be chosen after reading current canvas geometry and screenshot, not guessed as evidence. To connect wires, obtain an observed pin placement before trying `canvas_click` on both endpoints (or `canvas_drag` if the application requires dragging). Always distinguish simulated pointer activity from a confirmed connected circuit. The GitHub task is single-session within an issue; a new issue starts a new browser with no saved simulation state. Never claim a persisted project unless the site provides and confirms saving.
