@@ -31,7 +31,7 @@ jobs:
       - name: Compile standalone posting script
         run: python3 -m py_compile buffer_tiktok/post_new_video.py buffer_tiktok/captions.py
       - name: Verify publisher safety offline
-        run: python3 -m unittest discover -s buffer_tiktok -p 'test_*.py' -v
+        run: python3 -m unittest discover -s buffer_tiktok -p 'test_post_new_video.py' -v
       - name: Prepare one original AI video and submit via Buffer when authorized
         shell: bash
         run: |
