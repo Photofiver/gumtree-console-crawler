@@ -60,6 +60,40 @@ def tagged_json(page_text, tag):
     return None
 
 
+
+def focused_patch(data, old, new):
+    """Reduce an overlong proposed rewrite to its one exact local change.
+
+    The full old text must first occur in the original draft: a reviewer may
+    not fabricate context or rewrite the entire answer. Only a single short
+    differing span can pass the usual strict safety checks.
+    """
+    if not isinstance(old, str) or not isinstance(new, str):
+        raise ValueError("Patch old/new must be strings")
+    if len(old) <= 480 and len(new) <= 480:
+        return guarded_patch(data, old, new)
+    original = data["draft"]
+    if original.count(old) != 1:
+        raise ValueError("Overlong patch old is not an exact unique original span")
+    common = 0
+    while common < min(len(old), len(new)) and old[common] == new[common]:
+        common += 1
+    tail = 0
+    while (tail < len(old) - common and tail < len(new) - common
+           and old[len(old) - tail - 1] == new[len(new) - tail - 1]):
+        tail += 1
+    old_end = len(old) - tail if tail else len(old)
+    new_end = len(new) - tail if tail else len(new)
+    # Preserve short identical context on each side, ensuring an exact match.
+    left = max(0, common - 20)
+    right = min(tail, 20)
+    old_span = old[left:old_end + right]
+    new_span = new[left:new_end + right]
+    if not 5 <= len(old_span) <= 480 or not 1 <= len(new_span) <= 480:
+        raise ValueError("Overlong patch contains no single bounded local correction")
+    return guarded_patch(data, old_span, new_span)
+
+
 def safe_arithmetic_patch(data):
     """Only repair the explicit 25.2V < 24V test defect; do not invent sources."""
     original = data["draft"]
