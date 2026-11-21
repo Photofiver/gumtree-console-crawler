@@ -422,7 +422,7 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                         # public simulator button. Playwright's locator.click and
                         # dispatch_event both await actionability on WebGL and time out.
                         activated = page.locator("button").evaluate_all("""(els, label) => {
-                            const norm = value => (value || '').replace(/\\s+/g, ' ').trim().toLowerCase();
+                            const norm = value => (value || '').replace(/\s+/g, ' ').trim().toLowerCase();
                             const target = els.find(el => norm(el.innerText || el.getAttribute('aria-label') || el.textContent) === norm(label));
                             if (!target) return false;
                             target.click();
