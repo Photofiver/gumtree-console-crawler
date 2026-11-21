@@ -285,3 +285,20 @@ class ConsultTests(unittest.TestCase):
         with patch.object(waiter,"lookup",return_value=dict(title=title+" /3",review="DO POPRAWY",
                 status="NIEPOTWIERDZONE",reason="Napięcie",history=[{}])):
             self.assertEqual(waiter.evaluate(event),{})
+
+    def test_stop_hook_cannot_skip_github_when_unavailable(self):
+        event = dict(session_id="session", turn_id="turn", hook_event_name="Stop",
+                     last_assistant_message="NIEPOTWIERDZONE Brak dostępu: GitHub")
+        result = waiter.evaluate(event)
+        self.assertEqual(result["decision"], "block")
+
+    def test_stop_hook_rejects_fake_positive_without_google_answer(self):
+        from unittest.mock import patch
+        import hashlib
+        title = "[consult] " + hashlib.sha256(b"session" + bytes([0]) + b"turn").hexdigest()[:24]
+        event = dict(session_id="session", turn_id="turn", hook_event_name="Stop",
+                     last_assistant_message="POTWIERDZONE test\n" + waiter.LINK + "132")
+        with patch.object(waiter, "lookup", return_value=dict(
+                title=title, review="SPRAWDZONE", status="POTWIERDZONE",
+                draft="test", google_ai_responses_received=0)):
+            self.assertEqual(waiter.evaluate(event)["decision"], "block")
