@@ -144,7 +144,8 @@
       "source": "social_videos/new-ai-cat-20261120-s05-doing-yoga.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261120-s05-doing-yoga.mp4",
       "attempted_at": "2026-11-21T15:21:15.346984+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6b01b6ec8bd84d5966faa2d7"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
