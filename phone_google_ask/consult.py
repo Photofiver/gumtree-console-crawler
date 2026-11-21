@@ -260,6 +260,16 @@ def main():
     except Exception as exc:
         result = dict(review="NIEPOTWIERDZONE", reason=type(exc).__name__ + ": " + str(exc)[:500])
     result.setdefault("status", "NIEPOTWIERDZONE")
+    # Computed hypotheses are intentionally separate from verified research.
+    report = Path("exploration-report.json")
+    if report.exists():
+        try:
+            result["exploration"] = json.loads(report.read_text())["summary"]
+        except (KeyError, ValueError, OSError):
+            result["exploration_error"] = "Failed to load screening summary"
+    problem = Path("exploration-error.txt")
+    if problem.exists():
+        result["exploration_error"] = problem.read_text()[:350]
     result.update(issue=issue["number"], sha256=digest(body))
     Path("consult-result.json").write_text(json.dumps(result, ensure_ascii=False))
 
