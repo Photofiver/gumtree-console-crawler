@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from review import decide
+from revision_guard import guarded_patch, tagged_json, safe_arithmetic_patch, validate_revision
 
 
 def digest(value):
@@ -172,76 +173,68 @@ def evaluate(data, ask, read=source_text):
 
 
 def google_research(data, result, ask):
-    """Ask for changed findings in context. Treat suggested quotes as unverified."""
-    tag = secrets.token_hex(6)
-    prompt = ("Search for a different concrete solution. Check the criticism against manufacturer and "
-              "retailer pages. Return one JSON object between standalone lines BEGIN-" + tag +
-              " and END-" + tag + ". Keys: draft (revised complete answer), evidence (list of objects "
-              "with index (zero based), status met/unknown/failed, finding, source URL, exact quote). "
-              "Keep draft under 380 characters. Plain text, no math formatting. Preserve all requirements. Input: ")
-    evidence = [{"index": i, **c} for i, c in enumerate(data["checks"])]
-    payload = json.dumps(dict(question=data["question"], previous=data["draft"],
-                              feedback=result, checks=evidence), ensure_ascii=False)
-    # Research each fragment if necessary; merge proposed evidence by original index.
-    updated = dict(data, checks=[dict(c) for c in data["checks"]])
-    drafts = []
-    for piece in parts(payload, 2000-len(prompt.encode())):
-        query = prompt + piece
+    """Request ONE bounded text patch; never concatenate separate AI drafts.
+
+    AI suggestions are hypotheses, not source evidence. Only an exact substring
+    of the user's original draft can be replaced; requirements and checks stay.
+    """
+    tag = secrets.token_hex(8)
+    criticism = " ".join(result.get("reason", "").split())[:350]
+    base = {
+        "tag": tag,
+        "question": data["question"][:260],
+        "criticism": criticism,
+        "instructions": "Keep the exact same equipment and user constraints.",
+    }
+    errors = []
+    for attempt in range(2):
+        prefix = (
+            "Correct ONE factual error in the DRAFT below. "
+            "Return ONLY one JSON object with fields tag, old, new, where tag is the "
+            "same tag, old is an EXACT substring of DRAFT and new is a short replacement "
+            "(under 480 characters). No new products, stations, prices or claims. "
+            "Do not replace the entire draft. If evidence is missing, state that "
+            "it remains unverified; never invent proof. "
+        )
+        if attempt:
+            prefix = (
+                "Your previous response could not be safely parsed or applied. "
+                "Respond ONLY with a valid JSON object with fields tag, old, new; "
+                "old must exactly match the draft and new must not invent claims. "
+            )
+        query = None
+        for excerpt_length in (850, 650, 450, 250, 100):
+            packet = dict(base, draft_excerpt=data["draft"][:excerpt_length])
+            candidate = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+            if len(candidate.encode()) <= 2000:
+                query = candidate
+                break
+        if query is None:
+            raise ValueError("Could not fit a complete bounded patch request")
         page = ask(query)
         u = urlsplit(page.get("page", {}).get("url", ""))
         params = parse_qs(u.query)
-        if (page.get("question") != query or u.scheme != "https" or u.hostname != "www.google.com"
-                or u.path != "/search" or params.get("q") != [query] or params.get("udm") != ["50"]):
+        if (page.get("question") != query or u.scheme != "https" or
+                u.hostname != "www.google.com" or u.path != "/search" or
+                params.get("q") != [query] or params.get("udm") != ["50"]):
             raise ValueError("Research response did not match query")
-        match = re.search(r"(?ms)^BEGIN-" + tag + r"[ \t]*\n(.*?)^END-" + tag + r"[ \t]*$",
-                          page["page"]["text"])
-        if not match:
-            raise ValueError("No complete structured research response")
-        raw = match[1].strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-        # Google WebView renders line wraps inside JSON string literals.
-        proposal = json.loads(raw, strict=False)
-        if not isinstance(proposal["draft"], str) or not proposal["draft"].strip():
-            raise ValueError("Empty revision")
-        drafts.append(proposal["draft"].strip())
-        for entry in proposal.get("evidence", []):
-            i = entry["index"]
-            if isinstance(i, str) and i.isdecimal():
-                i = int(i)
-            if type(i) != int or not 0 <= i < len(evidence):
-                raise ValueError("Unknown requirement index")
-            for key in ("status", "finding", "source", "quote"):
-                if key in entry and isinstance(entry[key], str):
-                    updated["checks"][i][key] = entry[key]
-    updated["draft"] = "\n".join(drafts)
-    return updated
+        proposal = tagged_json(page["page"].get("text", ""), tag)
+        if proposal is None:
+            errors.append("No tagged structured JSON patch")
+            continue
+        try:
+            patched = guarded_patch(data, proposal["old"], proposal["new"])
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
+        # Never accept AI's proposed evidence as verified. Original checks stay.
+        return dict(data, draft=patched, checks=[dict(c) for c in data["checks"]])
+    raise ValueError("No safe patch accepted: " + "; ".join(errors)[:240])
 
 
 def evidence_revision(data, result, read):
-    """Withdraw the disputed recommendation and re-open exact sources after a failed research parse."""
-    checks, facts, gaps = [], [], []
-    for check in data["checks"]:
-        item = dict(check)
-        url, quote = item.get("source"), " ".join(item.get("quote", "").split())
-        observed = False
-        if url and len(quote) >= 8:
-            try:
-                observed = quote in read(url)
-            except (OSError, ValueError, subprocess.SubprocessError):
-                pass
-        if observed:
-            facts.append(url + " — " + quote)
-        if item.get("status") != "failed" or not observed:
-            item["status"] = "unknown"
-        gaps.append(item["requirement"])
-        checks.append(item)
-    if not facts:
-        return None
-    criticism = " ".join(result.get("reason", "").split())
-    draft = ("Wycofuję wcześniejszą rekomendację. W źródłach odczytano: " + " | ".join(facts)
-             + ". Do potwierdzenia dla jednego rozwiązania: " + "; ".join(gaps) + ".")
-    if criticism:
-        draft += " Uwaga recenzenta do sprawdzenia: " + criticism
-    return dict(data, draft=draft, checks=checks)
+    """Repair only a known deterministic arithmetic error; do not quote raw AI prose."""
+    return safe_arithmetic_patch(data)
 
 
 def solve(data, ask, read=source_text, research=google_research):
@@ -256,13 +249,15 @@ def solve(data, ask, read=source_text, research=google_research):
         if result.get("status") == "POTWIERDZONE" or result["review"] == "NIEPOTWIERDZONE" or attempt == 3:
             break
         try:
-            revised = research(data, result, ask)
+            revised = validate_revision(data, research(data, result, ask))
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
             history[-1]["research_error"] = str(exc)[:400]
             revised = evidence_revision(data, result, read)
             if revised is None:
-                result["obstacle"] = "Research: " + str(exc)[:400]
+                history[-1]["correction_status"] = "BLOCKED_UNVERIFIED"
+                result["obstacle"] = "No safe, evidenced revision: " + str(exc)[:300]
                 break
+            revised = validate_revision(data, revised)
         if " ".join(revised["draft"].split()).casefold() in seen:
             result["obstacle"] = "Research repeated a previously reviewed draft"
             break
