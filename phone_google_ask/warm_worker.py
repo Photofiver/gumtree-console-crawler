@@ -133,15 +133,28 @@ def handle(issue):
         for attempt in range(2):
             try:
                 answer = ask_emulator(question)
+                text = format_result(answer, req)
+                # Google AI may not follow the exact reviewer token on one load.
+                # Retry once; do not expose an intermediate unconfirmed result.
+                if text.startswith("Google AI: NIEPOTWIERDZONE") and attempt == 0:
+                    print("Google AI review incomplete; retrying once", flush=True)
+                    time.sleep(4)
+                    continue
                 break
             except RuntimeError:
                 if attempt == 1:
                     raise
                 print("Warm Android answer failed, retrying once", flush=True)
                 time.sleep(5)
-        text = format_result(answer, req)
     except Exception as exc:
         text = "Google AI: NIEPOTWIERDZONE\n\nWarm browser error: " + type(exc).__name__ + ": " + str(exc)[:700]
+    # In production a warm-session failure is provisional. The per-issue cold
+    # workflow remains the final fallback and MUST own the unconfirmed verdict.
+    # Posting early would make ChatGPT stop before the fallback finishes.
+    if text.startswith("Google AI: NIEPOTWIERDZONE") and not issue["title"].startswith("[google-warm-test]"):
+        print("Warm result unconfirmed for issue #", number,
+              "; withholding provisional comment and leaving cold fallback active", flush=True)
+        return False
     # Recheck to avoid duplicating a reply while the original per-issue workflow runs.
     if is_answered(number):
         return True
