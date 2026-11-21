@@ -316,8 +316,11 @@ def solve(data, ask, read=source_text, research=google_research):
                 data = dict(data, draft=last_reviewed)
                 break
         last_reviewed = data["draft"]
-        if (result.get("status") == "POTWIERDZONE"
-                or result["review"] == "NIEPOTWIERDZONE"
+        # A Google PASS ends text corrections even when evidence is incomplete.
+        # Missing/failed checks cannot be fixed by rewriting a passed answer:
+        # they require independent new evidence, not another speculative patch.
+        if (result["review"] in ("SPRAWDZONE", "NIEPOTWIERDZONE")
+                or result.get("status") == "POTWIERDZONE"
                 or attempt == 3):
             break
         try:
