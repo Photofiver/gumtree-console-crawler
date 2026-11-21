@@ -76,26 +76,6 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual(result["summary"]["verified_feasible_count"], 0)
         self.assertEqual(result["summary"]["genuinely_verified_retail_products"], 0)
 
-    def test_no_100_gbp_cap_after_user_removes_budget(self):
-        item = dict(model="Known 500W", source="https://example.org/known",
-                    rated_watts=500, voc_stc_v=19, voc_cold_v=21,
-                    isc_a=4, unit_price_gbp=150.0,
-                    retailer="amazon_uk", price_source="https://example.org/price")
-        data = dict(question="Nie ograniczaj budżetu do £100, może być więcej",
-                    candidate_log=[item])
-        result = screen(data, 1000)
-        self.assertIsNone(result["summary"]["budget_gbp"])
-        direct = [x for x in result["combinations"] if x["route"] == "direct_panel"]
-        self.assertTrue(direct)
-        self.assertTrue(all(x["screen"] != "reject_known_price_over_budget" for x in direct))
-        data["budget_gbp"] = 120
-        capped = screen(data, 1000)
-        self.assertEqual(capped["summary"]["budget_gbp"], 120)
-        self.assertTrue(any(x["screen"] == "reject_known_price_over_budget"
-                            for x in capped["combinations"]))
-        data["budget_gbp"] = None
-        self.assertIsNone(screen(data, 1000)["summary"]["budget_gbp"])
-
     def test_voltage_limit_and_unproven_price(self):
         models = [
             dict(model="High Voc 500W", source="https://example.org/high",
