@@ -67,3 +67,30 @@ def safe_arithmetic_patch(data):
             return dict(data, draft=guarded_patch(
                 data, m.group(0), "25,2 V przekracza limit 24 V"))
     return None
+
+
+def validate_revision(before, after):
+    """Prevent side effects on requirements, and prevent unverified facts entering drafts."""
+    if not isinstance(after, dict) or not isinstance(after.get("draft"), str):
+        raise ValueError("Research returned invalid data")
+    if after.get("question") != before.get("question"):
+        raise ValueError("Research changed the original question")
+    if [c.get("requirement") for c in after.get("checks", [])] != [
+            c.get("requirement") for c in before.get("checks", [])]:
+        raise ValueError("Research changed the original requirements")
+    for original, revised in zip(before["checks"], after["checks"]):
+        if revised.get("status") == "met" and original.get("status") != "met":
+            raise ValueError("AI cannot independently promote missing evidence to verified")
+    previous, candidate = before["draft"], after["draft"]
+    if candidate == previous or not candidate.strip():
+        raise ValueError("No valid change")
+    if "S700" in before.get("question", "").upper():
+        if FOREIGN_S700.search(candidate) and not FOREIGN_S700.search(previous):
+            raise ValueError("Research changed the model of the user's existing station")
+        if BAD_TOPIC.search(candidate) and not BAD_TOPIC.search(previous):
+            raise ValueError("Unrelated correction")
+    if prices(candidate) - prices(previous):
+        raise ValueError("Research inserted unsupported new prices")
+    if WRONG_VOC.search(candidate) and not WRONG_VOC.search(previous):
+        raise ValueError("Research introduced a false voltage comparison")
+    return after
