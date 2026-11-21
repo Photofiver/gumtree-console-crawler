@@ -4,7 +4,7 @@ on:
     - cron: '8,23,38,53 * * * *'  # refreshed registration after missing scheduled runs
   workflow_dispatch:
   workflow_run:
-    workflows: ['AI silent human-like cat TikTok every 96 minutes (up to 15/day)']
+    workflows: ['AI cat reach recovery (up to 3 longer originals per day)']
     types: [completed]
     branches: [main]
   push:
