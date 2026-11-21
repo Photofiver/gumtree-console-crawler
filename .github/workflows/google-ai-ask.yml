@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: read
 
 jobs:
   ask:
@@ -14,17 +15,54 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Prefer already running Google AI warm worker
+        id: warm
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'google-ai-warm-watchdog.yml', status: 'in_progress', per_page: 20
+            });
+            const warm = data.workflow_runs.some(r =>
+              r.event === 'schedule' || r.event === 'workflow_dispatch' ||
+              (r.event === 'issues' && r.display_title?.startsWith('[google-warm-start]'))
+            );
+            if (!warm) {
+              core.setOutput('served', 'false');
+              return;
+            }
+            const until = Date.now() + 95000;
+            while (Date.now() < until) {
+              const {data: comments} = await github.rest.issues.listComments({
+                owner, repo, issue_number: context.issue.number, per_page: 100
+              });
+              if (comments.some(c => c.user?.login === 'github-actions[bot]' &&
+                  c.body && !c.body.startsWith('Google AI: NIEPOTWIERDZONE') &&
+                  !c.body.startsWith('Google AI Mode did not return'))) {
+                core.setOutput('served', 'true');
+                core.info('Warm browser answered issue; skipped cold Android startup.');
+                return;
+              }
+              await new Promise(resolve => setTimeout(resolve, 6500));
+            }
+            core.setOutput('served', 'false');
       - uses: actions/setup-java@v4
+        if: steps.warm.outputs.served != 'true'
         with:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v4
+        if: steps.warm.outputs.served != 'true'
         with:
           packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
+        if: steps.warm.outputs.served != 'true'
         with:
           gradle-version: '8.13'
       - name: Prepare question and isolated test
+        if: steps.warm.outputs.served != 'true'
         shell: bash
         run: |
           cp phone_google_ask/GoogleAskTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/GoogleAskTest.java
@@ -36,13 +74,16 @@ jobs:
           test -n "$QUESTION_B64"
           echo "QUESTION_B64=$QUESTION_B64" >> "$GITHUB_ENV"
       - name: Build test
+        if: steps.warm.outputs.served != 'true'
         run: gradle --no-daemon -p android_browser :app:assembleDebug :app:assembleDebugAndroidTest
       - name: Enable KVM
+        if: steps.warm.outputs.served != 'true'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Ask Google AI Mode via Android WebView
+        if: steps.warm.outputs.served != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
@@ -59,7 +100,7 @@ jobs:
             adb pull /sdcard/Android/data/com.photofiver.phonebrowser/files/google-ai-ask-result.json google-ai-ask-result.json
             cat google-ai-ask-result.json
       - name: Upload Google AI answer
-        if: always()
+        if: always() && steps.warm.outputs.served != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: google-ai-ask-result
@@ -69,7 +110,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Post Google AI result to issue
-        if: always()
+        if: always() && steps.warm.outputs.served != 'true'
         env:
           REVIEW_RUN_OK: ${{ job.status }}
         uses: actions/github-script@v7
