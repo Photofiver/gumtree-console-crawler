@@ -28,6 +28,8 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
+      - name: Validate worker Python files
+        run: python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py
       - name: Prepare persistent Android worker
         run: cp phone_google_ask/GoogleAskTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/GoogleAskTest.java
       - name: Build Android app once per warm session
