@@ -173,6 +173,28 @@ def parse_task(body: str) -> dict:
     return task
 
 
+def observed_safe_link(actions: list, target: str) -> str | None:
+    """A captured snapshot's exact href can navigate if WebGL blocks DOM clicks.
+
+    Do not synthesize a URL from a label or follow URLs without revalidating.
+    """
+    if not target.strip() or MUTATING_WORDS.search(target):
+        return None
+    for action in reversed(actions):
+        for frame in action.get("frames", []):
+            for link in frame.get("links", []):
+                label = str(link.get("text", "")).strip()
+                url = str(link.get("url", ""))
+                if label and target.casefold() in label.casefold():
+                    try:
+                        require_public_url(url)
+                        if is_safe_browsing_url(url):
+                            return url
+                    except (ValueError, UnsafeTarget):
+                        continue
+    return None
+
+
 def run_task(task: dict, screenshot_path: Path) -> dict:
     from playwright.sync_api import sync_playwright
 
@@ -254,6 +276,16 @@ def run_task(task: dict, screenshot_path: Path) -> dict:
                         target = step["value"].strip()
                         if not target or MUTATING_WORDS.search(target):
                             raise ValueError("Unsafe or empty click_text target")
+                        # A previous snapshot supplies the exact destination of a
+                        # link; prefer following that inspected GET href on
+                        # WebGL-heavy pages instead of timing out in DOM evaluate.
+                        known_href = observed_safe_link(action_results, target)
+                        if known_href:
+                            page.goto(known_href, wait_until="domcontentloaded", timeout=30000)
+                            item["navigation_method"] = "observed_href"
+                            item["destination"] = page.url
+                            action_results.append(item)
+                            continue
                         # Search by visible/accessibility label, not brittle href/CSS.
                         # Only follow the first element confirmed safe by our guards.
                         element = None
