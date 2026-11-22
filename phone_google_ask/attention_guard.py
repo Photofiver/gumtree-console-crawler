@@ -25,7 +25,9 @@ def scaled_dot_product_attention(query, keys):
     The encoder supplies *trained* representations; no randomly initialised
     trainable projection is presented as a useful attention mechanism.
     """
-    if not keys or not query:
+    # numpy.ndarray / torch.Tensor refuse boolean truth testing for multi-value
+    # arrays. Validate lengths explicitly rather than using `if not keys`.
+    if query is None or keys is None or len(query) == 0 or len(keys) == 0:
         raise ValueError("Attention requires a query and at least one key")
     d = len(query)
     if any(len(key) != d for key in keys):
@@ -101,6 +103,7 @@ def main():
         result = build_focus(data, model)
     except Exception as exc:
         result = {"status":"unavailable", "reason":type(exc).__name__,
+                  "error_detail":str(exc)[:200],
                   "note":"No attention ranking was used; no heuristic substitute."}
     output.write_text(json.dumps(result, ensure_ascii=False))
     print(json.dumps({k:result[k] for k in ("status","model","reason") if k in result}))

@@ -64,6 +64,7 @@ class ExploreTests(unittest.TestCase):
 
     def test_hard_budget_screen_on_documented_quote(self):
         sample = sample_data()
+        sample["budget_max_gbp"] = 100
         for entry in sample["candidate_log"]:
             entry.update(unit_price_gbp=59.49,
                          retailer="amazon_uk",
@@ -75,6 +76,30 @@ class ExploreTests(unittest.TestCase):
                             c["screen"] == "excluded_uses_grid" for c in costly))
         self.assertEqual(result["summary"]["verified_feasible_count"], 0)
         self.assertEqual(result["summary"]["genuinely_verified_retail_products"], 0)
+
+    def test_unlimited_budget_does_not_reject_247_or_any_expensive_variants(self):
+        sample = sample_data()
+        sample["question"] = "Belfast S700: Bez limitu budżetu, wybierz opłacalny zestaw."
+        sample["budget_max_gbp"] = 100  # stale older field must not override user
+        for entry in sample["candidate_log"]:
+            entry.update(unit_price_gbp=129.99, retailer="amazon_uk",
+                         price_source="https://www.amazon.co.uk/example")
+        result = screen(sample, 1000)
+        summary = result["summary"]
+        self.assertIsNone(summary["budget_max_gbp"])
+        self.assertEqual(summary["budget_mode"], "uncapped")
+        self.assertEqual(summary["by_status"].get("reject_known_price_over_budget", 0), 0)
+        self.assertEqual(summary["screened"], 1000)
+
+    def test_explicit_budget_parsing_and_no_invented_limit(self):
+        from explore import budget_limit_gbp
+        self.assertEqual(budget_limit_gbp({"question":"Budżet maksymalnie £100"}), 100)
+        self.assertEqual(budget_limit_gbp({"question":"Budget max GBP 150"}), 150)
+        self.assertIsNone(budget_limit_gbp({"question":"PV max 5A and 100W"}))
+        self.assertIsNone(budget_limit_gbp({"question":"Bez górnego limitu ceny. £100 nie ogranicza."}))
+        self.assertIsNone(budget_limit_gbp({"question":"Brak kwoty."}))
+        with self.assertRaises(ValueError):
+            budget_limit_gbp({"budget_max_gbp":"100"})
 
     def test_voltage_limit_and_unproven_price(self):
         models = [
