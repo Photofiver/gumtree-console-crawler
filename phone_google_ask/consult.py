@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 from review import decide
+from attention_guard import focus_hint
 from revision_guard import guarded_patch, tagged_json, safe_arithmetic_patch, validate_revision
 
 
@@ -112,6 +113,9 @@ def evaluate(data, ask, read=source_text):
     # Repeat context if it fits. Otherwise the entire original remains in the fragments.
     if len(context.encode()) <= 800:
         prefix += context + "\n"
+    # Actual pretrained attention can add a short ranking reminder. It never
+    # removes, relaxes, or asserts completion of any original requirement.
+    prefix += focus_hint(data)
     chunks = list(parts(payload, 2000 - len(prefix.encode()) - 40))
     votes = []
     for i, chunk in enumerate(chunks, 1):
@@ -327,11 +331,21 @@ def main():
     from warm_worker import ask_emulator
     issue = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["issue"]
     body = issue["body"]
+    attention = {"status":"unavailable", "reason":"no_attention_report"}
+    attention_path = Path("attention-report.json")
+    if attention_path.exists():
+        try:
+            attention = json.loads(attention_path.read_text())
+        except (OSError, ValueError, TypeError):
+            attention = {"status":"unavailable", "reason":"unreadable_attention_report"}
     try:
-        result = solve(json.loads(body), ask_emulator)
+        packet = json.loads(body)
+        packet["attention"] = attention
+        result = solve(packet, ask_emulator)
     except Exception as exc:
         result = dict(review="NIEPOTWIERDZONE", reason=type(exc).__name__ + ": " + str(exc)[:500])
     result.setdefault("status", "NIEPOTWIERDZONE")
+    result["attention"] = {k: attention[k] for k in ("status", "model", "reason", "ranked_indices") if k in attention}
     # Computed hypotheses are intentionally separate from verified research.
     report = Path("exploration-report.json")
     if report.exists():
