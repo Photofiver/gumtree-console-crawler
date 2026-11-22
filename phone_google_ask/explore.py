@@ -44,16 +44,16 @@ def budget_limit_gbp(data):
         question = ""
     text = unicodedata.normalize("NFKD", question.lower())
     text = "".join(c for c in text if not unicodedata.combining(c))
-    text = re.sub(r"\\s+", " ", text)
+    text = re.sub(r"\s+", " ", text)
 
     unlimited = (
-        r"(?:bez|brak)\\s+(?:gornego\\s+)?limitu(?:\\s+(?:budzetu|cen|ceny|kwoty))?",
-        r"budzet\\s+bez\\s+limitu",
-        r"nie\\s+ma\\s+(?:gornego\\s+)?limitu\\s+budzetu",
-        r"nie\\s+ograniczaj\\s+budzetu",
-        r"no\\s+(?:upper\\s+)?budget\\s+(?:limit|cap)",
-        r"(?:unlimited|uncapped)\\s+budget",
-        r"without\\s+(?:a\\s+)?budget\\s+cap",
+        r"(?:bez|brak)\s+(?:gornego\s+)?limitu(?:\s+(?:budzetu|cen|ceny|kwoty))?",
+        r"budzet\s+bez\s+limitu",
+        r"nie\s+ma\s+(?:gornego\s+)?limitu\s+budzetu",
+        r"nie\s+ograniczaj\s+budzetu",
+        r"no\s+(?:upper\s+)?budget\s+(?:limit|cap)",
+        r"(?:unlimited|uncapped)\s+budget",
+        r"without\s+(?:a\s+)?budget\s+cap",
     )
     if any(re.search(pattern, text) for pattern in unlimited):
         return None
@@ -71,12 +71,12 @@ def budget_limit_gbp(data):
     # Recognise currency-bearing explicit limits in older, free-form tasks.
     # Avoid matching 'max 5 A' or '100 W' as a pound-denominated budget.
     cap = re.search(
-        r"(?:\\b(?:budzet|budget|limit|maksymalnie|maximum|max|do)\\b.{0,30}?)"
-        r"(?:£\\s*([0-9]+(?:[.,][0-9]+)?)|([0-9]+(?:[.,][0-9]+)?)\\s*(?:gbp|£))",
+        r"(?:\b(?:budzet|budget|limit|maksymalnie|maximum|max|do)\b.{0,30}?)"
+        r"(?:£\s*([0-9]+(?:[.,][0-9]+)?)|([0-9]+(?:[.,][0-9]+)?)\s*(?:gbp|£))",
         text,
     )
     if not cap:
-        cap = re.search(r"(?:<=|≤)\\s*£\\s*([0-9]+(?:[.,][0-9]+)?)", text)
+        cap = re.search(r"(?:<=|≤)\s*£\s*([0-9]+(?:[.,][0-9]+)?)", text)
     if not cap:
         return None
     value = next((x for x in cap.groups() if x), None)
