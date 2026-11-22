@@ -239,7 +239,85 @@ def parse_patch_response(page_text, tag, predetermined_old):
     return None
 
 
-def google_research(data, result, ask):
+def google_source_research(data, result, ask, read=source_text):
+    """Ask for a new primary source and verify its verbatim excerpt ourselves.
+
+    This is a genuine bounded research step, NOT certification of the whole
+    requirement or a substitute for opening a real product listing.
+    """
+    unfinished = [(i, c) for i, c in enumerate(data["checks"])
+                  if c.get("status") != "met" and not
+                  (c.get("source") and c.get("quote"))]
+    if not unfinished:
+        return None
+    reason = result.get("reason", "")
+    keywords = set(re.findall(r"\w{5,}", reason.casefold()))
+    def relevance(item):
+        tokens = set(re.findall(r"\w{5,}", item[1]["requirement"].casefold()))
+        return len(tokens & keywords)
+    index, check = max(unfinished, key=relevance)
+    tag = secrets.token_hex(8)
+    query = ("Find ONE actual public manufacturer's data sheet or official "
+             "retailer source related to the SPECIFIC requirement below. "
+             "Return ONLY JSON with tag, url (direct HTTPS page), quote "
+             "(a verbatim substring of that page, 16-200 chars). "
+             "Do not invent sources, datasheet values, prices or quotes. "
+             + json.dumps({"tag":tag, "equipment":data["question"][:170],
+                           "requirement":check["requirement"][:230]},
+                          ensure_ascii=False, separators=(",", ":")))
+    if len(query.encode()) > 2000:
+        return None
+    page = ask(query)
+    url = urlsplit(page.get("page", {}).get("url", ""))
+    params = parse_qs(url.query)
+    if (page.get("question") != query or url.scheme != "https" or
+            url.hostname != "www.google.com" or url.path != "/search" or
+            params.get("q") != [query] or params.get("udm") != ["50"]):
+        return None
+    output = page["page"].get("text", "")
+    decoder = json.JSONDecoder(strict=False)
+    for m in re.finditer(r"\{", output):
+        try:
+            obj, _ = decoder.raw_decode(output[m.start():])
+        except (TypeError, ValueError):
+            continue
+        if not isinstance(obj, dict) or obj.get("tag") != tag:
+            continue
+        url = obj.get("url")
+        quote = obj.get("quote")
+        if (not isinstance(url, str) or not url.startswith("https://")
+                or len(url) > 500 or not isinstance(quote, str)
+                or not 16 <= len(quote) <= 200):
+            continue
+        quote = " ".join(quote.split())
+        if len(quote) < 16:
+            continue
+        try:
+            page_text = read(url)
+        except (ValueError, OSError, subprocess.SubprocessError):
+            continue
+        if quote not in " ".join(page_text.split()):
+            continue
+        # Evidence from a real page is useful, but a quote alone cannot
+        # prove a whole solar configuration safe or automatically make a
+        # check 'met'. Preserve the exact user requirement and its status.
+        updated = dict(data)
+        checks = [dict(c) for c in data["checks"]]
+        checks[index]["source"] = url
+        checks[index]["quote"] = quote
+        checks[index]["finding"] = "Exact source quotation retrieved; full requirement still unverified"
+        updated["checks"] = checks
+        updated["draft"] = data["draft"] + (
+            "\nDodatkowe źródło dla nierozstrzygniętego wymogu: " + url +
+            ". Samo źródło nie potwierdza jeszcze kompletnego zestawu.")
+        updated["research_trace"] = list(data.get("research_trace", [])) + [
+            dict(requirement=check["requirement"], url=url,
+                 verified_quote=quote, requirement_status="unknown")]
+        return updated
+    return None
+
+
+def google_research(data, result, ask, read=source_text):
     """Request a short anchored correction and require source-safe validation.
 
     The reviewer is NOT a source of prices or electrical proof. If no safe edit
@@ -294,7 +372,13 @@ def google_research(data, result, ask):
             errors.append(str(exc))
             continue
         return dict(data, draft=patched, checks=[dict(c) for c in data["checks"]])
-    raise ValueError("No safe patch accepted: " + "; ".join(errors)[:240])
+    # A textual correction cannot supply a missing datasheet or a valid
+    # purchase bundle. Search for independent source evidence before giving up.
+    sourced = google_source_research(data, result, ask, read=read)
+    if sourced is not None:
+        return sourced
+    raise ValueError("No safe patch or independently readable source: " +
+                     "; ".join(errors)[:240])
 
 
 def evidence_revision(data, result, read):
@@ -364,7 +448,11 @@ def solve(data, ask, read=source_text, research=google_research):
                 or attempt == 3):
             break
         try:
-            revised = validate_revision(data, research(data, result, audited_ask))
+            if research is google_research:
+                proposal = research(data, result, audited_ask, read=read)
+            else:
+                proposal = research(data, result, audited_ask)
+            revised = validate_revision(data, proposal)
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
             step["research_error"] = str(exc)[:400]
             revised = evidence_revision(data, result, read)
@@ -385,7 +473,8 @@ def solve(data, ask, read=source_text, research=google_research):
                 google_ai_queries_sent=len(audit),
                 google_ai_responses_received=sum(x["state"] == "response_received" for x in audit),
                 google_ai_edits_rechecked=edits_rechecked,
-                google_ai_audit=audit)
+                google_ai_audit=audit,
+                research_trace=data.get("research_trace", []))
 
 
 def main():
