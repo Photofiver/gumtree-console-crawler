@@ -345,7 +345,7 @@ def main():
     except Exception as exc:
         result = dict(review="NIEPOTWIERDZONE", reason=type(exc).__name__ + ": " + str(exc)[:500])
     result.setdefault("status", "NIEPOTWIERDZONE")
-    result["attention"] = {k: attention[k] for k in ("status", "model", "reason", "ranked_indices") if k in attention}
+    result["attention"] = {k: attention[k] for k in ("status", "model", "reason", "error_detail", "ranked_indices") if k in attention}
     # Computed hypotheses are intentionally separate from verified research.
     report = Path("exploration-report.json")
     if report.exists():
