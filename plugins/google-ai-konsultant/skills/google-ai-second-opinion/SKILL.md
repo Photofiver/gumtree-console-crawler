@@ -3,7 +3,7 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. Research real sources, computationally screen up to 1000 distinct configurations, then deep-verify promising solutions through GitHub Google AI; never confuse combinations with confirmed products.'
 ---
 
-# Google AI Konsultant 1.8.12 — szybki przesiew, następnie weryfikacja
+# Google AI Konsultant 1.8.13 — szybki przesiew, następnie weryfikacja
 
 ## Cel i granice
 
@@ -56,6 +56,14 @@ Silnik `phone_google_ask/consult.py` nie może przyjąć od Google AI całej now
 Jeśli Google AI zwróci niewłaściwy format lub nieweryfikowalną propozycję, podejmuje jeszcze jedną próbę pobrania łatki. Jeśli obie się nie powiodą, dopuszczalna jest tylko wąska, deterministyczna naprawa oczywistego błędu `25,2 V < 24 V`; w pozostałych sytuacjach kończy z `BLOCKED_UNVERIFIED`, wskazuje powód i **nie wstawia cytowanych uwag recenzenta do gotowej odpowiedzi**. Nie przedstawiaj zatrzymania na tym etapie jako udanej autonomicznej korekty. Ukończenie samego Google AI Actions lub jego testów nie oznacza merytorycznego pozytywnego werdyktu.
 
 Ważne: 1000 wygenerowanych kombinacji to tylko przesiew obliczeniowy. W raporcie rozróżniaj cytowane niepotwierdzone ceny, prawdziwie sprawdzone koszyki zakupowe, zasady clippingu 100 W oraz liczbę bezpiecznych poprawek i rzeczywistych recenzji Google AI. Jeżeli brak któregokolwiek dowodu, zakończ wynikiem NIEPOTWIERDZONE bez rekomendacji zakupu.
+
+## Attention Guard 1.8.13 — audyt wieloczęściowy
+
+- Gdy pełny pakiet dowodów nie mieści się w limicie pojedynczego zapytania Google AI, `consult.py` ocenia **każdy** fragment, także po `REVISE` albo nieczytelnej odpowiedzi z fragmentu wcześniejszego; pole `reviewed` musi odzwierciedlać wszystkie ocenione fragmenty.
+- Google AI dostaje wyraźne zastrzeżenie, że każdy fragment jest tylko częścią większego pakietu i nie powinien odrzucać go wyłącznie z powodu braku informacji, które mogą być w późniejszych fragmentach. Autentyczne błędy w danym fragmencie nadal oznaczają `DO POPRAWY`.
+- W raporcie `failed_parts` i `unreadable_parts` wskazują części wymagające uwagi; wyniki fragmentów nie stanowią automatycznego globalnego zatwierdzenia.
+- `POTWIERDZONE` jest dopuszczalne tylko przy osobno sprawdzonych dowodach wszystkich warunków tej samej konfiguracji i wspólnej weryfikacji — sama liczba pozytywnych fragmentów ani `attention.status=active` nigdy nie uprawnia do sukcesu.
+- Gdy Google AI odrzuca analizę z powodu braku prawdziwych źródeł, nie wolno sztucznie zatwierdzać rozwiązań ani podmieniać faktów. Poprawa nieudokumentowanych cen, przewodów czy Voc wymaga realnego wyszukania i sprawdzenia ofert.
 
 ## Etap 3: istniejący cykl Google AI i GitHub
 

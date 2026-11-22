@@ -107,7 +107,10 @@ def evaluate(data, ask, read=source_text):
                          ensure_ascii=False, separators=(",", ":"))
     tag = secrets.token_hex(8)
     prefix = ("Audit this complete draft against the stated requirements. "
-              "REVISE if any claim is false or lacks evidence. Give a specific reason. "
+              "For numbered multi-part input, judge ONLY claims in this fragment: "
+              "other parts are reviewed separately; do NOT reject because other "
+              "parts or a closing sentence are absent. "
+              "REVISE false or unsupported claims actually present; give reasons. "
               "End with ONE exact separate line: REVISE " + tag +
               " OR PASS " + tag + ".\n")
     # Repeat context if it fits. Otherwise the entire original remains in the fragments.
@@ -117,7 +120,7 @@ def evaluate(data, ask, read=source_text):
     # removes, relaxes, or asserts completion of any original requirement.
     prefix += focus_hint(data)
     chunks = list(parts(payload, 2000 - len(prefix.encode()) - 40))
-    votes = []
+    votes, failures, unreadable = [], [], []
     for i, chunk in enumerate(chunks, 1):
         query = prefix + f"Part {i}/{len(chunks)}\n" + chunk
         answer = "NIEPOTWIERDZONE"
@@ -128,6 +131,8 @@ def evaluate(data, ask, read=source_text):
                 probe = query
             else:
                 retry_prefix = ("Check this claim for factual errors and missing proof. "
+                                "This is ONE part of a packet; judge present claims "
+                                "only, not absent later parts or truncated formatting. "
                                 "End with exactly ONE line: REVISE " + tag +
                                 " OR PASS " + tag + ".\n")
                 probe = retry_prefix + f"Part {i}/{len(chunks)}\n" + chunk
@@ -143,11 +148,26 @@ def evaluate(data, ask, read=source_text):
                 break
         votes.append(answer.split("\n\n", 1)[0])
         if answer.startswith("DO POPRAWY"):
-            return dict(review="DO POPRAWY", reason=answer.partition("\n\n")[2],
-                        parts=len(chunks), reviewed=i, blocked=blocked)
-        if not answer.startswith("SPRAWDZONE ·"):
-            return dict(review="NIEPOTWIERDZONE", reason="Google AI did not return an authenticated PASS/REVISE marker for part "+str(i)+" after two distinct prompts",
-                        parts=len(chunks), reviewed=i, blocked=blocked)
+            failures.append({"part":i, "reason":answer.partition("\n\n")[2][:600]})
+        elif not answer.startswith("SPRAWDZONE ·"):
+            unreadable.append(i)
+    # Never stop after the first REVISE. Each numbered fragment is independently
+    # audited, and the report must accurately count all reviewed parts.
+    if failures:
+        reason = "\n".join("Part "+str(f["part"])+"/"+str(len(chunks))+
+                           ": "+(f["reason"] or "Google AI requested revision")
+                           for f in failures)
+        if unreadable:
+            reason += "\nNo authenticated verdict for parts: "+", ".join(map(str,unreadable))
+        return dict(review="DO POPRAWY", reason=reason, parts=len(chunks),
+                    reviewed=len(votes), blocked=blocked,
+                    failed_parts=[f["part"] for f in failures], unreadable_parts=unreadable)
+    if unreadable:
+        return dict(review="NIEPOTWIERDZONE",
+                    reason="Google AI did not return an authenticated PASS/REVISE marker for parts: "+
+                           ", ".join(map(str,unreadable))+" after two distinct prompts",
+                    parts=len(chunks), reviewed=len(votes), blocked=blocked,
+                    unreadable_parts=unreadable)
     # Fragment approvals cannot establish consistency across separate model contexts.
     solved = False
     if not blocked and len(votes) == len(chunks):
