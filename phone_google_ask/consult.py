@@ -500,6 +500,67 @@ def solve(data, ask, read=source_text, research=google_research):
                 research_trace=data.get("research_trace", []))
 
 
+
+def review_for_chatgpt(data, ask, read=source_text):
+    """One genuine Google AI audit; only ChatGPT may research and revise drafts.
+
+    GitHub is a transport/audit/calculation worker, not a writer. In particular
+    Google AI's criticism is handed back unchanged for ChatGPT to investigate.
+    No Python code attempts to edit the draft or invent evidence.
+    """
+    audit = []
+
+    def audited_ask(query):
+        item = {"query_sha256": digest(query), "state": "sent"}
+        audit.append(item)
+        try:
+            response = ask(query)
+        except Exception as exc:
+            item["state"] = "transport_error"
+            item["error"] = type(exc).__name__
+            raise
+        if not isinstance(response, dict):
+            item["state"] = "invalid_response"
+            return response
+        page = response.get("page", {})
+        u = urlsplit(page.get("url", ""))
+        params = parse_qs(u.query)
+        if (response.get("question") == query and u.scheme == "https"
+                and u.hostname == "www.google.com" and u.path == "/search"
+                and params.get("q") == [query] and params.get("udm") == ["50"]
+                and isinstance(page.get("text"), str) and page["text"].strip()):
+            item["state"] = "response_received"
+        else:
+            item["state"] = "invalid_response"
+        return response
+
+    verdict = evaluate(data, audited_ask, read=read)
+    status = ("POTWIERDZONE" if verdict.get("review") == "SPRAWDZONE"
+              and verdict.get("status") == "POTWIERDZONE"
+              else "NIEPOTWIERDZONE")
+    next_action = ("report_verified_evidence" if status == "POTWIERDZONE"
+                   else "chatgpt_research_revise_and_resubmit")
+    return dict(verdict, status=status, draft=data["draft"],
+                checks=[dict(c) for c in data["checks"]],
+                correction_owner="chatgpt",
+                github_role="google_ai_transport_and_computational_screening",
+                next_action=next_action,
+                next_round_requirements={
+                    "preserve_original_question": True,
+                    "preserve_all_requirements": True,
+                    "recheck_claims_with_real_sources": True,
+                    "update_draft_and_check_evidence_in_chatgpt": True,
+                    "create_new_consult_issue_with_parent_issue": True,
+                    "do_not_fake_google_pass": True
+                },
+                history=[dict(round=1, draft=data["draft"], **verdict)],
+                google_ai_queries_sent=len(audit),
+                google_ai_responses_received=sum(
+                    item["state"] == "response_received" for item in audit),
+                google_ai_edits_rechecked=0,
+                google_ai_audit=audit)
+
+
 def main():
     from warm_worker import ask_emulator
     issue = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())["issue"]
@@ -514,7 +575,7 @@ def main():
     try:
         packet = json.loads(body)
         packet["attention"] = attention
-        result = solve(packet, ask_emulator)
+        result = review_for_chatgpt(packet, ask_emulator)
     except Exception as exc:
         result = dict(review="NIEPOTWIERDZONE", reason=type(exc).__name__ + ": " + str(exc)[:500])
     result.setdefault("status", "NIEPOTWIERDZONE")

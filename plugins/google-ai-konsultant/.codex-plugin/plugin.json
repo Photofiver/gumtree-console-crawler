@@ -15,7 +15,7 @@
   },
   "apps": "./.app.json",
   "name": "google-ai-second-opinion",
-  "version": "1.8.14",
+  "version": "1.8.15",
   "description": "Konsultuje odpowiedzi ChatGPT z Google AI Mode przez istniejący workflow GitHub, wykrywa sprzeczności i ponownie analizuje problem.",
   "author": {
     "name": "Właściciel wtyczki"

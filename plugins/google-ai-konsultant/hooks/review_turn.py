@@ -63,11 +63,16 @@ def evaluate(event, read=fetch):
     title = "[consult] " + tag
     stamp = Path(tempfile.gettempdir()) / ("konsultant-" + str(os.getuid()) + "-" + tag)
 
-    instruction = ("Dla KAŻDEJ wiadomości, gdy wtyczka jest używana, utwórz issue o tytule " + title +
-                   " zgodnie z protokołem 1.8.4 z SKILL.md. Wyślij szkic do Google AI, "
-                   "pobierz faktyczny werdykt oraz wyślij KAŻDĄ poprawioną wersję do nowej recenzji Google AI. "
-                   "Bez faktycznej odpowiedzi Google AI nigdy nie pisz POTWIERDZONE: "
-                   "zgłoś NIEPOTWIERDZONE z linkiem do issue. Nie pomijaj recenzji.")
+    instruction = ("To CHATGPT, a NIE GitHub, analizuje problem, wyszukuje produkty i "
+                   "źródła, poprawia szkic po uwagach Google AI i wysyła nowy [consult]. "
+                   "GitHub tylko przesiewa konfiguracje, wysyła pytania do Google AI i "
+                   "oddaje uwagi. Dla bieżącej tury utwórz issue o tytule " + title +
+                   " z aktualnym pytaniem, szkicem i checklistą dowodów. "
+                   "Odczytaj faktyczne Google AI feedback; w przypadku DO POPRAWY "
+                   "lub NIEPOTWIERDZONE SAMODZIELNIE sprawdź źródła, zmień szkic "
+                   "i wyślij nowe issue z parent_issue. Nie proś GitHub o pisanie "
+                   "lub wymyślanie poprawek. Nie deklaruj POTWIERDZONE bez "
+                   "pozytywnego audytu Google AI i prawdziwych dowodów.")
     if event.get("hook_event_name") == "UserPromptSubmit":
         try:
             with stamp.open("x") as handle:
@@ -88,9 +93,21 @@ def evaluate(event, read=fetch):
                 attempt = int(current[1] or "1")
                 if "pending" in receipt:
                     return {"decision":"block","reason":f"Trwa workflow issue #{match}. Oczekuj na to samo zgłoszenie przez --wait {match}."}
-                if receipt.get("review") == "DO POPRAWY" and attempt < 3 and len(receipt.get("history", [])) < 3:
-                    return {"decision":"block","reason":("Sprawdź uzasadnienie: " + receipt.get("reason","")
-                            + f". Popraw analizę i wyślij zmieniony szkic jako {title} /{attempt+1}, parent_issue={match}.")}
+                correction_needed = (receipt.get("review") == "DO POPRAWY" or
+                                     receipt.get("next_action") == "chatgpt_research_revise_and_resubmit")
+                if correction_needed and attempt < 3:
+                    feedback = (receipt.get("reason") or "Brak pełnego dowodu")[:2200]
+                    missing = ", ".join(receipt.get("blocked", [])[:10])
+                    return {"decision":"block","reason":(
+                        "TO CHATGPT MUSI WYKONAĆ KOREKTĘ, NIE GITHUB. "
+                        "Odczytaj uwagi Google AI: " + feedback +
+                        ". Niespełnione wymagania: " + missing +
+                        ". Samodzielnie wyszukaj brakujące dane w wiarygodnych "
+                        "źródłach, sprawdź je, popraw cały szkic zachowując "
+                        "wszystkie wymagania i wyślij nowy [consult] o tytule " +
+                        f"{title} /{attempt+1}, parent_issue={match}. "
+                        "Odbierz nowy wynik Google AI, nie uznawaj niezweryfikowanych "
+                        "produktów ani pozornych poprawek za sukces.")}
                 status = receipt.get("status")
                 if status == "POTWIERDZONE":
                     if receipt.get("review") != "SPRAWDZONE" or receipt.get("google_ai_responses_received",0) < 1:
