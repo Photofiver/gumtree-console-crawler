@@ -377,7 +377,7 @@ def google_research(data, result, ask, read=source_text):
     sourced = google_source_research(data, result, ask, read=read)
     if sourced is not None:
         return sourced
-    raise ValueError("No safe patch or independently readable source: " +
+    raise ValueError("No safe patch accepted; no independently readable source: " +
                      "; ".join(errors)[:240])
 
 
