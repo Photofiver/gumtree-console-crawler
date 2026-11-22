@@ -36,8 +36,9 @@ def lookup(number, read=fetch):
         if comment["user"]["login"] != "github-actions[bot]" or not comment["body"].startswith("Konsultant/2 "):
             continue
         result = json.loads(comment["body"].split(" ", 1)[1])
-        if result.get("sha256") == expected and result.get("run") == run["id"] and result.get("issue") == number:
-            return dict(result, title=issue["title"])
+        if (result.get("sha256") == expected and result.get("issue") == number
+                and result.get("run", run["id"]) == run["id"]):
+            return dict(result, title=issue["title"], issue_created_at=issue.get("created_at"))
     if run["status"] == "completed":
         return {"status":"NIEPOTWIERDZONE", "reason":"Workflow completed without a matching receipt: " + str(run["conclusion"]), "title":issue["title"]}
     return {"pending":run["status"], "title":issue["title"]}
@@ -91,7 +92,7 @@ def evaluate(event, read=fetch):
     if match:
         try:
             receipt = lookup(int(match), read)
-            current = re.fullmatch(re.escape(title) + r"(?: /([23]))?", receipt.get("title", ""))
+            current = re.fullmatch(re.escape(title) + r"(?: /([1-9]\\d*))?", receipt.get("title", ""))
             if current:
                 attempt = int(current[1] or "1")
                 if "pending" in receipt:
@@ -111,7 +112,16 @@ def evaluate(event, read=fetch):
                             f"Dostępna funkcja oczekiwania: --wait {match}.")}
                 correction_needed = (receipt.get("review") == "DO POPRAWY" or
                                      receipt.get("next_action") == "chatgpt_research_revise_and_resubmit")
-                if correction_needed and attempt < 3:
+                if correction_needed:
+                    exhausted = receipt.get("resolution_status") in ("physically_impossible", "evidence_exhausted")
+                    cited = receipt.get("exhaustion_evidence") or []
+                    can_close = (attempt >= 2 and exhausted and isinstance(cited, list)
+                                 and len({u for u in cited if isinstance(u, str)
+                                          and u.startswith("https://")}) >= 2)
+                    if can_close and "NIEPOTWIERDZONE" in message.split() and "POTWIERDZONE" not in message.split():
+                        return {}
+                    # DO POPRAWY never becomes final just because a fixed
+                    # counter was reached. Demand real evidence or next round.
                     feedback = (receipt.get("reason") or "Brak pełnego dowodu")[:2200]
                     missing = ", ".join(receipt.get("blocked", [])[:10])
                     return {"decision":"block","reason":(
@@ -134,7 +144,8 @@ def evaluate(event, read=fetch):
                     if receipt.get("draft","").strip() not in message:
                         return {"decision":"block","reason":"Dołącz dokładny zatwierdzony szkic do odpowiedzi."}
                     return {}
-                if status == "NIEPOTWIERDZONE" and status in message.split() and "POTWIERDZONE" not in message.split():
+                if (not correction_needed and status == "NIEPOTWIERDZONE"
+                        and status in message.split() and "POTWIERDZONE" not in message.split()):
                     return {}
         except (ValueError, KeyError, OSError):
             pass
