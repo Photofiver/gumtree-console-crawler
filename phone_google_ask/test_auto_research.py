@@ -22,6 +22,29 @@ class AutoResearchTests(unittest.TestCase):
         }
         self.now = datetime(2026, 11, 22, 18, 0, tzinfo=timezone.utc)
 
+    def test_original_chatgpt_google_review_path_is_preserved(self):
+        import importlib.util
+        from pathlib import Path
+        from consult import review_for_chatgpt
+        # The autonomous source gatherer does NOT replace ChatGPT authorship
+        # or the separate Google AI review of that ChatGPT draft.
+        self.assertTrue(callable(review_for_chatgpt))
+        hook = (Path(__file__).resolve().parents[1] /
+                "plugins/google-ai-konsultant/hooks/review_turn.py")
+        spec = importlib.util.spec_from_file_location("review_turn_for_test", hook)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        instruction = mod.evaluate({
+            "hook_event_name": "UserPromptSubmit",
+            "session_id": "agent-integration-test",
+            "turn_id": "unique-1",
+        })["hookSpecificOutput"]["additionalContext"]
+        self.assertIn("ORYGINALNY", instruction)
+        self.assertIn("AutoResearch/1", instruction)
+        self.assertIn("nowy [consult]", instruction)
+        self.assertIn("ChatGPT bada i poprawia", instruction)
+        self.assertIn("Google AI osobno recenzuje", instruction)
+
     def test_no_proof_is_not_marked_verified(self):
         packet = initial_state(self.issue)
         source = {"research_trace": [{
