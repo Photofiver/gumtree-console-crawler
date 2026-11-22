@@ -97,8 +97,9 @@ jobs:
 
                 const transportMissing = !receipt ||
                   (receipt.google_ai_responses_received || 0) === 0;
-                const shouldRetry = transportMissing &&
-                  (run.conclusion !== 'success' || !receipt);
+                // A successful GitHub job is not proof that Google AI answered.
+                // Retry missing or zero-response receipts, regardless of job conclusion.
+                const shouldRetry = transportMissing;
                 if (shouldRetry && (run.run_attempt || 1) < 3) {
                   await github.rest.actions.reRunWorkflow({
                     owner, repo, run_id: run.id
