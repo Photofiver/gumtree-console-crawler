@@ -16,14 +16,50 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Prefer already running Google AI warm worker
+        id: warm
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const {data} = await github.rest.actions.listWorkflowRuns({
+              owner, repo, workflow_id: 'google-ai-warm-watchdog.yml', status: 'in_progress', per_page: 20
+            });
+            const warm = data.workflow_runs.some(r =>
+              r.event === 'schedule' || r.event === 'workflow_dispatch' ||
+              (r.event === 'issues' && r.display_title?.startsWith('[google-warm-start]'))
+            );
+            if (!warm) {
+              core.setOutput('served', 'false');
+              return;
+            }
+            const until = Date.now() + (context.payload.issue.title.startsWith('[consult]') ? 720000 : 180000);
+            while (Date.now() < until) {
+              const {data: comments} = await github.rest.issues.listComments({
+                owner, repo, issue_number: context.issue.number, per_page: 100
+              });
+              if (comments.some(c => c.user?.login === 'github-actions[bot]' &&
+                  (c.body?.startsWith('Konsultant/2 ') ||
+                   c.body?.startsWith('Google AI: SPRAWDZONE') ||
+                   c.body?.startsWith('Google AI: DO POPRAWY') ||
+                   (c.body?.startsWith('Google AI Mode answer') &&
+                    /AI RESPONSE READY: (True|true)/.test(c.body))))) {
+                core.setOutput('served', 'true');
+                core.info('Warm browser answered issue; skipped cold Android startup.');
+                return;
+              }
+              await new Promise(resolve => setTimeout(resolve, 6500));
+            }
+            core.setOutput('served', 'false');
       - name: Regression checks for consultation and idea exploration
-        if: startsWith(github.event.issue.title, '[consult]')
+        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
         run: |
           python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
           python3 -m unittest discover -s phone_google_ask -p test_explore.py -v
           python3 -m unittest discover -s phone_google_ask -p test_attention_guard.py -v
       - name: Load trained transformer and calculate actual attention weights
-        if: startsWith(github.event.issue.title, '[consult]')
+        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
         shell: bash
         run: |
           if python3 -m pip install --user --disable-pip-version-check 'sentence-transformers==4.1.0'; then
@@ -32,7 +68,7 @@ jobs:
             echo '{"status":"unavailable","reason":"dependency_install_failed"}' > attention-report.json
           fi
       - name: Screen 100 or 1000 source-listed configurations before AI review
-        if: startsWith(github.event.issue.title, '[consult]')
+        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
         shell: bash
         run: |
           python3 - <<'PY'
@@ -65,42 +101,6 @@ jobs:
           QUESTION_B64="$(jq -r '.issue.body // ""' "$GITHUB_EVENT_PATH" | head -c 2000 | base64 -w0)"
           test -n "$QUESTION_B64"
           echo "QUESTION_B64=$QUESTION_B64" >> "$GITHUB_ENV"
-      - name: Prefer already running Google AI warm worker
-        if: ${{ !startsWith(github.event.issue.title, '[consult]') }}
-        id: warm
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const {data} = await github.rest.actions.listWorkflowRuns({
-              owner, repo, workflow_id: 'google-ai-warm-watchdog.yml', status: 'in_progress', per_page: 20
-            });
-            const warm = data.workflow_runs.some(r =>
-              r.event === 'schedule' || r.event === 'workflow_dispatch' ||
-              (r.event === 'issues' && r.display_title?.startsWith('[google-warm-start]'))
-            );
-            if (!warm) {
-              core.setOutput('served', 'false');
-              return;
-            }
-            const until = Date.now() + 95000;
-            while (Date.now() < until) {
-              const {data: comments} = await github.rest.issues.listComments({
-                owner, repo, issue_number: context.issue.number, per_page: 100
-              });
-              if (comments.some(c => c.user?.login === 'github-actions[bot]' &&
-                  (c.body?.startsWith('Google AI: SPRAWDZONE') ||
-                   c.body?.startsWith('Google AI: DO POPRAWY') ||
-                   (c.body?.startsWith('Google AI Mode answer') &&
-                    /AI RESPONSE READY: (True|true)/.test(c.body))))) {
-                core.setOutput('served', 'true');
-                core.info('Warm browser answered issue; skipped cold Android startup.');
-                return;
-              }
-              await new Promise(resolve => setTimeout(resolve, 6500));
-            }
-            core.setOutput('served', 'false');
       - uses: actions/setup-java@v4
         if: steps.warm.outputs.served != 'true'
         with:
