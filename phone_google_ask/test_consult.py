@@ -178,6 +178,51 @@ class ConsultTests(unittest.TestCase):
         self.assertEqual(result["review"], "NIEPOTWIERDZONE")
         self.assertIn("after two distinct prompts", result["reason"])
 
+    def test_semantic_audit_packets_are_full_json_and_complete_sentences(self):
+        import json
+        from consult import semantic_audit_chunks
+        draft = " ".join("Statement number %d is a complete sentence." % i
+                         for i in range(100))
+        claims = [{"requirement":"voltage 12-24V", "status":"unknown",
+                   "finding":"Need real manufacturer proof"}]
+        packets = semantic_audit_chunks("ALLPOWERS S700", draft, claims, 680)
+        self.assertGreater(len(packets), 1)
+        self.assertTrue(all(len(p.encode()) <= 680 for p in packets))
+        decoded = [json.loads(p) for p in packets]
+        reconstructed = " ".join(item["text"] for part in decoded
+                                 for item in part["items"]
+                                 if item["type"] == "draft_sentence")
+        self.assertEqual(reconstructed, draft)
+        included_checks = [item["claim"] for part in decoded
+                           for item in part["items"]
+                           if item["type"] == "requirement_check"]
+        self.assertEqual(included_checks, claims)
+
+    def test_semantic_audit_fails_closed_for_unbreakable_claim(self):
+        from consult import semantic_audit_chunks
+        draft = "Ordinary first sentence. " + "X"*2000
+        with self.assertRaisesRegex(ValueError, "One full sentence"):
+            semantic_audit_chunks("ALLPOWERS S700", draft,
+                                  [{"requirement":"Voltage", "status":"unknown"}], 500)
+
+    def test_live_google_review_queries_do_not_cut_json_mid_sentence(self):
+        import json
+        data = dict(self.data, draft=" ".join("Complete claim %d is true." % i
+                                              for i in range(115)))
+        collected = []
+        def ask(q):
+            collected.append(q)
+            content = q.split("\nPart ", 1)[1].split("\n", 1)[1]
+            section = json.loads(content)
+            self.assertTrue("items" in section or "checks" in section)
+            self.assertLessEqual(len(q.encode()), 2000)
+            return vote(q, "REVISE" if "Part 1/" in q else "PASS")
+        verdict = evaluate(data, ask, lambda _:"Rated 20 V")
+        self.assertGreater(verdict["parts"], 1)
+        self.assertEqual(verdict["reviewed"], verdict["parts"])
+        self.assertEqual(verdict["review"], "DO POPRAWY")
+        self.assertEqual(len(collected), verdict["parts"])
+
     def test_every_fragment_reviewed_even_if_first_is_rejected(self):
         data = dict(self.data, draft="Safe technical description. " * 250)
         prompts = []
