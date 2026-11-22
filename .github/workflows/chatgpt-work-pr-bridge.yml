@@ -1,5 +1,9 @@
 name: ChatGPT Work PR event bridge
 on:
+  # Run a single idempotent smoke check when the bridge workflow itself changes.
+  push:
+    branches: [main]
+    paths: [.github/workflows/chatgpt-work-pr-bridge.yml]
   # Each completed cold Google AI consultation triggers a new event.
   workflow_run:
     workflows: ["Google AI Mode ask (isolated)"]
@@ -36,7 +40,8 @@ jobs:
             const BRIDGE_PR = 283;
             const eventRun = context.payload.workflow_run;
             const match = /Google AI issue #([0-9]+)/.exec(eventRun?.display_title || '');
-            const number = Number(context.payload.inputs?.issue_number || match?.[1] || 0);
+            const number = Number(context.payload.inputs?.issue_number || match?.[1] ||
+              (context.eventName === 'push' ? 281 : 0));
             if (!Number.isSafeInteger(number) || number < 1) {
               core.info('No associated research issue; skip.');
               return;
