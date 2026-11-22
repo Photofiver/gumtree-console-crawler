@@ -29,12 +29,14 @@ class WarmWorkerRoutingTests(unittest.TestCase):
              patch.object(warm_worker, "review_consult", return_value='Konsultant/2 {"review":"DO POPRAWY"}'), \
              patch.object(warm_worker, "api") as api:
             self.assertTrue(warm_worker.handle(issue("[consult] audit", '{"question":"test"}')))
-            self.assertEqual(api.call_count, 2)
+            self.assertEqual(api.call_count, 3)
             self.assertEqual(api.call_args_list[0].args[0], "POST")
             self.assertEqual(api.call_args_list[0].args[1], "/issues/9001/comments")
             self.assertIn("Konsultant/2", api.call_args_list[0].args[2]["body"])
             self.assertEqual(api.call_args_list[1].args[1],
                              "/actions/workflows/google-ai-consult-continuity.yml/dispatches")
+            self.assertEqual(api.call_args_list[2].args[1],
+                             "/actions/workflows/chatgpt-work-pr-bridge.yml/dispatches")
 
     def test_handle_consult_no_fake_receipt_when_unavailable(self):
         with patch.object(warm_worker, "is_answered", return_value=False), \
