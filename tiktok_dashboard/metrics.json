@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-22T07:02:48.180994Z",
+  "generated_at_utc": "2026-11-22T07:56:58.782042Z",
   "followers": 5,
-  "followers_checked_at_utc": "2026-11-22T07:02:48.180994Z",
+  "followers_checked_at_utc": "2026-11-22T07:56:58.782042Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -95,10 +95,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 81,
+        "views": 86,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-22T07:02:48.180994Z"
+      "engagement_checked_at_utc": "2026-11-22T07:56:58.782042Z"
     },
     {
       "id": "6b01c3618bd84d5966004744",
@@ -110,10 +110,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 182,
+        "views": 183,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-22T07:02:48.180994Z"
+      "engagement_checked_at_utc": "2026-11-22T07:56:58.782042Z"
     },
     {
       "id": "6b01b6ec8bd84d5966faa2d7",
@@ -128,7 +128,7 @@
         "views": 230,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-22T07:02:48.180994Z"
+      "engagement_checked_at_utc": "2026-11-22T07:56:58.782042Z"
     },
     {
       "id": "6b007d38c9797a176531220c",
@@ -143,7 +143,7 @@
         "views": 215,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-22T07:02:48.180994Z"
+      "engagement_checked_at_utc": "2026-11-22T07:56:58.782042Z"
     },
     {
       "id": "6aff316d7218d2f8fc1e6016",
@@ -158,7 +158,7 @@
         "views": 601,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-22T07:02:48.180994Z"
+      "engagement_checked_at_utc": "2026-11-22T07:56:58.782042Z"
     },
     {
       "id": "6afea6dbb7fe0c41dda6bdf8",
@@ -441,11 +441,11 @@
     "likes": 5,
     "comments": 0,
     "shares": 0,
-    "views": 1309,
+    "views": 1315,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-22T07:02:48.180994Z",
+    "last_checked_at_utc": "2026-11-22T07:56:58.782042Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
