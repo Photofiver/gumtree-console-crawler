@@ -203,13 +203,13 @@ def patch_target(draft, criticism):
     truncated JSON prefix. An absence of strong matching words is not proof
     of a factual error: the selection is only an edit target.
     """
-    lines = [part.strip() for part in re.split(r"(?<=[.!?])\\s+|\\n+", draft)
+    lines = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", draft)
              if 8 <= len(part.strip()) <= 380]
     if not lines:
         lines = [draft[:min(len(draft), 300)].strip()]
-    words = set(re.findall(r"\\w{5,}", criticism.casefold()))
+    words = set(re.findall(r"\w{5,}", criticism.casefold()))
     def score(line):
-        tokens = set(re.findall(r"\\w{5,}", line.casefold()))
+        tokens = set(re.findall(r"\w{5,}", line.casefold()))
         return (len(words & tokens), -len(line))
     target = max(lines, key=score)
     if len(target) > 380:
@@ -223,7 +223,7 @@ def parse_patch_response(page_text, tag, predetermined_old):
     if proposal is not None:
         return proposal
     decoder = json.JSONDecoder(strict=False)
-    for m in re.finditer(r"\\{", page_text):
+    for m in re.finditer(r"\{", page_text):
         try:
             obj, _ = decoder.raw_decode(page_text[m.start():])
         except (ValueError, TypeError):
