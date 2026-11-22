@@ -221,7 +221,7 @@ class ConsultTests(unittest.TestCase):
         def ask(query):
             queries.append(query)
             tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
-            proposal = json.dumps(dict(tag=tag, new="The Renogy 175W panel requires independent voltage and current verification."))
+            proposal = json.dumps(dict(tag=tag, new="The Renogy 175W panel requires independent voltage and current verification before S700 connection."))
             return dict(question=query, page=dict(url="https://www.google.com/search?" +
                          urlencode({"q":query, "udm":"50"}), text=proposal))
         result = google_research(packet, {"reason":reason}, ask)
@@ -253,7 +253,7 @@ class ConsultTests(unittest.TestCase):
         calls = []
         def ask(query):
             calls.append(query)
-            if "Correct ONLY" in query or "Previous correction" in query:
+            if "correct ONLY" in query or "Previous correction" in query:
                 tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
                 obj = dict(tag=tag, new="The 48-hour outcome remains unverified in winter.")
                 return dict(question=query,page=dict(url="https://www.google.com/search?" +
