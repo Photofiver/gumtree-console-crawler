@@ -303,6 +303,18 @@ def handle(issue):
             return True
         api("POST", "/issues/" + str(number) + "/comments", {"body": text})
         print("Posted warm Google AI consultation for issue #", number, flush=True)
+        # GITHUB_TOKEN comments do not trigger a new Actions workflow;
+        # workflow_dispatch does, so check this issue immediately.
+        try:
+            api("POST", "/actions/workflows/google-ai-consult-continuity.yml/dispatches", {
+                "ref": os.environ.get("GITHUB_REF_NAME") or "main",
+                "inputs": {"issue_number": str(number)},
+            })
+            print("Dispatched immediate continuity check for #", number, flush=True)
+        except (HTTPError, OSError, ValueError) as exc:
+            # The review was already posted; dispatch failure must not erase it.
+            print("Continuity dispatch failed for #", number,
+                  type(exc).__name__, str(exc)[:200], flush=True)
         return True
     try:
         question, req = format_question(issue)
