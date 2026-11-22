@@ -3,7 +3,7 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. Research real sources, computationally screen up to 1000 distinct configurations, then deep-verify promising solutions through GitHub Google AI; never confuse combinations with confirmed products.'
 ---
 
-# Google AI Konsultant 1.8.13 — szybki przesiew, następnie weryfikacja
+# Google AI Konsultant 1.8.14 — szybki przesiew, następnie weryfikacja
 
 ## Cel i granice
 
@@ -56,6 +56,15 @@ Silnik `phone_google_ask/consult.py` nie może przyjąć od Google AI całej now
 Jeśli Google AI zwróci niewłaściwy format lub nieweryfikowalną propozycję, podejmuje jeszcze jedną próbę pobrania łatki. Jeśli obie się nie powiodą, dopuszczalna jest tylko wąska, deterministyczna naprawa oczywistego błędu `25,2 V < 24 V`; w pozostałych sytuacjach kończy z `BLOCKED_UNVERIFIED`, wskazuje powód i **nie wstawia cytowanych uwag recenzenta do gotowej odpowiedzi**. Nie przedstawiaj zatrzymania na tym etapie jako udanej autonomicznej korekty. Ukończenie samego Google AI Actions lub jego testów nie oznacza merytorycznego pozytywnego werdyktu.
 
 Ważne: 1000 wygenerowanych kombinacji to tylko przesiew obliczeniowy. W raporcie rozróżniaj cytowane niepotwierdzone ceny, prawdziwie sprawdzone koszyki zakupowe, zasady clippingu 100 W oraz liczbę bezpiecznych poprawek i rzeczywistych recenzji Google AI. Jeżeli brak któregokolwiek dowodu, zakończ wynikiem NIEPOTWIERDZONE bez rekomendacji zakupu.
+
+## Poprawka 1.8.14 — automatyczne korekty i wyszukiwanie brakujących źródeł
+
+- Po `DO POPRAWY` moduł `consult.py` nie żąda już od Google AI zgadywania dowolnego dokładnego fragmentu z uciętego szkicu. Sam wybiera jednoznaczny fragment **całego** tekstu powiązany z krytyką i przedstawia Google jedną konkretną pozycję `old` do krótkiej korekty.
+- Dopuszczone są dwie odpowiedzi: JSON `{tag,old,new}` z dokładnie zgodnym fragmentem lub krótszy JSON `{tag,new}` stosowany do tego właśnie fragmentu. Źródło musi zachować pochodzenie z aktualnej odpowiedzi Google; nie wolno przyjmować przypadkowego cytatu.
+- Jeżeli proponowany fragment jest błędny, zawiera nieudokumentowane ceny, usuwa S700 lub inne wymagania albo Google nie zwraca czytelnej poprawki, **nie akceptuj zmiany**. Wtedy workflow zadaje Google pytanie o brakujące źródło i samodzielnie otwiera wskazany URL; uznaje za odczytane tylko cytaty rzeczywiście obecne na stronie. Działa również z `sourceLinks`, gdy Google nie zwróci JSON.
+- Dodanie wiarygodnego cytatu oznacza nowy materiał do sprawdzenia, **nie automatyczne spełnienie wymogu**. Status `unknown` pozostaje, a dokładna poprawiona analiza przechodzi nowy audyt Google AI; zapis `research_trace` pozwala zobaczyć, jakie strony odczytano.
+- Jeżeli nie da się potwierdzić źródła, poprawka zostaje odrzucona jawnie jako `NIEPOTWIERDZONE`. Nie zakładaj, że wtyczka musi znaleźć rozwiązanie istniejące w dowolnych warunkach (np. gwarantowane ładowanie zimą przy bliskim zeru nasłonecznieniu).
+- Wymóg użytkownika „bez limitu budżetu” nadal wymusza `budget_mode=uncapped`; nie przywracaj stałego £100. Nie rekomenduj zakupu, dopóki brak dowodu zgodności jednej kompletnej konfiguracji i ceny jej całego koszyka.
 
 ## Attention Guard 1.8.13 — audyt wieloczęściowy
 
