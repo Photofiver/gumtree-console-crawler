@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   warm-session:
-    if: ${{ github.event_name != 'issues' || ((startsWith(github.event.issue.title, '[google-warm-test]') || startsWith(github.event.issue.title, '[google-warm-start]')) && github.event.issue.user.login == github.repository_owner) }}
+    if: ${{ github.event_name != 'issues' || ((startsWith(github.event.issue.title, '[google-warm-test]') || startsWith(github.event.issue.title, '[google-warm-start]') || startsWith(github.event.issue.title, '[auto-research]')) && github.event.issue.user.login == github.repository_owner) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 345
     steps:
@@ -39,9 +39,10 @@ jobs:
           gradle-version: '8.13'
       - name: Validate worker Python files and warm routing
         run: |
-          python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py
+          python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py phone_google_ask/auto_research.py
           python3 -m unittest discover -s phone_google_ask -p test_warm_worker.py -v
           python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
+          python3 -m unittest discover -s phone_google_ask -p test_auto_research.py -v
       - name: Prepare optional trained Attention once per warm session
         if: ${{ !(github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]')) }}
         run: |
