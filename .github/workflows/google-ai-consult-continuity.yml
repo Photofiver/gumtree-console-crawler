@@ -36,7 +36,7 @@ jobs:
             const marker = '<!-- google-ai-continuity-controller-v1 -->';
             const workflow_id = 'google-ai-ask.yml';
             const eventRun = context.payload.workflow_run;
-            const matchedRun = /Google AI issue #(\\d+)/.exec(eventRun?.display_title || '');
+            const matchedRun = /Google AI issue #([0-9]+)/.exec(eventRun?.display_title || '');
             const targetNumber = Number(
               context.payload.inputs?.issue_number || matchedRun?.[1] || 0
             );
