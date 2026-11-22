@@ -265,6 +265,74 @@ class ConsultTests(unittest.TestCase):
         self.assertTrue(any("outcome remains unverified" in q for q in calls))
         self.assertNotEqual(r["status"], "POTWIERDZONE")
 
+    def test_google_source_research_requires_verbatim_live_page_quote(self):
+        from consult import google_source_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh Belfast",
+                    draft="Solar wiring and converter remain unknown.",
+                    checks=[dict(requirement="Panel input voltage datasheet",
+                                 status="unknown", source="", quote="")])
+        urls = []
+        def ask(query):
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            urls.append(query)
+            response = dict(tag=tag, url="https://manufacturer.example/pv",
+                            quote="Open circuit voltage 22.5 V at STC")
+            return dict(question=query, page=dict(
+                url="https://www.google.com/search?" + urlencode({"q":query,"udm":"50"}),
+                text=json.dumps(response)))
+        evidence = google_source_research(data, {"reason":"Missing input voltage datasheet"},
+                                          ask, lambda url:"Panel: Open circuit voltage 22.5 V at STC.")
+        self.assertIsNotNone(evidence)
+        self.assertEqual(evidence["checks"][0]["status"], "unknown")
+        self.assertEqual(evidence["checks"][0]["source"], "https://manufacturer.example/pv")
+        self.assertEqual(evidence["research_trace"][0]["requirement_status"], "unknown")
+        self.assertIn("Dodatkowe źródło", evidence["draft"])
+        self.assertEqual(len(urls), 1)
+
+    def test_source_research_rejects_fake_quote_and_keeps_user_constraints(self):
+        from consult import google_source_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh", draft="No proof",
+                    checks=[dict(requirement="Voc verified", status="unknown")])
+        def ask(query):
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            obj = dict(tag=tag, url="https://example.org/pv",
+                       quote="A fabricated 24 V value not on the page")
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                        urlencode({"q":query, "udm":"50"}), text=json.dumps(obj)))
+        r = google_source_research(data, {"reason":"Need voltage proof"},
+                                   ask, lambda _: "This page has no such specifications.")
+        self.assertIsNone(r)
+        self.assertEqual(data["checks"][0]["status"], "unknown")
+        self.assertEqual(data["draft"], "No proof")
+
+    def test_failed_patch_causes_verified_source_search_and_recheck(self):
+        from consult import google_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh Belfast",
+                    draft="Panel electrical performance is not independently verified.",
+                    checks=[dict(requirement="Cold Voc data", status="unknown")])
+        calls = []
+        def ask(query):
+            calls.append(query)
+            if "Return ONLY JSON" in query or "Check the review criticism" in query or "Previous correction" in query:
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                             urlencode({"q":query, "udm":"50"}), text="No structured patch."))
+            if "Find ONE actual" in query:
+                tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+                result = dict(tag=tag,url="https://maker.example/spec",
+                              quote="Voc at STC is 23.0 volts")
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                             urlencode({"q":query, "udm":"50"}), text=json.dumps(result)))
+            return vote(query,"REVISE" if "Dodatkowe źródło" not in query else "PASS")
+        receipt = solve(data, ask, lambda _: "Voc at STC is 23.0 volts", google_research)
+        self.assertGreaterEqual(receipt["google_ai_edits_rechecked"], 1)
+        self.assertTrue(receipt["research_trace"])
+        self.assertEqual(receipt["research_trace"][0]["requirement_status"], "unknown")
+        self.assertNotEqual(receipt["status"], "POTWIERDZONE")
+        self.assertTrue(any("Dodatkowe źródło" in q for q in calls))
+
     def test_s700_deterministic_correction_of_false_voltage(self):
         from consult import evidence_revision
         data = dict(question="ALLPOWERS S700", draft="25,2 V mieści się w 24 V",
