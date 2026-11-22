@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   warm-session:
-    if: ${{ github.event_name != 'issues' || ((startsWith(github.event.issue.title, '[google-warm-test]') || startsWith(github.event.issue.title, '[google-warm-start]') || startsWith(github.event.issue.title, '[auto-research]')) && github.event.issue.user.login == github.repository_owner) }}
+    if: ${{ github.event_name != 'issues' || ((startsWith(github.event.issue.title, '[google-warm-test]') || startsWith(github.event.issue.title, '[google-warm-start]')) && github.event.issue.user.login == github.repository_owner) }}
     runs-on: ubuntu-24.04
     timeout-minutes: 345
     steps:
