@@ -1,0 +1,140 @@
+name: Google AI consultation continuity controller
+on:
+  schedule:
+    - cron: '11,26,41,56 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  issues: write
+  contents: read
+
+concurrency:
+  group: google-ai-consult-continuity
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Recover failed consultations and preserve unfinished work
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const crypto = require('crypto');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const marker = '<!-- google-ai-continuity-controller-v1 -->';
+            const workflow_id = 'google-ai-ask.yml';
+
+            // Inspect the newest open consultations, without reposting a draft
+            // or treating an unresolved Google AI verdict as completed work.
+            const issuePages = [];
+            for (let page = 1; page <= 3; page++) {
+              const response = await github.rest.issues.listForRepo({
+                owner, repo, state: 'open', sort: 'updated', direction: 'desc',
+                per_page: 100, page
+              });
+              issuePages.push(...response.data);
+              if (response.data.length < 100) break;
+            }
+            const issues = issuePages.filter(i =>
+              !i.pull_request && i.title.startsWith('[consult]') &&
+              i.user?.login === owner).slice(0, 60);
+
+            const runs = [];
+            for (let page = 1; page <= 5; page++) {
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner, repo, workflow_id, event: 'issues', per_page: 100, page
+              });
+              runs.push(...response.data.workflow_runs);
+              if (response.data.workflow_runs.length < 100) break;
+            }
+
+            for (const issue of issues) {
+              try {
+                const run = runs.find(r =>
+                  r.display_title === 'Google AI issue #' + issue.number);
+                if (!run) {
+                  core.warning('Consultation #' + issue.number +
+                    ' has no visible workflow run; an issue-triggered run must be investigated.');
+                  continue;
+                }
+                if (run.status !== 'completed') {
+                  core.info('Consultation #' + issue.number + ' still ' + run.status);
+                  continue;
+                }
+                const comments = await github.paginate(
+                  github.rest.issues.listComments,
+                  {owner, repo, issue_number: issue.number, per_page: 100}
+                );
+                const digest = crypto.createHash('sha256')
+                  .update(issue.body || '', 'utf8').digest('hex');
+                const receipts = comments.filter(c =>
+                  c.user?.login === 'github-actions[bot]' &&
+                  (c.body || '').startsWith('Konsultant/2 ')
+                ).reverse();
+                let receipt = null;
+                for (const comment of receipts) {
+                  try {
+                    const parsed = JSON.parse(comment.body.substring('Konsultant/2 '.length));
+                    if (parsed.issue === issue.number && parsed.sha256 === digest &&
+                        (parsed.run === undefined || parsed.run === run.id)) {
+                      receipt = parsed;
+                      break;
+                    }
+                  } catch (err) {
+                    core.warning('Unreadable receipt for #' + issue.number);
+                  }
+                }
+                if (receipt?.status === 'POTWIERDZONE' &&
+                    receipt.review === 'SPRAWDZONE' &&
+                    receipt.google_ai_responses_received > 0) {
+                  core.info('Consultation #' + issue.number + ' verified; no action.');
+                  continue;
+                }
+
+                const transportMissing = !receipt ||
+                  (receipt.google_ai_responses_received || 0) === 0;
+                const shouldRetry = transportMissing &&
+                  (run.conclusion !== 'success' || !receipt);
+                if (shouldRetry && (run.run_attempt || 1) < 3) {
+                  await github.rest.actions.reRunWorkflow({
+                    owner, repo, run_id: run.id
+                  });
+                  core.info('Re-ran transport for #' + issue.number +
+                    ' (next attempt ' + ((run.run_attempt || 1) + 1) + '/3).');
+                  continue;
+                }
+
+                // No ChatGPT session can be reawakened by a GitHub comment.
+                // Keep an explicit, idempotent evidence trail for the next turn.
+                if (comments.some(c => (c.body || '').includes(marker))) {
+                  continue;
+                }
+                const status = receipt?.status || 'NIEPOTWIERDZONE';
+                const review = receipt?.review || 'BRAK WERYFIKACJI';
+                const reason = String(receipt?.reason ||
+                  'No authenticated Google AI receipt after the available retries.')
+                  .slice(0, 1600);
+                const body = [
+                  marker,
+                  '**Kontroler ciągłości: zadanie nie jest potwierdzone.**',
+                  'Status: ' + status + '; ocena Google AI: ' + review + '.',
+                  'Powód: ' + reason,
+                  'Kolejna akcja: ChatGPT musi sprawdzić źródła, poprawić szkic i utworzyć',
+                  'nowe [consult] z parent_issue=' + issue.number + ', zachowując wszystkie wymagania.',
+                  'Kontroler automatycznie ponawia jedynie nieudany transport/audyt.',
+                  'GitHub nie może sam wznowić zamkniętej odpowiedzi ChatGPT ani',
+                  'wygenerować za nią zweryfikowanego rozwiązania.'
+                ].join('\n');
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: issue.number, body
+                });
+                core.info('Recorded unresolved consultation #' + issue.number);
+              } catch (err) {
+                core.warning('Continuity check failed for #' + issue.number +
+                  ': ' + String(err.message || err).slice(0, 300));
+              }
+            }
