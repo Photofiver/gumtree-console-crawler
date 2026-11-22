@@ -106,7 +106,8 @@ jobs:
                 for (const comment of receipts) {
                   try {
                     const parsed = JSON.parse(comment.body.substring('Konsultant/2 '.length));
-                    if (parsed.issue === issue.number && parsed.sha256 === digest) {
+                    if (parsed.issue === issue.number && parsed.sha256 === digest &&
+                        (parsed.run === undefined || parsed.run === run.id)) {
                       receipt = parsed;
                       break;
                     }
@@ -114,9 +115,12 @@ jobs:
                     core.warning('Unreadable receipt for #' + issue.number);
                   }
                 }
-                const verified = receipt?.status === 'POTWIERDZONE' &&
+                if (receipt?.status === 'POTWIERDZONE' &&
                     receipt.review === 'SPRAWDZONE' &&
-                    receipt.google_ai_responses_received > 0;
+                    receipt.google_ai_responses_received > 0) {
+                  core.info('Consultation #' + issue.number + ' verified; no action.');
+                  continue;
+                }
 
                 if (run.status !== 'completed' && !receipt) {
                   core.info('Consultation #' + issue.number +
@@ -137,13 +141,7 @@ jobs:
                   continue;
                 }
 
-                // Ordinary-chat bridge polls the authenticated original issue
-                // locally; no ChatGPT Work/PR trigger is needed here.
-                if (verified) {
-                  core.info('Consultation #' + issue.number + ' verified; no further review.');
-                  continue;
-                }
-
+                // No ChatGPT session can be reawakened by a GitHub comment.
                 // Keep an explicit, idempotent evidence trail for the next turn.
                 if (comments.some(c => (c.body || '').includes(marker))) {
                   continue;
