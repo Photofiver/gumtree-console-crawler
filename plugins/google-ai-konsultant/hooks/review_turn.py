@@ -92,7 +92,7 @@ def evaluate(event, read=fetch):
     if match:
         try:
             receipt = lookup(int(match), read)
-            current = re.fullmatch(re.escape(title) + r"(?: /([1-9]\\d*))?", receipt.get("title", ""))
+            current = re.fullmatch(re.escape(title) + r"(?: /([1-9]\d*))?", receipt.get("title", ""))
             if current:
                 attempt = int(current[1] or "1")
                 if "pending" in receipt:
