@@ -16,7 +16,8 @@ permissions:
 # starting a new Android instance for every question.
 concurrency:
   group: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && 'google-ai-warm-oneoff-test' || 'google-ai-warm-persistent' }}
-  cancel-in-progress: false
+  # An explicit [google-warm-start] replaces the outdated running worker.
+  cancel-in-progress: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-start]') }}
 
 jobs:
   warm-session:
@@ -57,6 +58,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GOOGLE_AI_PERSISTENT_WEBVIEW: '1'
           WARM_RUNTIME_MINUTES: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && '4' || '315' }}
           WARM_TEST_ISSUE: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && github.event.issue.number || '0' }}
         with:
