@@ -11,6 +11,7 @@ on:
 permissions:
   contents: read
   issues: write
+  actions: write
 
 # Only one persistent emulator; keep one replacement queued, rather than
 # starting a new Android instance for every question.
