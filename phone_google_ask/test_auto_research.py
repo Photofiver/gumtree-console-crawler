@@ -39,9 +39,9 @@ class AutoResearchTests(unittest.TestCase):
             "session_id": "agent-integration-test",
             "turn_id": "unique-1",
         })["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("ORYGINALNY", instruction)
+        self.assertIn("Oryginalny proces", instruction)
         self.assertIn("AutoResearch/1", instruction)
-        self.assertIn("nowy [consult]", instruction)
+        self.assertIn("nowe [consult]", instruction)
         self.assertIn("ChatGPT bada i poprawia", instruction)
         self.assertIn("Google AI osobno recenzuje", instruction)
 
