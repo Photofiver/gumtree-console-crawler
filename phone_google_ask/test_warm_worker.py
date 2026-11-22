@@ -41,6 +41,37 @@ class WarmWorkerRoutingTests(unittest.TestCase):
             self.assertFalse(warm_worker.handle(issue("[consult] audit")))
             api.assert_not_called()
 
+    def test_persistent_browser_runs_once_at_worker_start(self):
+        with patch.dict(os.environ, {"GOOGLE_AI_PERSISTENT_WEBVIEW": "1"}), \
+             patch.object(warm_worker, "start_persistent_webview") as launch, \
+             patch.object(warm_worker, "ask_persistent_webview",
+                          return_value={"aiResponseReady": True}) as ask:
+            result = warm_worker.ask_emulator("2+2")
+        self.assertTrue(result["aiResponseReady"])
+        ask.assert_called_once_with("2+2")
+        launch.assert_not_called()  # Already running, not launched per question.
+
+    def test_persistent_protocol_rejects_old_response(self):
+        from unittest.mock import MagicMock
+        import subprocess
+        import tempfile
+        import shutil
+        with patch("secrets.token_hex", return_value="abcdef12"), \
+             patch.object(warm_worker.subprocess, "run") as run, \
+             patch.object(warm_worker.time, "sleep"), \
+             patch.object(warm_worker.time, "monotonic", side_effect=[1.0, 2.0, 3.0, 4.0]):
+            def response(command, **kwargs):
+                if command[1:3] == ["shell", "cat"]:
+                    return subprocess.CompletedProcess(command, 0, stdout=json.dumps({
+                        "id": "abcdef12", "question": "3+4",
+                        "loadUrl": "https://www.google.com/search?udm=50",
+                        "aiResponseReady": True, "page": {"text": "7"}
+                    }), stderr="")
+                return subprocess.CompletedProcess(command, 0, stdout="", stderr="")
+            run.side_effect = response
+            with self.assertRaisesRegex(RuntimeError, "question mismatch"):
+                warm_worker.ask_persistent_webview("2+2")
+
     def test_consult_does_real_screening_and_google_review(self):
         payload = {"question": "Main goal", "draft": "Review this proposal.",
                    "checks": [{"requirement": "A", "status": "unknown"}],
