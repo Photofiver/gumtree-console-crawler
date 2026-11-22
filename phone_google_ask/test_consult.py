@@ -105,6 +105,35 @@ class ConsultTests(unittest.TestCase):
         self.assertEqual(result["review"], "NIEPOTWIERDZONE")
         self.assertIn("after two distinct prompts", result["reason"])
 
+    def test_every_fragment_reviewed_even_if_first_is_rejected(self):
+        data = dict(self.data, draft="Safe technical description. " * 250)
+        prompts = []
+        def ask(query):
+            prompts.append(query)
+            return vote(query, "REVISE" if "Part 1/" in query else "PASS")
+        result = evaluate(data, ask, lambda _: "Rated 20 V")
+        self.assertGreater(result["parts"], 1)
+        self.assertEqual(result["review"], "DO POPRAWY")
+        self.assertEqual(result["reviewed"], result["parts"])
+        self.assertEqual(result["failed_parts"], [1])
+        for index in range(1, result["parts"] + 1):
+            self.assertTrue(any("Part "+str(index)+"/"+str(result["parts"]) in q
+                                for q in prompts))
+
+    def test_missing_middle_verdict_does_not_skip_later_fragments(self):
+        data = dict(self.data, draft="More source verification required. " * 180)
+        prompts = []
+        def ask(query):
+            prompts.append(query)
+            return vote(query, "ambiguous" if "Part 2/" in query else "PASS")
+        result = evaluate(data, ask, lambda _: "Rated 20 V")
+        self.assertGreater(result["parts"], 2)
+        self.assertEqual(result["review"], "NIEPOTWIERDZONE")
+        self.assertEqual(result["reviewed"], result["parts"])
+        self.assertIn(2, result["unreadable_parts"])
+        self.assertTrue(any("Part "+str(result["parts"])+"/"+str(result["parts"]) in q
+                            for q in prompts))
+
     def test_utf8(self):
         original = "ząb 🌞 " * 1400
         self.assertEqual("".join(parts(original, 1357)),original)
