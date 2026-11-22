@@ -211,7 +211,8 @@ def format_result(result, req):
         + "\n\nPAGE: " + str(page.get("url") or result.get("loadUrl", ""))
         + "\n\nTEXT:\n" + str(page.get("text") or "NO TEXT")
         + "\n\nSOURCE LINKS: " + json.dumps(page.get("sourceLinks") or [], ensure_ascii=False)
-        + "\n\nAI RESPONSE READY: " + str(bool(result.get("aiResponseReady")))
+        + "\n\nWEBVIEW_ELAPSED_MS: " + str(result.get("elapsedMs", "not_measured"))
+        + "\nAI RESPONSE READY: " + str(bool(result.get("aiResponseReady")))
     )
 
 
@@ -313,14 +314,14 @@ def handle(issue):
                 # Retry once; do not expose an intermediate unconfirmed result.
                 if text.startswith("Google AI: NIEPOTWIERDZONE") and attempt == 0:
                     print("Google AI review incomplete; retrying once", flush=True)
-                    time.sleep(4)
+                    time.sleep(1 if os.environ.get("GOOGLE_AI_PERSISTENT_WEBVIEW") == "1" else 4)
                     continue
                 break
             except RuntimeError:
                 if attempt == 1:
                     raise
                 print("Warm Android answer failed, retrying once", flush=True)
-                time.sleep(5)
+                time.sleep(1 if os.environ.get("GOOGLE_AI_PERSISTENT_WEBVIEW") == "1" else 5)
     except Exception as exc:
         text = "Google AI: NIEPOTWIERDZONE\n\nWarm browser error: " + type(exc).__name__ + ": " + str(exc)[:700]
     # In production a warm-session failure is provisional. The per-issue cold
