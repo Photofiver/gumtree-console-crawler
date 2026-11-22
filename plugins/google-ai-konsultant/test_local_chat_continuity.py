@@ -141,11 +141,14 @@ class BridgeTests(unittest.TestCase):
     def test_positive_verdict_does_not_trigger_new_consult(self):
         i = issue()
         fake = FakeGitHub(i, [review(i, "POTWIERDZONE", "SPRAWDZONE")])
+        messages = []
         with tempfile.TemporaryDirectory() as folder:
-            c = bridge.Controller(fake, lambda *args: self.fail("unexpected browser send"),
+            c = bridge.Controller(fake, lambda *args: messages.append(args) or "reported",
                                   Path(folder)/"state.json", 777, "abcABC234567")
             self.assertEqual(c.once(), "verified_issue_777")
             self.assertEqual(fake.creates, 0)
+            self.assertEqual(len(messages), 1)
+            self.assertIn("evidence-based answer", messages[0][1])
 
 
 if __name__ == "__main__":
