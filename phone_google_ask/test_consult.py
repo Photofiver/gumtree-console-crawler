@@ -83,13 +83,15 @@ class ConsultTests(unittest.TestCase):
             original_cwd = os.getcwd()
             try:
                 os.chdir(directory)
-                with patch.dict(os.environ, {"GITHUB_EVENT_PATH":str(event)}), \\
-                     patch.dict(sys.modules, {"warm_worker":warm}), \\
-                     patch.object(consult,"review_for_chatgpt",return_value=dict(
-                         review="DO POPRAWY", status="NIEPOTWIERDZONE",
-                         correction_owner="chatgpt",draft=self.data["draft"])) as reviewer, \\
-                     patch.object(consult,"solve",side_effect=AssertionError(
-                         "Legacy GitHub correction is forbidden")):
+                with (
+                    patch.dict(os.environ, {"GITHUB_EVENT_PATH":str(event)}),
+                    patch.dict(sys.modules, {"warm_worker":warm}),
+                    patch.object(consult,"review_for_chatgpt",return_value=dict(
+                        review="DO POPRAWY", status="NIEPOTWIERDZONE",
+                        correction_owner="chatgpt",draft=self.data["draft"])) as reviewer,
+                    patch.object(consult,"solve",side_effect=AssertionError(
+                        "Legacy GitHub correction is forbidden"))
+                ):
                     consult.main()
                     reviewer.assert_called_once()
                 receipt = json.loads(Path("consult-result.json").read_text())
