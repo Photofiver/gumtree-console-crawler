@@ -35,8 +35,10 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-      - name: Validate worker Python files
-        run: python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py
+      - name: Validate worker Python files and warm routing
+        run: |
+          python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py
+          python3 -m unittest discover -s phone_google_ask -p test_warm_worker.py -v
       - name: Prepare optional trained Attention once per warm session
         run: |
           if ! python3 -m pip install --user --disable-pip-version-check 'sentence-transformers==4.1.0'; then
