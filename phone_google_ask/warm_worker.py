@@ -53,7 +53,7 @@ def is_ours(issue, test_mode):
     if issue.get("user", {}).get("login", "").lower() != OWNER.lower():
         return False
     title = issue.get("title", "")
-    return title.startswith("[google-warm-test]") if test_mode else title.startswith("[google-ask]")
+    return title.startswith("[google-warm-test]") if test_mode else title.startswith(("[google-ask]", "[consult]"))
 
 
 def is_answered(number):
@@ -122,10 +122,92 @@ def format_result(result, req):
     )
 
 
+_ATTENTION_MODEL = None
+
+
+def review_consult(issue):
+    """Review a [consult] packet in the already-booted emulator.
+
+    Keep the source screening and trained Attention separate from the actual
+    Google AI verdict. No GitHub-side edits or invented verified products.
+    """
+    global _ATTENTION_MODEL
+    from consult import review_for_chatgpt
+    from attention_guard import build_focus, MODEL_ID
+    from explore import screen
+
+    data = json.loads(issue.get("body") or "{}")
+    if not isinstance(data, dict):
+        raise ValueError("Consultation body must be a JSON object")
+    attention = {"status": "unavailable", "reason": "model_not_ready"}
+    try:
+        from sentence_transformers import SentenceTransformer
+        if _ATTENTION_MODEL is None:
+            _ATTENTION_MODEL = SentenceTransformer(MODEL_ID, trust_remote_code=False)
+        attention = build_focus(data, _ATTENTION_MODEL)
+    except Exception as exc:
+        attention = {"status": "unavailable", "reason": type(exc).__name__,
+                     "error_detail": str(exc)[:200]}
+    data["attention"] = attention
+
+    exploration = None
+    exploration_error = None
+    if data.get("idea_target") in (100, 1000):
+        try:
+            exploration = screen(data, data["idea_target"])["summary"]
+        except (ValueError, TypeError, KeyError) as exc:
+            exploration_error = str(exc)[:350]
+
+    result = review_for_chatgpt(data, ask_emulator)
+    result["issue"] = issue["number"]
+    result["attention"] = {k: v for k, v in attention.items()
+                           if k in ("status", "model", "reason", "error_detail", "ranked_indices")}
+    if exploration is not None:
+        result["exploration"] = exploration
+    if exploration_error is not None:
+        result["exploration_error"] = exploration_error
+
+    # A failed warm transport is not a completed review. Let the ordinary
+    # issue workflow provide the cold fallback rather than post a fake receipt.
+    if result.get("google_ai_responses_received", 0) == 0:
+        print("Warm consult had no Google AI response; cold fallback retained", flush=True)
+        return None
+    payload = json.dumps(result, ensure_ascii=False)
+    if len(payload.encode("utf-8")) > 57000:
+        # Original draft and evidence remain in the issue; do not cut a reason
+        # or fabricate a success to fit GitHub's comment size limit.
+        result.pop("history", None)
+        result.pop("draft", None)
+        result.pop("checks", None)
+        payload = json.dumps(result, ensure_ascii=False)
+    if len(payload.encode("utf-8")) > 57000:
+        result.pop("google_ai_audit", None)
+        if "exploration" in result:
+            result["exploration"].pop("shortlist", None)
+        payload = json.dumps(result, ensure_ascii=False)
+    if len(payload.encode("utf-8")) > 57000:
+        raise ValueError("Consultation receipt too large; cold fallback required")
+    return "Konsultant/2 " + payload
+
+
 def handle(issue):
     number = issue["number"]
     if is_answered(number):
         return False
+    if issue["title"].startswith("[consult]"):
+        try:
+            text = review_consult(issue)
+        except Exception as exc:
+            print("Warm consultation error for issue #", number, ":",
+                  type(exc).__name__, str(exc)[:250], flush=True)
+            return False
+        if text is None:
+            return False
+        if is_answered(number):
+            return True
+        api("POST", "/issues/" + str(number) + "/comments", {"body": text})
+        print("Posted warm Google AI consultation for issue #", number, flush=True)
+        return True
     try:
         question, req = format_question(issue)
         if not question:
