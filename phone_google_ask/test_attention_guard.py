@@ -8,6 +8,18 @@ class FakePretrainedEncoder:
         return [[4.0, 0.0], [4.0, 0.0], [0.0, 3.0]]
 
 
+class AmbiguousTensor(list):
+    def __bool__(self):
+        raise ValueError("The truth value of an array with more than one element is ambiguous")
+
+
+class ArrayEncoder:
+    def encode(self, texts, **kwargs):
+        return [AmbiguousTensor([4.0, 0.0]),
+                AmbiguousTensor([4.0, 0.0]),
+                AmbiguousTensor([0.0, 3.0])]
+
+
 class AttentionTests(unittest.TestCase):
     def setUp(self):
         self.data = {"question":"Zachowaj główny cel", "draft":"Draft", "checks":[
@@ -20,6 +32,15 @@ class AttentionTests(unittest.TestCase):
         self.assertAlmostEqual(sum(weights), 1.0)
         self.assertAlmostEqual(vec[0], 4*weights[0])
         self.assertAlmostEqual(vec[1], 3*weights[1])
+
+    def test_no_numpy_boolean_ambiguity_when_real_encoder_returns_arrays(self):
+        weights, vec = scaled_dot_product_attention(
+            AmbiguousTensor([4.0, 0.0]),
+            [AmbiguousTensor([4.0, 0.0]), AmbiguousTensor([0.0, 3.0])]
+        )
+        self.assertGreater(weights[0], weights[1])
+        self.assertEqual(len(vec), 2)
+        self.assertEqual(build_focus(self.data, ArrayEncoder())["status"], "active")
 
     def test_pretrained_encoder_inputs_and_focus(self):
         encoder=FakePretrainedEncoder()
