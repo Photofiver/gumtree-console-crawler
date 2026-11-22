@@ -1,8 +1,9 @@
 name: Google AI warm session watchdog
 on:
   schedule:
-    # Every five hours (four across midnight); jobs end before GitHub's 6h limit.
-    - cron: '23 0,5,10,15,20 * * *'
+    # A new session is queued before the 315-minute worker expires; GitHub
+    # schedules can be delayed, so do not rely on one exact start time.
+    - cron: '7,37 * * * *'
   workflow_dispatch:
   issues:
     types: [opened]
@@ -10,6 +11,12 @@ on:
 permissions:
   contents: read
   issues: write
+
+# Only one persistent emulator; keep one replacement queued, rather than
+# starting a new Android instance for every question.
+concurrency:
+  group: ${{ github.event_name == 'issues' && startsWith(github.event.issue.title, '[google-warm-test]') && 'google-ai-warm-oneoff-test' || 'google-ai-warm-persistent' }}
+  cancel-in-progress: false
 
 jobs:
   warm-session:
@@ -30,6 +37,11 @@ jobs:
           gradle-version: '8.13'
       - name: Validate worker Python files
         run: python3 -m py_compile phone_google_ask/warm_worker.py phone_google_ask/review.py
+      - name: Prepare optional trained Attention once per warm session
+        run: |
+          if ! python3 -m pip install --user --disable-pip-version-check 'sentence-transformers==4.1.0'; then
+            echo "Attention unavailable; Google AI transport will still run."
+          fi
       - name: Prepare persistent Android worker
         run: cp phone_google_ask/GoogleAskTest.java android_browser/app/src/androidTest/java/com/photofiver/phonebrowser/GoogleAskTest.java
       - name: Build Android app once per warm session
