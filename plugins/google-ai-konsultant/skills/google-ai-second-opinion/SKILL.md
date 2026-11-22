@@ -3,11 +3,19 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. Research real sources, computationally screen up to 1000 distinct configurations, then deep-verify promising solutions through GitHub Google AI; never confuse combinations with confirmed products.'
 ---
 
-# Google AI Konsultant 1.8.11 — szybki przesiew, następnie weryfikacja
+# Google AI Konsultant 1.8.12 — szybki przesiew, następnie weryfikacja
 
 ## Cel i granice
 
 Znajdź działające rozwiązanie, nie tylko uzasadnienie odmowy. `SPRAWDZONE` Google AI odnosi się do konkretnego szkicu; nie oznacza, że użytkownik otrzymał działający zestaw ani że przeszukano cały rynek. Nie wymyślaj produktów, cen, kompatybilności ani odwiedzonych stron. Wykazuj osobno liczbę pomysłów **wygenerowanych matematycznie**, liczbę **przefiltrowanych**, liczbę **prawdziwych sprawdzonych ofert** i liczbę **niezależnych recenzji Google AI**.
+
+## Attention Guard 1.8.12 (poprawka błędu NumPy i polityki budżetowej)
+
+- Zewnętrzna funkcja `scaled_dot_product_attention` nie może używać `if not keys` dla wielowymiarowych tablic NumPy; w 1.8.12 sprawdza jawnie `len(...)`. Status `active` wolno podać wyłącznie na podstawie nowego artefaktu `attention-report.json`.
+- **Brak globalnego limitu £100**: `phone_google_ask/explore.py` odrzuca z powodu ceny wyłącznie, gdy aktualna prośba określa dodatni budżet. Pole `budget_max_gbp` ustala limit w przypadkach z limitem; bez limitu budżetu i bez limitu ceny oznacza `budget_mode=uncapped`, nawet jeżeli w pozostałych polach pozostał historyczny limit.
+- Po każdym uruchomieniu dla `bez limitu budżetu` raport `exploration.summary.budget_mode` MUSI pokazać `uncapped` i `by_status.reject_known_price_over_budget` nie może występować. Kwoty paneli nadal są potrzebne do porównania opłacalności, ale nie są granicą zakupu.
+- `DO POPRAWY` z Google AI i `NIEPOTWIERDZONE` nie są błędami, które wolno „naprawić” wpisaniem PASS: dopóki źródła i pełen koszt jednego zestawu nie są potwierdzone, nie zgłaszaj zatwierdzonego rozwiązania. Raportuj ilości wysłanych i odebranych rzeczywistych recenzji.
+- Do testów regresyjnych dołączono symulowane tablice z zabronionym `__bool__` oraz scenariusz bez ograniczenia budżetu. Każde odstępstwo w aktualnym workflow traktuj jako problem.
 
 ## Attention Guard 1.8.11 (zewnętrzna, rzeczywista operacja Attention)
 
