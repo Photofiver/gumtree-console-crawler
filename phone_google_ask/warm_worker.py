@@ -289,7 +289,9 @@ def main():
                 last_ping = time.monotonic()
         except (HTTPError, OSError, subprocess.SubprocessError, ValueError) as exc:
             print("Warm browser watchdog check error:", repr(exc)[:550], flush=True)
-        time.sleep(12)
+        # Poll often enough for quick questions without exceeding the usual
+        # per-repository GITHUB_TOKEN API hourly budget (~600 polls/hour).
+        time.sleep(6)
     print("Warm session finished normally; next scheduled run starts a fresh emulator.", flush=True)
 
 
