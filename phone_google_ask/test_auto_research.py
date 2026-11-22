@@ -39,10 +39,10 @@ class AutoResearchTests(unittest.TestCase):
             "session_id": "agent-integration-test",
             "turn_id": "unique-1",
         })["hookSpecificOutput"]["additionalContext"]
-        self.assertIn("Oryginalny proces", instruction)
-        self.assertIn("AutoResearch/1", instruction)
+        self.assertIn("GitHub jest JEDYNIE kontrolerem", instruction)
+        self.assertNotIn("AutoResearch/1", instruction)
         self.assertIn("nowe [consult]", instruction)
-        self.assertIn("ChatGPT bada i poprawia", instruction)
+        self.assertIn("ChatGPT samodzielnie", instruction)
         self.assertIn("Google AI osobno recenzuje", instruction)
 
     def test_no_proof_is_not_marked_verified(self):
