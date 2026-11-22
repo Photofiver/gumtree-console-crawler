@@ -3,11 +3,19 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. Research real sources, computationally screen up to 1000 distinct configurations, then deep-verify promising solutions through GitHub Google AI; never confuse combinations with confirmed products.'
 ---
 
-# Google AI Konsultant 1.8.4 — szybki przesiew, następnie weryfikacja
+# Google AI Konsultant 1.8.11 — szybki przesiew, następnie weryfikacja
 
 ## Cel i granice
 
 Znajdź działające rozwiązanie, nie tylko uzasadnienie odmowy. `SPRAWDZONE` Google AI odnosi się do konkretnego szkicu; nie oznacza, że użytkownik otrzymał działający zestaw ani że przeszukano cały rynek. Nie wymyślaj produktów, cen, kompatybilności ani odwiedzonych stron. Wykazuj osobno liczbę pomysłów **wygenerowanych matematycznie**, liczbę **przefiltrowanych**, liczbę **prawdziwych sprawdzonych ofert** i liczbę **niezależnych recenzji Google AI**.
+
+## Attention Guard 1.8.11 (zewnętrzna, rzeczywista operacja Attention)
+
+- Dla każdego nowego issue `[consult]` workflow próbuje załadować **wytrenowany** model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`. Model sam posiada warstwy self-attention, a `phone_google_ask/attention_guard.py` liczy osobno scaled dot-product attention `softmax(QK^T/sqrt(d))V` pomiędzy celem użytkownika a wymaganiami.
+- Wynik trafia do `attention-report.json`. Jeśli ma status `active`, zgodny hash celu i wszystkich wymagań, najważniejsze wymagania są ponownie przypominane w zapytaniach Google AI; **wszystkie wymagania nadal pozostają obowiązkowe**. Ranking nie jest dowodem prawdziwości ani zamiennikiem czytania źródeł.
+- Jeśli model nie załaduje się albo obliczenia zawiodą, raport ma status `unavailable`. Nie twierdź, że Attention działało, nie stosuj przypadkowych wag ani nie udawaj wyniku. Raport pozostaje artefaktem wykonania.
+- Mechanizm działa **poza modelem ChatGPT**, tylko dla danych rzeczywiście przekazanych w zgłoszeniu. Nie modyfikuje wewnętrznych wag/warstw Attention GPT, nie czyta automatycznie całej historii rozmowy i nie gwarantuje wywołania wtyczki przy każdym pytaniu.
+- Testy: `test_attention_guard.py` i `test_consult.py` sprawdzają wzór, spójność celu, zachowanie wszystkich warunków i wykorzystanie rankingu w recenzji.
 
 ## Obowiązkowa recenzja Google AI przy użyciu wtyczki
 
