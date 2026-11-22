@@ -54,7 +54,7 @@ def is_ours(issue, test_mode):
     if issue.get("user", {}).get("login", "").lower() != OWNER.lower():
         return False
     title = issue.get("title", "")
-    return title.startswith("[google-warm-test]") if test_mode else title.startswith(("[google-ask]", "[consult]"))
+    return title.startswith("[google-warm-test]") if test_mode else title.startswith(("[google-ask]", "[consult]", "[auto-research]"))
 
 
 def is_answered(number):
@@ -364,6 +364,7 @@ def main():
     started = datetime.now(timezone.utc)
     seen = set()
     last_ping = 0
+    last_auto_scan = -999.0
     print("Google AI warm Android session started, max duration", args.runtime_minutes, "minutes", flush=True)
     while time.monotonic() < deadline:
         try:
@@ -374,10 +375,30 @@ def main():
                 else:
                     print("Test issue not created by owner or wrong prefix", flush=True)
                 break
+            # Autonomous research is deliberately independent of chat Stop hooks.
+            # Check older open research issues too; the saved comment resumes work
+            # across 315-minute warm worker restarts without paid model APIs.
+            if time.monotonic() - last_auto_scan >= 30 and time.monotonic() + 140 < deadline:
+                last_auto_scan = time.monotonic()
+                from auto_research import run_once as autonomous_round
+                for page in range(1, 4):
+                    pending = api("GET", "/issues?state=open&sort=updated&direction=desc&per_page=100&page=" + str(page))
+                    worked = False
+                    for task in pending:
+                        if (task.get("title", "").startswith("[auto-research]") and
+                                is_ours(task, False) and "pull_request" not in task):
+                            if autonomous_round(task, ask_emulator, api):
+                                print("Autonomous Google AI research persisted for issue #",
+                                      task["number"], flush=True)
+                                worked = True
+                                break
+                    if worked or len(pending) < 100:
+                        break
             issues = api("GET", "/issues?state=open&sort=created&direction=desc&per_page=50")
             cutoff = started - timedelta(minutes=15)
             for issue in reversed(issues):
-                if not is_ours(issue, False) or "pull_request" in issue:
+                if (not is_ours(issue, False) or "pull_request" in issue or
+                        issue["title"].startswith("[auto-research]")):
                     continue
                 number = issue["number"]
                 if number in seen:
