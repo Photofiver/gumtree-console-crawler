@@ -6,6 +6,7 @@ Only accept requests opened by the repository owner; never print issue bodies.
 """
 import argparse
 import base64
+import hashlib
 from datetime import datetime, timedelta, timezone
 import json
 import os
@@ -254,6 +255,7 @@ def review_consult(issue):
 
     result = review_for_chatgpt(data, ask_emulator)
     result["issue"] = issue["number"]
+    result["sha256"] = hashlib.sha256((issue.get("body") or "").encode("utf-8")).hexdigest()
     result["attention"] = {k: v for k, v in attention.items()
                            if k in ("status", "model", "reason", "error_detail", "ranked_indices")}
     if exploration is not None:
