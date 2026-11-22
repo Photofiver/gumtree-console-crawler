@@ -56,6 +56,7 @@ public final class GoogleAiWarmActivity extends Activity {
     private boolean pageFinished = false;
     private boolean snapshotPending = false;
     private boolean prewarmReady = false;
+    private int navigationRetries = 0;
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
@@ -94,8 +95,22 @@ public final class GoogleAiWarmActivity extends Activity {
             }
             @Override public void onReceivedError(WebView view, WebResourceRequest req,
                     WebResourceError error) {
-                if (req.isForMainFrame() && !activeId.isEmpty()) {
-                    complete(new JSONObject(), false, "main_frame_error");
+                // An outstanding prewarm navigation may fail after a NEW question
+                // was submitted. It is not a failure of the current question.
+                if (req.isForMainFrame() && !activeId.isEmpty()
+                        && matchesActiveQuery(req.getUrl().toString())) {
+                    if (navigationRetries < 2) {
+                        navigationRetries++;
+                        pageFinished = false;
+                        final String requested = activeUrl;
+                        handler.postDelayed(() -> {
+                            if (!activeId.isEmpty() && activeUrl.equals(requested))
+                                browser.loadUrl(requested);
+                        }, 850);
+                    } else {
+                        complete(new JSONObject(), false,
+                                 "main_frame_error_" + String.valueOf(error.getDescription()));
+                    }
                 }
             }
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest req) {
@@ -167,6 +182,7 @@ public final class GoogleAiWarmActivity extends Activity {
                         startedAtMs = android.os.SystemClock.elapsedRealtime();
                         pageFinished = false;
                         snapshotPending = false;
+                        navigationRetries = 0;
                         browser.loadUrl(activeUrl);
                     }
                 }
