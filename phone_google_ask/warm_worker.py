@@ -1,7 +1,7 @@
 """Reuse a booted Android emulator for new Google AI issues; renew by scheduled Actions runs.
 
-The worker keeps the emulator running for the configured window. The instrumented
-WebView restarts per question: GitHub-hosted runners cannot transfer live tabs.
+The worker keeps the emulator running for the configured window. The SAME Android Activity and WebView stay open across questions on this runner.
+GitHub-hosted runners cannot transfer a live WebView across separate jobs.
 Only accept requests opened by the repository owner; never print issue bodies.
 """
 import argparse
@@ -81,7 +81,100 @@ def format_question(issue):
     return body.strip(), None
 
 
+def start_persistent_webview():
+    """Launch the Google AI Mode WebView ONCE for this entire warm worker.
+
+    The same Activity and WebView remain alive for successive questions.
+    Never start a new Android instrumentation instance per question.
+    """
+    activity = "com.photofiver.phonebrowser/.GoogleAiWarmActivity"
+    try:
+        result = subprocess.run(
+            ["adb", "shell", "am", "start", "-n", activity],
+            capture_output=True, text=True, timeout=18, check=True,
+        )
+        if "Error" in result.stdout or "Exception" in result.stdout:
+            raise RuntimeError("Android Activity launch failed")
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise RuntimeError("Failed to start persistent Google AI browser: " + str(exc)[:200])
+    ready_path = APP_FILES + "google-ai-warm-ready.json"
+    deadline = time.monotonic() + 35
+    while time.monotonic() < deadline:
+        probe = subprocess.run(
+            ["adb", "shell", "cat", ready_path],
+            capture_output=True, text=True, timeout=7,
+        )
+        if probe.returncode == 0:
+            try:
+                report = json.loads(probe.stdout)
+                if report.get("status") == "ready" and (
+                        str(report.get("url") or "").startswith("https://www.google.com/")):
+                    print("PERSISTENT_GOOGLE_AI_WEBVIEW_READY", flush=True)
+                    return
+            except (ValueError, TypeError):
+                pass
+        time.sleep(0.5)
+    raise RuntimeError("Persistent Google AI Mode page did not finish prewarming")
+
+
+def ask_persistent_webview(question):
+    """Send one question to the SAME running WebView over adb files.
+
+    No new WebView, app launch, browser process, Android test or 18s sleep.
+    An id and exact question are checked to prevent stale replies.
+    """
+    if not isinstance(question, str) or not question.strip():
+        raise ValueError("Question missing")
+    if len(question.encode("utf-8")) > 2000:
+        raise ValueError("Question exceeds Google AI transport size")
+    import secrets
+    request_id = secrets.token_hex(12)
+    command_path = APP_FILES + "google-ai-warm-command.json"
+    command_staging = APP_FILES + "google-ai-warm-command.incoming"
+    answer_path = APP_FILES + "google-ai-warm-result.json"
+    request = json.dumps({"id": request_id, "question": question}, ensure_ascii=False)
+    started = time.monotonic()
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", encoding="utf-8") as temp:
+        temp.write(request)
+        temp.flush()
+        subprocess.run(["adb", "push", temp.name, command_staging],
+                       capture_output=True, check=True, timeout=12)
+        subprocess.run(["adb", "shell", "mv", command_staging, command_path],
+                       capture_output=True, check=True, timeout=8)
+
+    deadline = time.monotonic() + 53
+    while time.monotonic() < deadline:
+        probe = subprocess.run(
+            ["adb", "shell", "cat", answer_path],
+            capture_output=True, text=True, timeout=8,
+        )
+        if probe.returncode == 0:
+            try:
+                report = json.loads(probe.stdout)
+            except (ValueError, TypeError):
+                report = {}
+            if report.get("id") == request_id:
+                if report.get("question") != question:
+                    raise RuntimeError("Persistent WebView reply question mismatch")
+                page = report.get("page") or {}
+                if not str(report.get("loadUrl") or "").startswith(
+                        "https://www.google.com/search?"):
+                    raise RuntimeError("Persistent WebView did not use Google AI Mode")
+                if not report.get("aiResponseReady") or not page.get("text"):
+                    raise RuntimeError("Google AI Mode did not finish: " +
+                                       str(report.get("error") or "empty response"))
+                elapsed = round(time.monotonic() - started, 2)
+                print("PERSISTENT_GOOGLE_AI_ANSWER_READY host_seconds=",
+                      elapsed, "webview_ms=", report.get("elapsedMs"),
+                      flush=True)
+                return report
+        time.sleep(0.35)
+    raise RuntimeError("Persistent Google AI WebView did not return an answer within 53s")
+
+
 def ask_emulator(question):
+    if os.environ.get("GOOGLE_AI_PERSISTENT_WEBVIEW") == "1":
+        return ask_persistent_webview(question)
     encoded = base64.b64encode(question.encode("utf-8")).decode("ascii")
     path = APP_FILES + "google-ai-ask-result.json"
     subprocess.run(["adb", "shell", "rm", "-f", path], timeout=15, check=True)
@@ -251,6 +344,8 @@ def main():
     parser.add_argument("--test-issue", type=int, default=0)
     args = parser.parse_args()
     deadline = time.monotonic() + args.runtime_minutes * 60
+    if os.environ.get("GOOGLE_AI_PERSISTENT_WEBVIEW") == "1":
+        start_persistent_webview()
     started = datetime.now(timezone.utc)
     seen = set()
     last_ping = 0
