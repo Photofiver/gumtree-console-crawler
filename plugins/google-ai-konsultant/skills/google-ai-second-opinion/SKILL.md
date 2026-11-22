@@ -52,17 +52,3 @@ Plugin zawiera hook review_turn.py, który w obsługiwanych środowiskach przeka
 Silnik produkcyjny phone_google_ask/consult.py korzysta z review_for_chatgpt(), który wykonuje wyłącznie autentyczną ocenę Google AI i zwraca niezmieniony szkic. Starszy solve() pozostaje wyłącznie na potrzeby zgodności i starych testów; nie może być drogą produkcyjną do samodzielnego poprawiania tekstu przez GitHub.
 
 Po DO POPRAWY nie kopiuj bezkrytycznie słów Google AI — sprawdź, czy krytyka nie wynika z podziału materiału na fragmenty i czy źródła rzeczywiście ją potwierdzają. Jeżeli Google AI nie zwrócił sprawdzalnej odpowiedzi, napisz, że brak potwierdzenia; nie deklaruj PASS. Zakończ tylko odpowiedzią popartą prawdziwymi testami i źródłami.
-
-
-## Opcjonalny eksperymentalny most do zwykłego ChatGPT (bez Work)
-
-Wtyczka zawiera skrypt lokalny: plugins/google-ai-konsultant/local_chat_continuity.py.
-Jego instrukcje i ograniczenia: plugins/google-ai-konsultant/ORDINARY_CHAT_CONTINUITY.md.
-
-- Na Windows dostępny jest opcjonalny backend gptty (projekt kymuco/gptty), uruchamiany z flagą --backend gptty; na Linux/macOS dostępny jest tritao/chatgpt-web. Oba są nieoficjalne, wymagają lokalnej autoryzacji i nie działają bez jej skonfigurowania.
-- Skrypt śledzi botowy komentarz Konsultant/2 z poprawnym SHA256 istniejącego [consult], przekazuje recenzję do **tej samej, zwykłej rozmowy** przez nieoficjalny program tritao/chatgpt-web i prosi ChatGPT o samodzielną korektę.
-- Lokalny skrypt przyjmuje tylko pełny poprawiony JSON zachowujący każde wymaganie; jako transport zakłada kolejne [consult] z parent_issue i nowym review_round. Po nowej recenzji może powtórzyć cykl, bez arbitralnego limitu liczby rund w logice pętli.
-- Przed wysłaniem do ChatGPT utrwala marker próby. Po niepewnym wyniku NIE próbuje ponownie bez sprawdzenia rozmowy; nie omija limitów, logowania ani blokad.
-- Nie działa przez sam plik w repozytorium. Wymaga osobno działającego lokalnego komputera, zalogowanego Chrome, GitHub tokena tylko na komputerze, identyfikatora rozmowy i ręcznego uruchomienia procesu co najmniej raz.
-- To nieoficjalna metoda oparta na interfejsie przeglądarkowym; istnieją ryzyka zgodności, regulaminowe i limitowe. Testy w CI **nie dowodzą** działania na zalogowanym koncie ani nie zastępują produkcyjnej weryfikacji.
-- **Nie uruchamiaj tego mostu w publicznym GitHub Actions z wrzuconymi ciasteczkami/tokenami ChatGPT.** GitHub Actions sam nie wznawia zamkniętej zwykłej rozmowy.
