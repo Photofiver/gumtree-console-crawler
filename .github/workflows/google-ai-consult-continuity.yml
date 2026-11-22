@@ -106,8 +106,7 @@ jobs:
                 for (const comment of receipts) {
                   try {
                     const parsed = JSON.parse(comment.body.substring('Konsultant/2 '.length));
-                    if (parsed.issue === issue.number && parsed.sha256 === digest &&
-                        (parsed.run === undefined || parsed.run === run.id)) {
+                    if (parsed.issue === issue.number && parsed.sha256 === digest) {
                       receipt = parsed;
                       break;
                     }
@@ -115,12 +114,9 @@ jobs:
                     core.warning('Unreadable receipt for #' + issue.number);
                   }
                 }
-                if (receipt?.status === 'POTWIERDZONE' &&
+                const verified = receipt?.status === 'POTWIERDZONE' &&
                     receipt.review === 'SPRAWDZONE' &&
-                    receipt.google_ai_responses_received > 0) {
-                  core.info('Consultation #' + issue.number + ' verified; no action.');
-                  continue;
-                }
+                    receipt.google_ai_responses_received > 0;
 
                 if (run.status !== 'completed' && !receipt) {
                   core.info('Consultation #' + issue.number +
@@ -141,7 +137,63 @@ jobs:
                   continue;
                 }
 
-                // No ChatGPT session can be reawakened by a GitHub comment.
+                // Forward the authenticated review as a PR comment event to
+                // ChatGPT Work. The event-triggered task itself is configured in
+                // Work; GitHub alone cannot revive a normal finished chat.
+                // Do NOT interpret signaling as evidence of AI task execution.
+                const bridgePr = 289;  // Dedicated open draft PR. DO NOT MERGE.
+                const signalMarker = '<!-- google-ai-work-signal:' +
+                  issue.number + ':' + digest + ' -->';
+                try {
+                  const bridge = await github.rest.pulls.get({
+                    owner, repo, pull_number: bridgePr
+                  });
+                  if (bridge.data.state !== 'open') {
+                    core.warning('ChatGPT Work bridge PR #' + bridgePr + ' is closed');
+                  } else {
+                    const bridgeComments = await github.paginate(
+                      github.rest.issues.listComments,
+                      {owner, repo, issue_number: bridgePr, per_page: 100}
+                    );
+                    if (!bridgeComments.some(c =>
+                      c.user?.login === 'github-actions[bot]' &&
+                      (c.body || '').includes(signalMarker))) {
+                      const status = receipt?.status || 'NIEPOTWIERDZONE';
+                      const review = receipt?.review || 'BRAK WERYFIKACJI';
+                      const body = [
+                        'GOOGLE_AI_REVIEW_FOR_CHATGPT_WORK',
+                        signalMarker,
+                        'Original issue: #' + issue.number,
+                        'Original issue URL: https://github.com/' + owner + '/' +
+                          repo + '/issues/' + issue.number,
+                        'Original JSON SHA256: ' + digest,
+                        'Google AI review: ' + review,
+                        'Google AI status: ' + status,
+                        'Google AI responses received: ' +
+                          (receipt?.google_ai_responses_received || 0),
+                        'Reason: ' + String(receipt?.reason || 'No authenticated result').slice(0, 2400),
+                        'Read the full original issue and authenticated Konsultant/2 receipt.',
+                        verified
+                          ? 'Verified: independently check the evidence before final reporting.'
+                          : 'Unresolved: independently verify sources, revise the complete draft in ChatGPT Work, and open a child [consult] with parent_issue=' + issue.number + '.'
+                      ].join('\\n');
+                      await github.rest.issues.createComment({
+                        owner, repo, issue_number: bridgePr, body
+                      });
+                      core.info('Posted ChatGPT Work event for consultation #' + issue.number);
+                    } else {
+                      core.info('ChatGPT Work event already posted for #' + issue.number);
+                    }
+                  }
+                } catch (bridgeError) {
+                  core.warning('Could not signal ChatGPT Work for #' +
+                    issue.number + ': ' + String(bridgeError.message || bridgeError).slice(0, 300));
+                }
+                if (verified) {
+                  core.info('Consultation #' + issue.number + ' verified; no further review.');
+                  continue;
+                }
+
                 // Keep an explicit, idempotent evidence trail for the next turn.
                 if (comments.some(c => (c.body || '').includes(marker))) {
                   continue;
