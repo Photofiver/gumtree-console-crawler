@@ -15,18 +15,16 @@ Wprowadzone w 1.8.15 pole correction_owner=chatgpt i next_action=chatgpt_researc
 
 `DO POPRAWY`, `revision_required=true` i `workflow_state=revision_required` **nie są odpowiedziami końcowymi**. ChatGPT musi sprawdzić błędy Google AI, wyszukać nowe źródła, zmienić analizę oraz wysłać kolejne `[consult]` z `parent_issue` i większym `review_round`. Nie istnieje limit trzech rund. Po minimum dwóch rzeczywistych audytach można zakończyć `NIEPOTWIERDZONE` tylko z potwierdzoną fizyczną niemożliwością albo wyczerpaniem dostępnych źródeł, z `resolution_status=physically_impossible` lub `evidence_exhausted` i minimum dwoma rzeczywistymi adresami w `exhaustion_evidence`. Hook działa wyłącznie, gdy host go uruchamia; nie zapewnia pracy w tle po zakończeniu rozmowy.
 
-## Rozszerzenie: agent źródeł + ORYGINALNA podwójna weryfikacja
+## Orkiestracja: ChatGPT bada, Google AI audytuje, GitHub pilnuje stanu
 
-Nie zastępuj istniejącej ścieżki `ChatGPT → [consult] → Google AI → ChatGPT` automatyczną analizą skryptu. **ChatGPT pozostaje głównym badaczem, autorem szkicu, niezależnym weryfikatorem źródeł oraz autorem poprawionych wersji.** `review_for_chatgpt()` nadal wysyła każde konkretne, stworzone przez ChatGPT rozwiązanie do Google AI i zwraca autentyczny werdykt `Konsultant/2`.
+**GitHub nie wykonuje wyszukiwań źródeł i nie pisze rozwiązań za ChatGPT.** Dotychczasową pętlę `[auto-research]` w ciepłym workerze wyłączono. Stare komentarze `AutoResearch/1` są tylko historycznymi danymi, NIE dowodem bieżącej pracy ChatGPT.
 
-Nowy niezależny agent `phone_google_ask/auto_research.py` wykonuje **tylko równoległe pozyskiwanie tropów i cytatów** do publicznych issue `[auto-research]`. Jego `AutoResearch/1` zawiera `rounds`, `sources`, `checks`, `candidate`, `last_note`. To **nie jest** wynik podwójnej weryfikacji. Propozycja `candidate.status=UNVERIFIED_CANDIDATE` ma pozostać kandydatem.
-
-Dla każdego aktywnego zadania:
-1. ChatGPT odczytuje odpowiadający tematowi issue `[auto-research]`, najnowszy komentarz `AutoResearch/1` i ewentualne `AutoResearchArchive/1`; dla ALLPOWERS S700 jest to https://github.com/Photofiver/gumtree-console-crawler/issues/277. Brak takich komentarzy oznacza **brak postępu agenta**, nie wynik zero ani powód do czekania.
-2. ChatGPT samodzielnie otwiera podane strony, sprawdza ceny, specyfikacje, zgodność i dokładne cytaty; odrzuca błędne, stare i niepowiązane tropy. Dodaje własne źródła. Właściwe sprawdzenie przez ChatGPT nie jest zastępowane cytatem Google AI.
-3. ChatGPT przygotowuje pełne `question`, `draft`, `checks` i własną ocenę dowodów; publikuje nowe `[consult]`. Google AI wykonuje **niezależny audyt tego konkretnego szkicu**. ChatGPT odczytuje odpowiadający mu komentarz `Konsultant/2` i sprawdza `review`, `status`, `blocked` i rzeczywistą liczbę odpowiedzi.
-4. Jeżeli `DO POPRAWY`, ChatGPT prowadzi kolejną samodzielną analizę z pomocą agenta i wysyła NOWY, poprawiony `[consult]` z `parent_issue`. **Nie wystarczy ponowić tę samą ocenę ani przepisać szkicu od Google.** Nie ogłaszaj pozytywnego wyniku bez dwóch rzeczywistych ról: sprawdzenia źródeł przez ChatGPT i niezależnego sprawdzenia konkretnej wersji przez Google AI.
-5. Gdy aktywna tura ChatGPT się kończy, kontynuację ChatGPT może wykonać osobne, uprawnione zadanie automatyczne ChatGPT podczas następnego uruchomienia; GitHub sam nie potrafi reaktywować zakończonej odpowiedzi na Androidzie. Nie obiecuj nieprzerwanej ani darmowej bez limitów aktywności ChatGPT pomiędzy uruchomieniami. Zachowuj trwałe postępy w GitHub.
+Prawdziwa, obowiązująca ścieżka:
+1. **ChatGPT** w aktywnej turze lub uprawnionym zadaniu samodzielnie wyszukuje i weryfikuje źródła, tworzy szkic i wysyła issue `[consult]`.
+2. **Google AI** dostaje ten szkic z workflow GitHub; oryginalny wynik trafia do komentarza `Konsultant/2`.
+3. **GitHub** jedynie transportuje i zapisuje wynik, pilnuje spójności issue oraz ponawia nieudany transport, nigdy samodzielnie nie zmienia odpowiedzi ani nie przegląda ofert.
+4. Po `DO POPRAWY` **ChatGPT** — a nie GitHub ani Google AI — poprawia po samodzielnej analizie i wysyła kolejny `[consult]` z `parent_issue`.
+5. Kiedy nie ma działającej aktywnej tury ChatGPT, kontroler zapisuje `AWAITING_CHATGPT` / nierozwiązany status; **nie udaje**, że może sam wznowić turę. Bez uprawnionego mechanizmu wywołania ChatGPT GitHub nie może utrzymać aktywnej odpowiedzi mobilnego czatu. Nie twierdź, że sama reguła Stop lub komentarz GitHub obchodzi to ograniczenie.
 
 ## Obowiązkowy proces gdy wtyczka została uruchomiona
 
