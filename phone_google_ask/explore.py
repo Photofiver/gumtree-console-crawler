@@ -72,7 +72,7 @@ def budget_limit_gbp(data):
     # Avoid matching 'max 5 A' or '100 W' as a pound-denominated budget.
     cap = re.search(
         r"(?:\b(?:budzet|budget|limit|maksymalnie|maximum|max|do)\b.{0,30}?)"
-        r"(?:£\s*([0-9]+(?:[.,][0-9]+)?)|([0-9]+(?:[.,][0-9]+)?)\s*(?:gbp|£))",
+        r"(?:£\s*([0-9]+(?:[.,][0-9]+)?)|gbp\s*([0-9]+(?:[.,][0-9]+)?)|([0-9]+(?:[.,][0-9]+)?)\s*(?:gbp|£))",
         text,
     )
     if not cap:
