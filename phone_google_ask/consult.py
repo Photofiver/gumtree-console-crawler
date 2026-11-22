@@ -276,31 +276,54 @@ def google_source_research(data, result, ask, read=source_text):
         return None
     output = page["page"].get("text", "")
     decoder = json.JSONDecoder(strict=False)
+    candidates = []
     for m in re.finditer(r"\{", output):
         try:
             obj, _ = decoder.raw_decode(output[m.start():])
         except (TypeError, ValueError):
             continue
-        if not isinstance(obj, dict) or obj.get("tag") != tag:
-            continue
-        url = obj.get("url")
-        quote = obj.get("quote")
+        if isinstance(obj, dict) and obj.get("tag") == tag:
+            candidates.append((obj.get("url"), obj.get("quote")))
+    # Google AI Mode does not consistently obey JSON-only instructions.
+    # Its returned source links are merely leads: verify them independently.
+    for item in page["page"].get("sourceLinks", []):
+        if isinstance(item, str):
+            candidates.append((item, None))
+        elif isinstance(item, dict):
+            candidates.append((item.get("url"), None))
+    for m in re.finditer(r"https://[^\s<>\"']{8,400}", output):
+        candidates.append((m.group(0).rstrip(".,;)]}"), None))
+
+    wanted = set(re.findall(r"\w{3,}", check["requirement"].casefold()))
+    seen = set()
+    for url, quote in candidates[:10]:
         if (not isinstance(url, str) or not url.startswith("https://")
-                or len(url) > 500 or not isinstance(quote, str)
-                or not 16 <= len(quote) <= 200):
+                or len(url) > 500 or url in seen):
             continue
-        quote = " ".join(quote.split())
-        if len(quote) < 16:
-            continue
+        seen.add(url)
         try:
-            page_text = read(url)
+            page_text = " ".join(read(url).split())
         except (ValueError, OSError, subprocess.SubprocessError):
             continue
-        if quote not in " ".join(page_text.split()):
+        if not page_text:
             continue
-        # Evidence from a real page is useful, but a quote alone cannot
-        # prove a whole solar configuration safe or automatically make a
-        # check 'met'. Preserve the exact user requirement and its status.
+        if isinstance(quote, str) and 16 <= len(quote) <= 200:
+            quote = " ".join(quote.split())
+            if quote not in page_text:
+                continue
+        else:
+            # Extract an exact, independently read page excerpt. A URL alone
+            # is never evidence, and a model-supplied quote is never trusted.
+            windows = [part.strip() for part in
+                       re.split(r"(?<=[.!?])\s+|\n+", page_text)
+                       if 24 <= len(part.strip()) <= 200]
+            matches = [(len(wanted & set(re.findall(r"\w{3,}", w.casefold()))), w)
+                       for w in windows]
+            if not matches:
+                continue
+            score, quote = max(matches, key=lambda pair:(pair[0], -len(pair[1])))
+            if score == 0:
+                continue
         updated = dict(data)
         checks = [dict(c) for c in data["checks"]]
         checks[index]["source"] = url
