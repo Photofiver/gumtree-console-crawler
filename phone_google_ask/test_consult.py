@@ -41,6 +41,10 @@ class ConsultTests(unittest.TestCase):
         self.assertEqual(result["status"], "NIEPOTWIERDZONE")
         self.assertEqual(result["correction_owner"], "chatgpt")
         self.assertEqual(result["next_action"], "chatgpt_research_revise_and_resubmit")
+        self.assertFalse(result["terminal"])
+        self.assertTrue(result["revision_required"])
+        self.assertEqual(result["workflow_state"], "revision_required")
+        self.assertTrue(result["next_round_requirements"]["do_not_stop_on_do_poprawy"])
         self.assertEqual(result["draft"], original["draft"])
         self.assertEqual(result["checks"], original["checks"])
         self.assertEqual(len(result["history"]), 1)
@@ -64,6 +68,9 @@ class ConsultTests(unittest.TestCase):
                                     lambda _:"Rated 20 V")
         self.assertEqual(result["status"], "POTWIERDZONE")
         self.assertEqual(result["next_action"], "report_verified_evidence")
+        self.assertTrue(result["terminal"])
+        self.assertFalse(result["revision_required"])
+        self.assertEqual(result["workflow_state"], "verified")
         self.assertEqual(result["google_ai_edits_rechecked"],0)
 
     def test_main_calls_chatgpt_review_not_legacy_solve(self):
