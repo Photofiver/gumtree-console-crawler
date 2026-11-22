@@ -311,11 +311,6 @@ def handle(issue):
                 "inputs": {"issue_number": str(number)},
             })
             print("Dispatched immediate continuity check for #", number, flush=True)
-            api("POST", "/actions/workflows/chatgpt-work-pr-bridge.yml/dispatches", {
-                "ref": os.environ.get("GITHUB_REF_NAME") or "main",
-                "inputs": {"issue_number": str(number)},
-            })
-            print("Dispatched ChatGPT Work PR review event for #", number, flush=True)
         except (HTTPError, OSError, ValueError) as exc:
             # The review was already posted; dispatch failure must not erase it.
             print("Continuity dispatch failed for #", number,
@@ -395,14 +390,6 @@ def main():
                             if autonomous_round(task, ask_emulator, api):
                                 print("Autonomous Google AI research persisted for issue #",
                                       task["number"], flush=True)
-                                try:
-                                    api("POST", "/actions/workflows/chatgpt-work-pr-bridge.yml/dispatches", {
-                                        "ref": os.environ.get("GITHUB_REF_NAME") or "main",
-                                        "inputs": {"issue_number": str(task["number"])},
-                                    })
-                                except (HTTPError, OSError, ValueError) as exc:
-                                    print("ChatGPT Work event dispatch failed:",
-                                          type(exc).__name__, str(exc)[:200], flush=True)
                                 worked = True
                                 break
                     if worked or len(pending) < 100:
