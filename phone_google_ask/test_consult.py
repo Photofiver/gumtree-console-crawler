@@ -293,6 +293,24 @@ class ConsultTests(unittest.TestCase):
         self.assertIn("Dodatkowe źródło", evidence["draft"])
         self.assertEqual(len(urls), 1)
 
+    def test_google_ai_unstructured_text_source_links_are_independently_opened(self):
+        from consult import google_source_research
+        data = dict(question="ALLPOWERS S700 Belfast",
+                    draft="The cold Voc remains unverified.",
+                    checks=[dict(requirement="Cold Voc panel voltage", status="unknown")])
+        def ask(query):
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                        urlencode({"q":query, "udm":"50"}),
+                        text="A narrative answer without any structured JSON.",
+                        sourceLinks=[{"url":"https://maker.example/datasheet"}]))
+        def source(url):
+            self.assertEqual(url,"https://maker.example/datasheet")
+            return "Panel datasheet. Cold Voc panel voltage at low temperature is not yet specified."
+        packet = google_source_research(data, {"reason":"Cold Voc missing"}, ask, source)
+        self.assertIsNotNone(packet)
+        self.assertEqual(packet["checks"][0]["status"], "unknown")
+        self.assertIn("Cold Voc panel voltage", packet["checks"][0]["quote"])
+
     def test_source_research_rejects_fake_quote_and_keeps_user_constraints(self):
         from consult import google_source_research
         import json
