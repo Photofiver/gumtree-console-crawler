@@ -319,7 +319,7 @@ class ConsultTests(unittest.TestCase):
         calls = []
         def ask(query):
             calls.append(query)
-            if "Return ONLY JSON" in query or "Check the review criticism" in query or "Previous correction" in query:
+            if ("Check the review criticism" in query or "Previous correction" in query) and "Find ONE actual" not in query:
                 return dict(question=query, page=dict(url="https://www.google.com/search?" +
                              urlencode({"q":query, "udm":"50"}), text="No structured patch."))
             if "Find ONE actual" in query:
