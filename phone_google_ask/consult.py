@@ -196,45 +196,188 @@ def evaluate(data, ask, read=source_text):
                 parts=len(chunks), reviewed=len(votes), blocked=blocked)
 
 
-def google_research(data, result, ask):
-    """Request ONE bounded text patch; never concatenate separate AI drafts.
+def patch_target(draft, criticism):
+    """Choose a short, exact span from the actual draft for a local correction.
 
-    AI suggestions are hypotheses, not source evidence. Only an exact substring
-    of the user's original draft can be replaced; requirements and checks stay.
+    Google does not have to guess an exact 'old' substring from an arbitrary
+    truncated JSON prefix. An absence of strong matching words is not proof
+    of a factual error: the selection is only an edit target.
+    """
+    lines = [part.strip() for part in re.split(r"(?<=[.!?])\s+|\n+", draft)
+             if 8 <= len(part.strip()) <= 380]
+    if not lines:
+        lines = [draft[:min(len(draft), 300)].strip()]
+    words = set(re.findall(r"\w{5,}", criticism.casefold()))
+    def score(line):
+        tokens = set(re.findall(r"\w{5,}", line.casefold()))
+        return (len(words & tokens), -len(line))
+    target = max(lines, key=score)
+    if len(target) > 380:
+        target = target[:380].rsplit(" ", 1)[0]
+    return target
+
+
+def parse_patch_response(page_text, tag, predetermined_old):
+    """Accept a tagged JSON patch, including a 'new'-only anchored protocol."""
+    proposal = tagged_json(page_text, tag)
+    if proposal is not None:
+        return proposal
+    decoder = json.JSONDecoder(strict=False)
+    for m in re.finditer(r"\{", page_text):
+        try:
+            obj, _ = decoder.raw_decode(page_text[m.start():])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(obj, dict) or obj.get("tag") != tag:
+            continue
+        new = obj.get("new")
+        if not isinstance(new, str):
+            continue
+        if "old" in obj and obj["old"] != predetermined_old:
+            continue
+        return {"old":predetermined_old, "new":new}
+    return None
+
+
+def google_source_research(data, result, ask, read=source_text):
+    """Ask for a new primary source and verify its verbatim excerpt ourselves.
+
+    This is a genuine bounded research step, NOT certification of the whole
+    requirement or a substitute for opening a real product listing.
+    """
+    unfinished = [(i, c) for i, c in enumerate(data["checks"])
+                  if c.get("status") != "met" and not
+                  (c.get("source") and c.get("quote"))]
+    if not unfinished:
+        return None
+    reason = result.get("reason", "")
+    keywords = set(re.findall(r"\w{5,}", reason.casefold()))
+    def relevance(item):
+        tokens = set(re.findall(r"\w{5,}", item[1]["requirement"].casefold()))
+        return len(tokens & keywords)
+    index, check = max(unfinished, key=relevance)
+    tag = secrets.token_hex(8)
+    query = ("Find ONE actual public manufacturer's data sheet or official "
+             "retailer source related to the SPECIFIC requirement below. "
+             "Return ONLY JSON with tag, url (direct HTTPS page), quote "
+             "(a verbatim substring of that page, 16-200 chars). "
+             "Do not invent sources, datasheet values, prices or quotes. "
+             + json.dumps({"tag":tag, "equipment":data["question"][:170],
+                           "requirement":check["requirement"][:230]},
+                          ensure_ascii=False, separators=(",", ":")))
+    if len(query.encode()) > 2000:
+        return None
+    page = ask(query)
+    url = urlsplit(page.get("page", {}).get("url", ""))
+    params = parse_qs(url.query)
+    if (page.get("question") != query or url.scheme != "https" or
+            url.hostname != "www.google.com" or url.path != "/search" or
+            params.get("q") != [query] or params.get("udm") != ["50"]):
+        return None
+    output = page["page"].get("text", "")
+    decoder = json.JSONDecoder(strict=False)
+    candidates = []
+    for m in re.finditer(r"\{", output):
+        try:
+            obj, _ = decoder.raw_decode(output[m.start():])
+        except (TypeError, ValueError):
+            continue
+        if isinstance(obj, dict) and obj.get("tag") == tag:
+            candidates.append((obj.get("url"), obj.get("quote")))
+    # Google AI Mode does not consistently obey JSON-only instructions.
+    # Its returned source links are merely leads: verify them independently.
+    for item in page["page"].get("sourceLinks", []):
+        if isinstance(item, str):
+            candidates.append((item, None))
+        elif isinstance(item, dict):
+            candidates.append((item.get("url"), None))
+    for m in re.finditer(r"https://[^\s<>\"']{8,400}", output):
+        candidates.append((m.group(0).rstrip(".,;)]}"), None))
+
+    wanted = set(re.findall(r"\w{3,}", check["requirement"].casefold()))
+    seen = set()
+    for url, quote in candidates[:10]:
+        if (not isinstance(url, str) or not url.startswith("https://")
+                or len(url) > 500 or url in seen):
+            continue
+        seen.add(url)
+        try:
+            page_text = " ".join(read(url).split())
+        except (ValueError, OSError, subprocess.SubprocessError):
+            continue
+        if not page_text:
+            continue
+        if isinstance(quote, str) and 16 <= len(quote) <= 200:
+            quote = " ".join(quote.split())
+            if quote not in page_text:
+                continue
+        else:
+            # Extract an exact, independently read page excerpt. A URL alone
+            # is never evidence, and a model-supplied quote is never trusted.
+            windows = [part.strip() for part in
+                       re.split(r"(?<=[.!?])\s+|\n+", page_text)
+                       if 24 <= len(part.strip()) <= 200]
+            matches = [(len(wanted & set(re.findall(r"\w{3,}", w.casefold()))), w)
+                       for w in windows]
+            if not matches:
+                continue
+            score, quote = max(matches, key=lambda pair:(pair[0], -len(pair[1])))
+            if score == 0:
+                continue
+        updated = dict(data)
+        checks = [dict(c) for c in data["checks"]]
+        checks[index]["source"] = url
+        checks[index]["quote"] = quote
+        checks[index]["finding"] = "Exact source quotation retrieved; full requirement still unverified"
+        updated["checks"] = checks
+        updated["draft"] = data["draft"] + (
+            "\nDodatkowe źródło dla nierozstrzygniętego wymogu: " + url +
+            ". Samo źródło nie potwierdza jeszcze kompletnego zestawu.")
+        updated["research_trace"] = list(data.get("research_trace", [])) + [
+            dict(requirement=check["requirement"], url=url,
+                 verified_quote=quote, requirement_status="unknown")]
+        return updated
+    return None
+
+
+def google_research(data, result, ask, read=source_text):
+    """Request a short anchored correction and require source-safe validation.
+
+    The reviewer is NOT a source of prices or electrical proof. If no safe edit
+    exists, fail closed; a DO POPRAWY verdict never becomes a manufactured PASS.
     """
     tag = secrets.token_hex(8)
-    criticism = " ".join(result.get("reason", "").split())[:350]
-    base = {
-        "tag": tag,
-        "question": data["question"][:260],
-        "criticism": criticism,
-        "instructions": "Keep the exact same equipment and user constraints.",
-    }
+    reason = " ".join(result.get("reason", "").split())[:450]
+    old = patch_target(data["draft"], reason)
+    if len(old) < 5 or data["draft"].count(old) != 1:
+        raise ValueError("No unique local edit target in draft")
+    base = {"tag":tag, "old":old, "reason":reason[:220],
+            "question":data["question"][:180]}
     errors = []
     for attempt in range(2):
-        prefix = (
-            "Correct ONE factual error in the DRAFT below. "
-            "Return ONLY one JSON object with fields tag, old, new, where tag is the "
-            "same tag, old is an EXACT substring of DRAFT and new is a short replacement "
-            "(under 480 characters). No new products, stations, prices or claims. "
-            "Do not replace the entire draft. If evidence is missing, state that "
-            "it remains unverified; never invent proof. "
-        )
-        if attempt:
+        if attempt == 0:
             prefix = (
-                "Your previous response could not be safely parsed or applied. "
-                "Respond ONLY with a valid JSON object with fields tag, old, new; "
-                "old must exactly match the draft and new must not invent claims. "
+                "Check the review criticism and correct ONLY the exact OLD text. "
+                "Return ONE JSON object with tag, old, new; copy old verbatim, "
+                "new <= 280 characters. Keep all original constraints. "
+                "If a technical claim lacks proof, state uncertainty instead "
+                "of adding invented specifications, offers or prices. "
+                "No markdown. "
             )
-        query = None
-        for excerpt_length in (850, 650, 450, 250, 100):
-            packet = dict(base, draft_excerpt=data["draft"][:excerpt_length])
-            candidate = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
-            if len(candidate.encode()) <= 2000:
-                query = candidate
-                break
-        if query is None:
-            raise ValueError("Could not fit a complete bounded patch request")
+        else:
+            prefix = (
+                "Previous correction was unsafe or unparseable. Return ONLY "
+                "JSON with tag and new (<=280 characters). The program already "
+                "knows OLD. Replace ONLY OLD with a cautious evidence-based "
+                "correction, never new unverified facts. "
+            )
+        packet = dict(base)
+        if attempt:
+            packet.pop("old")
+            packet["old_exact_text"] = old
+        query = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+        if len(query.encode()) > 2000:
+            raise ValueError("Patch request exceeds Google transport limit")
         page = ask(query)
         u = urlsplit(page.get("page", {}).get("url", ""))
         params = parse_qs(u.query)
@@ -242,18 +385,23 @@ def google_research(data, result, ask):
                 u.hostname != "www.google.com" or u.path != "/search" or
                 params.get("q") != [query] or params.get("udm") != ["50"]):
             raise ValueError("Research response did not match query")
-        proposal = tagged_json(page["page"].get("text", ""), tag)
+        proposal = parse_patch_response(page["page"].get("text", ""), tag, old)
         if proposal is None:
-            errors.append("No tagged structured JSON patch")
+            errors.append("No valid tagged short correction")
             continue
         try:
             patched = guarded_patch(data, proposal["old"], proposal["new"])
         except ValueError as exc:
             errors.append(str(exc))
             continue
-        # Never accept AI's proposed evidence as verified. Original checks stay.
         return dict(data, draft=patched, checks=[dict(c) for c in data["checks"]])
-    raise ValueError("No safe patch accepted: " + "; ".join(errors)[:240])
+    # A textual correction cannot supply a missing datasheet or a valid
+    # purchase bundle. Search for independent source evidence before giving up.
+    sourced = google_source_research(data, result, ask, read=read)
+    if sourced is not None:
+        return sourced
+    raise ValueError("No safe patch accepted; no independently readable source: " +
+                     "; ".join(errors)[:240])
 
 
 def evidence_revision(data, result, read):
@@ -323,7 +471,11 @@ def solve(data, ask, read=source_text, research=google_research):
                 or attempt == 3):
             break
         try:
-            revised = validate_revision(data, research(data, result, audited_ask))
+            if research is google_research:
+                proposal = research(data, result, audited_ask, read=read)
+            else:
+                proposal = research(data, result, audited_ask)
+            revised = validate_revision(data, proposal)
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError, RuntimeError) as exc:
             step["research_error"] = str(exc)[:400]
             revised = evidence_revision(data, result, read)
@@ -344,7 +496,8 @@ def solve(data, ask, read=source_text, research=google_research):
                 google_ai_queries_sent=len(audit),
                 google_ai_responses_received=sum(x["state"] == "response_received" for x in audit),
                 google_ai_edits_rechecked=edits_rechecked,
-                google_ai_audit=audit)
+                google_ai_audit=audit,
+                research_trace=data.get("research_trace", []))
 
 
 def main():

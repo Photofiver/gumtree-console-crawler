@@ -207,6 +207,153 @@ class ConsultTests(unittest.TestCase):
                     google_research(data, {"reason":"DO POPRAWY"}, answer)
         self.assertEqual(data["checks"][0]["status"], "unknown")
 
+    def test_anchored_patch_corrects_late_criticism_without_truncating_draft(self):
+        from consult import google_research, patch_target
+        import json
+        draft = ("The background description is long but does not contain an error. " * 22
+                 + "The Renogy 175W panel is safe for direct S700 connection.")
+        packet = dict(question="ALLPOWERS S700 606 Wh Belfast",
+                      draft=draft, checks=[dict(requirement="Voltage", status="unknown")])
+        reason = "The Renogy 175W panel is not safe for direct connection."
+        target = patch_target(draft, reason)
+        self.assertIn("Renogy 175W", target)
+        queries = []
+        def ask(query):
+            queries.append(query)
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            proposal = json.dumps(dict(tag=tag, new="The Renogy 175W panel requires independent voltage and current verification before S700 connection."))
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                         urlencode({"q":query, "udm":"50"}), text=proposal))
+        result = google_research(packet, {"reason":reason}, ask)
+        self.assertIn("requires independent voltage", result["draft"])
+        self.assertIn("The background description", result["draft"])
+        self.assertNotIn("safe for direct S700 connection", result["draft"])
+        self.assertTrue(all(len(q.encode()) <= 2000 for q in queries))
+        self.assertEqual(result["checks"], packet["checks"])
+
+    def test_anchored_patch_refuses_unverified_prices(self):
+        from consult import google_research
+        import json
+        packet = dict(question="ALLPOWERS S700 Belfast", draft="This 175W panel needs verification.",
+                      checks=[dict(requirement="Product", status="unknown")])
+        def ask(query):
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            proposal = json.dumps(dict(tag=tag, new="The complete panel kit costs £9.99."))
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                         urlencode({"q":query, "udm":"50"}), text=proposal))
+        with self.assertRaisesRegex(ValueError, "No safe patch accepted"):
+            google_research(packet, {"reason":"Need kit price proof"}, ask)
+
+    def test_google_ai_anchored_correction_is_rechecked(self):
+        from consult import google_research
+        import json
+        packet = dict(question="ALLPOWERS S700 Belfast 606 Wh",
+                      draft="The panel is guaranteed to charge in 48 hours.",
+                      checks=[dict(requirement="Reality", status="unknown")])
+        calls = []
+        def ask(query):
+            calls.append(query)
+            if "correct ONLY" in query or "Previous correction" in query:
+                tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+                obj = dict(tag=tag, new="The 48-hour outcome remains unverified in winter.")
+                return dict(question=query,page=dict(url="https://www.google.com/search?" +
+                            urlencode({"q":query,"udm":"50"}),text=json.dumps(obj)))
+            if "Find ONE actual" in query:
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                            urlencode({"q":query, "udm":"50"}), text="No independently verifiable source."))
+            return vote(query, "REVISE" if "guaranteed" in query else "PASS")
+        r = solve(packet, ask, lambda _: "", google_research)
+        self.assertEqual(len(r["history"]), 2)
+        self.assertEqual(r["google_ai_edits_rechecked"], 1)
+        self.assertTrue(any("outcome remains unverified" in q for q in calls))
+        self.assertNotEqual(r["status"], "POTWIERDZONE")
+
+    def test_google_source_research_requires_verbatim_live_page_quote(self):
+        from consult import google_source_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh Belfast",
+                    draft="Solar wiring and converter remain unknown.",
+                    checks=[dict(requirement="Panel input voltage datasheet",
+                                 status="unknown", source="", quote="")])
+        urls = []
+        def ask(query):
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            urls.append(query)
+            response = dict(tag=tag, url="https://manufacturer.example/pv",
+                            quote="Open circuit voltage 22.5 V at STC")
+            return dict(question=query, page=dict(
+                url="https://www.google.com/search?" + urlencode({"q":query,"udm":"50"}),
+                text=json.dumps(response)))
+        evidence = google_source_research(data, {"reason":"Missing input voltage datasheet"},
+                                          ask, lambda url:"Panel: Open circuit voltage 22.5 V at STC.")
+        self.assertIsNotNone(evidence)
+        self.assertEqual(evidence["checks"][0]["status"], "unknown")
+        self.assertEqual(evidence["checks"][0]["source"], "https://manufacturer.example/pv")
+        self.assertEqual(evidence["research_trace"][0]["requirement_status"], "unknown")
+        self.assertIn("Dodatkowe źródło", evidence["draft"])
+        self.assertEqual(len(urls), 1)
+
+    def test_google_ai_unstructured_text_source_links_are_independently_opened(self):
+        from consult import google_source_research
+        data = dict(question="ALLPOWERS S700 Belfast",
+                    draft="The cold Voc remains unverified.",
+                    checks=[dict(requirement="Cold Voc panel voltage", status="unknown")])
+        def ask(query):
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                        urlencode({"q":query, "udm":"50"}),
+                        text="A narrative answer without any structured JSON.",
+                        sourceLinks=[{"url":"https://maker.example/datasheet"}]))
+        def source(url):
+            self.assertEqual(url,"https://maker.example/datasheet")
+            return "Panel datasheet. Cold Voc panel voltage at low temperature is not yet specified."
+        packet = google_source_research(data, {"reason":"Cold Voc missing"}, ask, source)
+        self.assertIsNotNone(packet)
+        self.assertEqual(packet["checks"][0]["status"], "unknown")
+        self.assertIn("Cold Voc panel voltage", packet["checks"][0]["quote"])
+
+    def test_source_research_rejects_fake_quote_and_keeps_user_constraints(self):
+        from consult import google_source_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh", draft="No proof",
+                    checks=[dict(requirement="Voc verified", status="unknown")])
+        def ask(query):
+            tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+            obj = dict(tag=tag, url="https://example.org/pv",
+                       quote="A fabricated 24 V value not on the page")
+            return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                        urlencode({"q":query, "udm":"50"}), text=json.dumps(obj)))
+        r = google_source_research(data, {"reason":"Need voltage proof"},
+                                   ask, lambda _: "This page has no such specifications.")
+        self.assertIsNone(r)
+        self.assertEqual(data["checks"][0]["status"], "unknown")
+        self.assertEqual(data["draft"], "No proof")
+
+    def test_failed_patch_causes_verified_source_search_and_recheck(self):
+        from consult import google_research
+        import json
+        data = dict(question="ALLPOWERS S700 606Wh Belfast",
+                    draft="Panel electrical performance is not independently verified.",
+                    checks=[dict(requirement="Cold Voc data", status="unknown")])
+        calls = []
+        def ask(query):
+            calls.append(query)
+            if ("Check the review criticism" in query or "Previous correction" in query) and "Find ONE actual" not in query:
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                             urlencode({"q":query, "udm":"50"}), text="No structured patch."))
+            if "Find ONE actual" in query:
+                tag = re.search(r'"tag":"([a-f0-9]{16})"', query)[1]
+                result = dict(tag=tag,url="https://maker.example/spec",
+                              quote="Voc at STC is 23.0 volts")
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                             urlencode({"q":query, "udm":"50"}), text=json.dumps(result)))
+            return vote(query,"REVISE" if "Dodatkowe źródło" not in query else "PASS")
+        receipt = solve(data, ask, lambda _: "Voc at STC is 23.0 volts", google_research)
+        self.assertGreaterEqual(receipt["google_ai_edits_rechecked"], 1)
+        self.assertTrue(receipt["research_trace"])
+        self.assertEqual(receipt["research_trace"][0]["requirement_status"], "unknown")
+        self.assertNotEqual(receipt["status"], "POTWIERDZONE")
+        self.assertTrue(any("Dodatkowe źródło" in q for q in calls))
+
     def test_s700_deterministic_correction_of_false_voltage(self):
         from consult import evidence_revision
         data = dict(question="ALLPOWERS S700", draft="25,2 V mieści się w 24 V",
