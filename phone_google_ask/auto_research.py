@@ -75,6 +75,65 @@ def ready(state, now):
     return True
 
 
+def propose_candidate(state, ask):
+    """Request a *labeled unverified proposal*, never certify it as a solution."""
+    references = state.get("sources", [])[-5:]
+    if not references:
+        return None
+    facts = [{"url": x["url"], "quote": x["quote"][:135]}
+             for x in references]
+    question = state["question"][:310]
+    query = (
+        "Using ONLY the independently retrieved web excerpts below, suggest "
+        "one SPECIFIC equipment configuration or say it cannot be proven. "
+        "Preserve every original requirement. Never invent a price, voltage, "
+        "accessory or source. Output ONLY JSON with draft (<=650 chars), "
+        "urls (list of exact source URLs), missing (list of unproven constraints). "
+        "A draft is a LEAD, not an approved purchase. "
+        + json.dumps({"task": question, "sources": facts},
+                     ensure_ascii=False, separators=(",", ":"))
+    )
+    if len(query.encode("utf-8")) > 2000:
+        return None
+    try:
+        response = ask(query)
+        if response.get("question") != query or not response.get("aiResponseReady"):
+            return None
+        page = response.get("page") or {}
+        from urllib.parse import urlsplit, parse_qs
+        url = urlsplit(page.get("url") or "")
+        if (url.scheme != "https" or url.hostname != "www.google.com" or
+                url.path != "/search" or parse_qs(url.query).get("q") != [query] or
+                parse_qs(url.query).get("udm") != ["50"]):
+            return None
+        text = page.get("text") or ""
+        decoder = json.JSONDecoder(strict=False)
+        permitted = {x["url"] for x in state["sources"]}
+        for pos, ch in enumerate(text):
+            if ch != "{":
+                continue
+            try:
+                proposal, _ = decoder.raw_decode(text[pos:])
+            except (ValueError, TypeError):
+                continue
+            if not isinstance(proposal, dict):
+                continue
+            draft = proposal.get("draft")
+            urls = proposal.get("urls")
+            missing = proposal.get("missing", [])
+            if (not isinstance(draft, str) or not draft.strip() or
+                    len(draft) > 650 or not isinstance(urls, list) or
+                    not urls or not all(u in permitted for u in urls) or
+                    not isinstance(missing, list)):
+                continue
+            return {"draft": draft.strip(), "source_urls": urls,
+                    "missing": [str(v)[:180] for v in missing[:15]],
+                    "status": "UNVERIFIED_CANDIDATE"}
+    except (OSError, ValueError, RuntimeError, TypeError):
+        return None
+    return None
+
+
 def next_step(issue, state, ask, read=source_text, now=None):
     """Advance one independent lead search, not an unsupported PASS."""
     now = now or datetime.now(timezone.utc)
@@ -123,6 +182,14 @@ def next_step(issue, state, ask, read=source_text, now=None):
         delay = 180
     state["rounds"] = round_index + 1
     state["last_route"] = route
+    # Search distinct components first; after each complete cycle, ask Google
+    # for a new concrete candidate grounded exclusively in saved source URLs.
+    # Candidate suggestions never change check statuses to "met".
+    if (state["rounds"] % len(state["checks"]) == 0 and state["sources"]):
+        proposal = propose_candidate(state, ask)
+        if proposal:
+            proposal["proposed_at"] = now.isoformat()
+            state["candidate"] = proposal
     state["next_after"] = (now + timedelta(seconds=delay)).isoformat()
     # A real PASS requires per-component engineering validation AND a separate
     # Google AI review. Lead collection alone deliberately never claims it.
