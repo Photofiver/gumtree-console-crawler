@@ -74,6 +74,53 @@ def parts(text, limit):
         yield text
 
 
+
+def semantic_audit_chunks(question, draft, claims, limit):
+    """Build complete independent JSON packets, never arbitrary mid-JSON slices.
+
+    The previous parts(payload) path cut prose and JSON in half. Google AI
+    repeatedly called those cut-offs missing draft content and rejected them.
+    Review sections now end at paragraph/sentence boundaries and each packet
+    is valid JSON. A single statement that cannot fit fails rather than
+    pretending that a chopped claim is a complete review.
+    """
+    compact = json.dumps(dict(question=question, draft=draft, checks=claims),
+                         ensure_ascii=False, separators=(",", ":"))
+    if len(compact.encode()) <= limit:
+        return [compact]
+    topic = " ".join(question.split())[:160]
+    items = []
+    for paragraph in re.split(r"\n+", draft):
+        paragraph = paragraph.strip()
+        if not paragraph:
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+", paragraph):
+            if sentence.strip():
+                items.append(dict(type="draft_sentence", text=sentence.strip()))
+    for claim in claims:
+        items.append(dict(type="requirement_check", claim=claim))
+
+    def encoded(group):
+        return json.dumps(dict(topic=topic, items=group),
+                          ensure_ascii=False, separators=(",", ":"))
+    packets, group = [], []
+    for item in items:
+        if len(encoded(group + [item]).encode()) <= limit:
+            group.append(item)
+            continue
+        if group:
+            packets.append(encoded(group))
+            group = []
+        if len(encoded([item]).encode()) > limit:
+            raise ValueError("One full sentence or requirement exceeds Google limit; shorten the draft")
+        group.append(item)
+    if group:
+        packets.append(encoded(group))
+    if not packets:
+        raise ValueError("No complete review packet")
+    return packets
+
+
 def evaluate(data, ask, read=source_text):
     question, checks, draft = (data[k] for k in ("question", "checks", "draft"))
     if not question.strip() or not draft.strip() or not isinstance(checks, list) or not checks:
@@ -108,8 +155,9 @@ def evaluate(data, ask, read=source_text):
     tag = secrets.token_hex(8)
     prefix = ("Audit this complete draft against the stated requirements. "
               "For numbered multi-part input, judge ONLY claims in this fragment: "
-              "other parts are reviewed separately; do NOT reject because other "
-              "parts or a closing sentence are absent. "
+              "other parts are reviewed separately; every part is valid, "
+              "self-contained JSON. Do NOT reject for missing other parts, "
+              "or for an alleged cut-off at the end of this complete packet. "
               "REVISE false or unsupported claims actually present; give reasons. "
               "End with ONE exact separate line: REVISE " + tag +
               " OR PASS " + tag + ".\n")
@@ -119,7 +167,8 @@ def evaluate(data, ask, read=source_text):
     # Actual pretrained attention can add a short ranking reminder. It never
     # removes, relaxes, or asserts completion of any original requirement.
     prefix += focus_hint(data)
-    chunks = list(parts(payload, 2000 - len(prefix.encode()) - 40))
+    chunks = semantic_audit_chunks(question, draft, claims,
+                                   2000 - len(prefix.encode()) - 70)
     votes, failures, unreadable = [], [], []
     for i, chunk in enumerate(chunks, 1):
         query = prefix + f"Part {i}/{len(chunks)}\n" + chunk
