@@ -112,7 +112,24 @@ def semantic_audit_chunks(question, draft, claims, limit):
             packets.append(encoded(group))
             group = []
         if len(encoded([item]).encode()) > limit:
-            raise ValueError("One full sentence or requirement exceeds Google limit; shorten the draft")
+            if item["type"] != "draft_sentence":
+                raise ValueError("One full requirement exceeds Google limit; shorten its evidence")
+            # A punctuation-free passage can still be legitimate (e.g. UTF-8
+            # stress tests). Preserve every character and mark its pieces as
+            # CONTINUATIONS, never pretending that a chopped sentence is whole.
+            budget = limit - len(encoded([dict(type="draft_fragment", text="",
+                                            part=999, of=999)]).encode()) - 20
+            if budget < 24 or not re.search(r"\s", item["text"]):
+                raise ValueError("One full sentence exceeds Google limit; shorten the draft")
+            fragments = list(parts(item["text"], budget))
+            for idx, frag in enumerate(fragments, 1):
+                segment = dict(type="draft_fragment", text=frag,
+                               part=idx, of=len(fragments))
+                packet = encoded([segment])
+                if len(packet.encode()) > limit:
+                    raise ValueError("Cannot safely fit a draft fragment")
+                packets.append(packet)
+            continue
         group.append(item)
     if group:
         packets.append(encoded(group))
