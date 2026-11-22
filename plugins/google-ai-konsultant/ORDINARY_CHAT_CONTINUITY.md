@@ -48,6 +48,32 @@ To run one check and stop, append --once.
 Default private state: ~/.local/state/google-ai-konsultant/continuity.json
 Use a different --state for each independent issue chain.
 
+## Windows PowerShell alternative (native Windows)
+
+A second third-party client, https://github.com/kymuco/gptty , documents a
+native Windows installation and sending to an **explicit existing conversation**.
+This is also unofficial and uses sensitive session auth saved locally.
+
+One-time install and local auth (complete the browser login yourself):
+
+    py -m pip install "gptty-web[auth]"
+    gptty auth refresh --mode wait
+
+Verify you can communicate with your own existing conversation first:
+
+    gptty send --to https://chatgpt.com/c/CONVERSATION_ID --no-stream "Test"
+
+Then launch the local continuation controller in PowerShell:
+
+    $env:GH_TOKEN = gh auth token
+    py plugins/google-ai-konsultant/local_chat_continuity.py --backend gptty --root-issue INITIAL_CONSULT_ISSUE_NUMBER --conversation-id CONVERSATION_ID
+
+The gptty command must be on PATH. The computer must remain running with
+the script active; when ChatGPT authentication expires, gptty may need a new
+interactive login. Never share auth_data.json, browser cookies, tokens or the
+private state with GitHub. This native Windows path has NOT been validated
+against the user's authenticated ChatGPT account.
+
 ## Limits
 
 The external CLI drives undocumented ChatGPT web behaviour. Browser login,

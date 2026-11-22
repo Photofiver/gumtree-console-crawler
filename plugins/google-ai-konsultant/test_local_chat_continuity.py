@@ -71,6 +71,32 @@ class FakeGitHub:
 
 
 class BridgeTests(unittest.TestCase):
+    def test_windows_gptty_sends_to_exact_existing_conversation(self):
+        calls = []
+        class Done:
+            returncode = 0
+            stdout = '{"action":"blocked","reason":"test"}'
+        def runner(command, **kwargs):
+            calls.append(command)
+            return Done()
+        text = bridge.send_using_backend("gptty", "gptty", "abcABC234567",
+                                         "Read the new Google feedback", runner=runner)
+        self.assertEqual(text, Done.stdout)
+        self.assertEqual(calls[0][:4],
+                         ["gptty", "send", "--to", "https://chatgpt.com/c/abcABC234567"])
+        self.assertIn("--no-stream", calls[0])
+        self.assertEqual(calls[0][-1], "Read the new Google feedback")
+
+    def test_legacy_linux_transport_still_works(self):
+        class Done:
+            returncode = 0
+            stdout = "verified"
+        def runner(command, **kwargs):
+            self.assertEqual(command, ["/opt/chatgpt-web/run", "send", "abcABC234567", "p"])
+            return Done()
+        self.assertEqual(bridge.send_using_backend("chatgpt-web", "/opt/chatgpt-web/run",
+                                                  "abcABC234567", "p", runner=runner), "verified")
+
     def test_only_authenticated_matching_bot_receipt(self):
         i = issue()
         correct = review(i)

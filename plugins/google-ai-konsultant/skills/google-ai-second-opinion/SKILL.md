@@ -59,6 +59,7 @@ Po DO POPRAWY nie kopiuj bezkrytycznie słów Google AI — sprawdź, czy krytyk
 Wtyczka zawiera skrypt lokalny: plugins/google-ai-konsultant/local_chat_continuity.py.
 Jego instrukcje i ograniczenia: plugins/google-ai-konsultant/ORDINARY_CHAT_CONTINUITY.md.
 
+- Na Windows dostępny jest opcjonalny backend gptty (projekt kymuco/gptty), uruchamiany z flagą --backend gptty; na Linux/macOS dostępny jest tritao/chatgpt-web. Oba są nieoficjalne, wymagają lokalnej autoryzacji i nie działają bez jej skonfigurowania.
 - Skrypt śledzi botowy komentarz Konsultant/2 z poprawnym SHA256 istniejącego [consult], przekazuje recenzję do **tej samej, zwykłej rozmowy** przez nieoficjalny program tritao/chatgpt-web i prosi ChatGPT o samodzielną korektę.
 - Lokalny skrypt przyjmuje tylko pełny poprawiony JSON zachowujący każde wymaganie; jako transport zakłada kolejne [consult] z parent_issue i nowym review_round. Po nowej recenzji może powtórzyć cykl, bez arbitralnego limitu liczby rund w logice pętli.
 - Przed wysłaniem do ChatGPT utrwala marker próby. Po niepewnym wyniku NIE próbuje ponownie bez sprawdzenia rozmowy; nie omija limitów, logowania ani blokad.

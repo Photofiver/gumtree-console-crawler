@@ -12,6 +12,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -239,11 +240,34 @@ class Controller:
         return "created_child_issue_" + str(child)
 
 
+def send_using_backend(backend, executable, conversation, prompt, runner=subprocess.run):
+    """Use a CLI with a documented existing-chat send command, never an API key."""
+    if backend == "gptty":
+        command = [executable, "send", "--to", "https://chatgpt.com/c/" + conversation,
+                   "--no-stream", "--format", "plain", prompt]
+    elif backend == "chatgpt-web":
+        command = [executable, "send", conversation, prompt]
+    else:
+        raise ValueError("Unsupported ChatGPT transport")
+    response = runner(command, stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE, text=True,
+                      timeout=900, check=False)
+    if response.returncode:
+        raise RuntimeError("ChatGPT local CLI returned status " + str(response.returncode) +
+                           "; inspect the conversation before any retry")
+    return response.stdout
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root-issue", type=int, required=True)
     parser.add_argument("--conversation-id", required=True)
-    parser.add_argument("--chatgpt-web", type=Path, required=True)
+    parser.add_argument("--backend", choices=("chatgpt-web", "gptty"),
+                        default="chatgpt-web")
+    parser.add_argument("--chatgpt-web", type=Path,
+                        help="Linux/macOS tritao/chatgpt-web/run file")
+    parser.add_argument("--gptty-command", default="gptty",
+                        help="Windows/Linux/macOS gptty executable (on PATH)")
     parser.add_argument("--state", type=Path,
                         default=Path.home() / ".local/state/google-ai-konsultant/continuity.json")
     parser.add_argument("--poll-seconds", type=int, default=120)
@@ -253,17 +277,16 @@ def main():
         parser.error("Issue must be positive and polling >=60 seconds")
     if not re.fullmatch(r"[A-Za-z0-9_-]{8,160}", args.conversation_id):
         parser.error("Invalid conversation ID")
-    if not args.chatgpt_web.is_file():
-        parser.error("No local chatgpt-web/run script")
+    if args.backend == "chatgpt-web":
+        if args.chatgpt_web is None or not args.chatgpt_web.is_file():
+            parser.error("Provide --chatgpt-web path to the local run script")
+        executable = str(args.chatgpt_web)
+    else:
+        executable = args.gptty_command
+        if not shutil.which(executable) and not Path(executable).is_file():
+            parser.error("gptty not installed; see gptty-web on PyPI")
     def send(conversation, prompt):
-        response = subprocess.run(
-            [str(args.chatgpt_web), "send", conversation, prompt],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-            timeout=900, check=False)
-        if response.returncode:
-            raise RuntimeError("ChatGPT browser CLI returned error " + str(response.returncode)
-                               + "; inspect the conversation before any retry")
-        return response.stdout
+        return send_using_backend(args.backend, executable, conversation, prompt)
     c = Controller(GitHub(os.environ.get("GH_TOKEN", "")), send,
                    args.state.expanduser(), args.root_issue, args.conversation_id)
     while True:
