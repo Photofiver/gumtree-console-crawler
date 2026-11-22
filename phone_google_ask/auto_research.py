@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from consult import google_source_research, source_text
 
 PREFIX = "AutoResearch/1 "
+ARCHIVE_PREFIX = "AutoResearchArchive/1 "
 ROUTES = (
     "primary manufacturer technical specifications",
     "actual Amazon UK offer, exact model and price",
@@ -126,9 +127,8 @@ def next_step(issue, state, ask, read=source_text, now=None):
     # A real PASS requires per-component engineering validation AND a separate
     # Google AI review. Lead collection alone deliberately never claims it.
     state["status"] = "RESEARCHING"
-    # Bound a single GitHub comment; old sources still exist in previous revisions
-    # of the bot comment through GitHub API history if retained.
-    state["sources"] = state["sources"][-80:]
+    # Never discard verified sources merely because the current run ended.
+    # run_once archives older chunks before shrinking the live progress comment.
     return state, True
 
 
@@ -140,8 +140,26 @@ def run_once(issue, ask, api, read=source_text, now=None):
     if not changed:
         return False
     body = PREFIX + json.dumps(updated, ensure_ascii=False, separators=(",", ":"))
-    if len(body.encode("utf-8")) > 60000:
-        updated["sources"] = updated["sources"][-35:]
+    if len(body.encode("utf-8")) > 54000:
+        # Archive FIRST with append-only bot comments; only then compact the
+        # mutable progress comment. Retry is idempotent using archive digests.
+        older = updated["sources"][:-30]
+        count = int(updated.get("archived_sources", 0))
+        for start in range(0, len(older), 30):
+            batch = older[start:start+30]
+            stamp = hashlib.sha256(json.dumps(batch, ensure_ascii=False,
+                      sort_keys=True).encode("utf-8")).hexdigest()
+            if not any((c.get("body") or "").startswith(ARCHIVE_PREFIX + stamp + " ")
+                       for c in comments):
+                archive = ARCHIVE_PREFIX + stamp + " " + json.dumps(
+                    {"issue": issue["number"], "sha256": checksum(issue),
+                     "offset": count+start, "sources": batch},
+                    ensure_ascii=False, separators=(",", ":"))
+                api("POST", "/issues/" + str(issue["number"]) + "/comments",
+                    {"body": archive})
+            count += len(batch)
+        updated["archived_sources"] = count
+        updated["sources"] = updated["sources"][-30:]
         body = PREFIX + json.dumps(updated, ensure_ascii=False, separators=(",", ":"))
     if comment_id is not None:
         api("PATCH", "/issues/comments/" + str(comment_id), {"body": body})
