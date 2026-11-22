@@ -3,6 +3,8 @@ on:
   push:
     paths:
       - 'phone_google_ask/consult.py'
+      - 'phone_google_ask/attention_guard.py'
+      - 'phone_google_ask/test_attention_guard.py'
       - 'phone_google_ask/revision_guard.py'
       - 'phone_google_ask/explore.py'
       - 'phone_google_ask/test_consult.py'
@@ -21,3 +23,4 @@ jobs:
         run: |
           python3 -m unittest discover -s phone_google_ask -p 'test_consult.py' -v
           python3 -m unittest discover -s phone_google_ask -p 'test_explore.py' -v
+          python3 -m unittest discover -s phone_google_ask -p 'test_attention_guard.py' -v

@@ -2,23 +2,23 @@
   "interface": {
     "displayName": "Google AI Konsultant",
     "shortDescription": "Druga opinia Google AI",
-    "longDescription": "Przed udzieleniem odpowiedzi na pytania u\u017cytkownika prosi Google AI Mode o niezale\u017cn\u0105 krytyczn\u0105 ocen\u0119 poprzez istniej\u0105cy GitHub Actions workflow. Przy sprzeczno\u015bciach iteruje i weryfikuje \u017ar\u00f3d\u0142a. Wymaga po\u0142\u0105czenia z GitHub i dost\u0119pno\u015bci workflow w Photofiver/gumtree-console-crawler. Zg\u0142oszenia GitHub s\u0105 publiczne; wtyczka nie powinna wysy\u0142a\u0107 tam tre\u015bci poufnych lub osobistych bez wyra\u017anej zgody. Nie gwarantuje uruchamiania przy ka\u017cdym pytaniu ani dost\u0119pno\u015bci Google AI Mode.",
-    "developerName": "W\u0142a\u015bciciel wtyczki",
+    "longDescription": "Przed udzieleniem odpowiedzi na pytania użytkownika prosi Google AI Mode o niezależną krytyczną ocenę poprzez istniejący GitHub Actions workflow. Przy sprzecznościach iteruje i weryfikuje źródła. Wymaga połączenia z GitHub i dostępności workflow w Photofiver/gumtree-console-crawler. Zgłoszenia GitHub są publiczne; wtyczka nie powinna wysyłać tam treści poufnych lub osobistych bez wyraźnej zgody. Nie gwarantuje uruchamiania przy każdym pytaniu ani dostępności Google AI Mode.",
+    "developerName": "Właściciel wtyczki",
     "category": "Productivity",
     "capabilities": [
       "Interactive"
     ],
     "defaultPrompt": [
-      "Odpowiedz na moje pytanie dopiero po niezale\u017cnej weryfikacji z Google AI Mode; wykryj sprzeczno\u015bci i je wyja\u015bnij.",
-      "Przeanalizuj m\u00f3j problem wsp\u00f3lnie z Google AI i sprawd\u017a praktyczne rozwi\u0105zania."
+      "Odpowiedz na moje pytanie dopiero po niezależnej weryfikacji z Google AI Mode; wykryj sprzeczności i je wyjaśnij.",
+      "Przeanalizuj mój problem wspólnie z Google AI i sprawdź praktyczne rozwiązania."
     ]
   },
   "apps": "./.app.json",
   "name": "google-ai-second-opinion",
-  "version": "1.8.10",
-  "description": "Konsultuje odpowiedzi ChatGPT z Google AI Mode przez istniej\u0105cy workflow GitHub, wykrywa sprzeczno\u015bci i ponownie analizuje problem.",
+  "version": "1.8.11",
+  "description": "Konsultuje odpowiedzi ChatGPT z Google AI Mode przez istniejący workflow GitHub, wykrywa sprzeczności i ponownie analizuje problem.",
   "author": {
-    "name": "W\u0142a\u015bciciel wtyczki"
+    "name": "Właściciel wtyczki"
   },
   "keywords": [],
   "skills": "./skills"

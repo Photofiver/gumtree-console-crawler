@@ -21,6 +21,16 @@ jobs:
         run: |
           python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
           python3 -m unittest discover -s phone_google_ask -p test_explore.py -v
+          python3 -m unittest discover -s phone_google_ask -p test_attention_guard.py -v
+      - name: Load trained transformer and calculate actual attention weights
+        if: startsWith(github.event.issue.title, '[consult]')
+        shell: bash
+        run: |
+          if python3 -m pip install --user --disable-pip-version-check 'sentence-transformers==4.1.0'; then
+            python3 phone_google_ask/attention_guard.py
+          else
+            echo '{"status":"unavailable","reason":"dependency_install_failed"}' > attention-report.json
+          fi
       - name: Screen 100 or 1000 source-listed configurations before AI review
         if: startsWith(github.event.issue.title, '[consult]')
         shell: bash
@@ -135,6 +145,7 @@ jobs:
           path: |
             google-ai-ask-result.json
             consult-result.json
+            attention-report.json
             exploration-report.json
             exploration-error.txt
             google-ai-ask-instrumentation.txt

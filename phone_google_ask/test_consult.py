@@ -37,6 +37,23 @@ class ConsultTests(unittest.TestCase):
         self.assertEqual([h["review"] for h in result["history"]], ["DO POPRAWY","SPRAWDZONE"])
         self.assertEqual(result["status"],"POTWIERDZONE")
 
+    def test_attention_priority_is_in_review_without_removing_checks(self):
+        from attention_guard import context_hash
+        data = dict(self.data)
+        data["attention"] = {
+            "status":"active",
+            "context_sha256":context_hash(data["question"], [c["requirement"] for c in data["checks"]]),
+            "ranked_indices":[0]
+        }
+        sent = []
+        def ask(query):
+            sent.append(query)
+            return vote(query, "PASS")
+        result = evaluate(data, ask, lambda _:"Rated 20 V")
+        self.assertEqual(result["review"],"SPRAWDZONE")
+        self.assertTrue(any("attention highlights" in q for q in sent))
+        self.assertTrue(all("Voltage" in q for q in sent))
+
     def test_no_reply(self):
         calls = []
         def ask(query):
