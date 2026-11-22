@@ -160,6 +160,12 @@
       "attempted_at": "2026-11-21T21:43:35.141944+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b021088d5eabfb8cc622bac"
+    },
+    "78b712f42a66b16966c723db2211e2a8985331e723bba329d0a13814b72ae0db": {
+      "source": "social_videos/new-ai-cat-20261122-s00-ironing-shirt.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261122-s00-ironing-shirt.mp4",
+      "attempted_at": "2026-11-22T16:21:33.653098+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
