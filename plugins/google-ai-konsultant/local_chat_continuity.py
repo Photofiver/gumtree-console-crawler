@@ -157,7 +157,7 @@ def make_prompt(issue, receipt, marker):
         "Request ID: " + marker + "\n"
         "ISSUE NUMBER: " + str(issue["number"]) + "\n"
         "ORIGINAL ISSUE JSON:\n" + issue["body"] + "\n"
-        "AUTHENTICATED GOOGLE AI RECEIPT:\n" +
+        "AUTHENTICATED GITHUB WORKFLOW RECEIPT (check actual Google responses):\n" +
         json.dumps(receipt, ensure_ascii=False)
     )
 
@@ -203,7 +203,19 @@ class Controller:
                     receipt.get("review") == "SPRAWDZONE" and
                     receipt.get("google_ai_responses_received", 0) > 0)
         if verified:
+            # Publish the final outcome into the same ordinary conversation.
+            # Persist before sending so a browser timeout cannot double-submit.
+            self.state["delivery"] = {"marker": marker, "status": "reporting_final"}
+            self.save()
+            self.send(self.state["conversation"],
+                      "Google AI has completed its authenticated review of "
+                      "the following consultation. Give the user the final "
+                      "evidence-based answer, preserving all original conditions "
+                      "and distinguishing verified findings from uncertainty. "
+                      "Do not open any new issue. ISSUE JSON:\n" + issue["body"] +
+                      "\nREVIEW:\n" + json.dumps(receipt, ensure_ascii=False))
             self.state["terminal"] = "verified_issue_" + str(issue["number"])
+            self.state["delivery"] = None
             self.save()
             return self.state["terminal"]
         self.state["delivery"] = {"marker": marker, "status": "sending"}
