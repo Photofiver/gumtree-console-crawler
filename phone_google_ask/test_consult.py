@@ -27,6 +27,77 @@ class ConsultTests(unittest.TestCase):
             checks=[dict(requirement="Voltage",status="met",source="https://example.org",
                          finding="Rated voltage", quote="Rated 20 V")])
 
+    def test_chatgpt_owns_revisions_and_github_never_rewrites_draft(self):
+        from consult import review_for_chatgpt
+        original = dict(self.data, draft="The 175W panel is directly safe for the S700.")
+        calls = []
+        def google(query):
+            calls.append(query)
+            if "Correct ONE" in query or "Find ONE actual" in query:
+                raise AssertionError("GitHub may not perform corrections or research")
+            return vote(query, "REVISE")
+        result = review_for_chatgpt(original, google, lambda _: "Rated 20 V")
+        self.assertEqual(result["review"], "DO POPRAWY")
+        self.assertEqual(result["status"], "NIEPOTWIERDZONE")
+        self.assertEqual(result["correction_owner"], "chatgpt")
+        self.assertEqual(result["next_action"], "chatgpt_research_revise_and_resubmit")
+        self.assertEqual(result["draft"], original["draft"])
+        self.assertEqual(result["checks"], original["checks"])
+        self.assertEqual(len(result["history"]), 1)
+        self.assertEqual(result["google_ai_edits_rechecked"], 0)
+        self.assertEqual(result["google_ai_queries_sent"], len(calls))
+        self.assertEqual(result["google_ai_responses_received"], len(calls))
+
+    def test_chatgpt_review_does_not_promote_unverified_to_pass(self):
+        from consult import review_for_chatgpt
+        packet = dict(self.data, checks=[dict(requirement="Cold Voc",status="unknown")])
+        result = review_for_chatgpt(packet, lambda q:vote(q, "PASS"),
+                                    lambda _:"Rated 20 V")
+        self.assertEqual(result["review"], "SPRAWDZONE")
+        self.assertEqual(result["status"], "NIEPOTWIERDZONE")
+        self.assertEqual(result["next_action"], "chatgpt_research_revise_and_resubmit")
+        self.assertEqual(result["checks"][0]["status"], "unknown")
+
+    def test_chatgpt_review_accepts_only_google_pass_with_all_evidence(self):
+        from consult import review_for_chatgpt
+        result = review_for_chatgpt(self.data,lambda q:vote(q,"PASS"),
+                                    lambda _:"Rated 20 V")
+        self.assertEqual(result["status"], "POTWIERDZONE")
+        self.assertEqual(result["next_action"], "report_verified_evidence")
+        self.assertEqual(result["google_ai_edits_rechecked"],0)
+
+    def test_main_calls_chatgpt_review_not_legacy_solve(self):
+        import consult
+        import json
+        import os
+        import sys
+        import tempfile
+        import types
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            event = Path(directory) / "event.json"
+            event.write_text(json.dumps({"issue":{
+                "number":1001,
+                "body":json.dumps(dict(self.data))}}))
+            warm = types.SimpleNamespace(ask_emulator=lambda q:vote(q,"REVISE"))
+            original_cwd = os.getcwd()
+            try:
+                os.chdir(directory)
+                with patch.dict(os.environ, {"GITHUB_EVENT_PATH":str(event)}), \\
+                     patch.dict(sys.modules, {"warm_worker":warm}), \\
+                     patch.object(consult,"review_for_chatgpt",return_value=dict(
+                         review="DO POPRAWY", status="NIEPOTWIERDZONE",
+                         correction_owner="chatgpt",draft=self.data["draft"])) as reviewer, \\
+                     patch.object(consult,"solve",side_effect=AssertionError(
+                         "Legacy GitHub correction is forbidden")):
+                    consult.main()
+                    reviewer.assert_called_once()
+                receipt = json.loads(Path("consult-result.json").read_text())
+                self.assertEqual(receipt["correction_owner"],"chatgpt")
+                self.assertEqual(receipt["draft"],self.data["draft"])
+            finally:
+                os.chdir(original_cwd)
+
     def test_revise_then_verify(self):
         def research(data, result, ask):
             self.assertIn("voltage", result["reason"])
