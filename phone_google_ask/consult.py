@@ -196,45 +196,87 @@ def evaluate(data, ask, read=source_text):
                 parts=len(chunks), reviewed=len(votes), blocked=blocked)
 
 
-def google_research(data, result, ask):
-    """Request ONE bounded text patch; never concatenate separate AI drafts.
+def patch_target(draft, criticism):
+    """Choose a short, exact span from the actual draft for a local correction.
 
-    AI suggestions are hypotheses, not source evidence. Only an exact substring
-    of the user's original draft can be replaced; requirements and checks stay.
+    Google does not have to guess an exact 'old' substring from an arbitrary
+    truncated JSON prefix. An absence of strong matching words is not proof
+    of a factual error: the selection is only an edit target.
+    """
+    lines = [part.strip() for part in re.split(r"(?<=[.!?])\\s+|\\n+", draft)
+             if 8 <= len(part.strip()) <= 380]
+    if not lines:
+        lines = [draft[:min(len(draft), 300)].strip()]
+    words = set(re.findall(r"\\w{5,}", criticism.casefold()))
+    def score(line):
+        tokens = set(re.findall(r"\\w{5,}", line.casefold()))
+        return (len(words & tokens), -len(line))
+    target = max(lines, key=score)
+    if len(target) > 380:
+        target = target[:380].rsplit(" ", 1)[0]
+    return target
+
+
+def parse_patch_response(page_text, tag, predetermined_old):
+    """Accept a tagged JSON patch, including a 'new'-only anchored protocol."""
+    proposal = tagged_json(page_text, tag)
+    if proposal is not None:
+        return proposal
+    decoder = json.JSONDecoder(strict=False)
+    for m in re.finditer(r"\\{", page_text):
+        try:
+            obj, _ = decoder.raw_decode(page_text[m.start():])
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(obj, dict) or obj.get("tag") != tag:
+            continue
+        new = obj.get("new")
+        if not isinstance(new, str):
+            continue
+        if "old" in obj and obj["old"] != predetermined_old:
+            continue
+        return {"old":predetermined_old, "new":new}
+    return None
+
+
+def google_research(data, result, ask):
+    """Request a short anchored correction and require source-safe validation.
+
+    The reviewer is NOT a source of prices or electrical proof. If no safe edit
+    exists, fail closed; a DO POPRAWY verdict never becomes a manufactured PASS.
     """
     tag = secrets.token_hex(8)
-    criticism = " ".join(result.get("reason", "").split())[:350]
-    base = {
-        "tag": tag,
-        "question": data["question"][:260],
-        "criticism": criticism,
-        "instructions": "Keep the exact same equipment and user constraints.",
-    }
+    reason = " ".join(result.get("reason", "").split())[:450]
+    old = patch_target(data["draft"], reason)
+    if len(old) < 5 or data["draft"].count(old) != 1:
+        raise ValueError("No unique local edit target in draft")
+    base = {"tag":tag, "old":old, "reason":reason[:220],
+            "question":data["question"][:180]}
     errors = []
     for attempt in range(2):
-        prefix = (
-            "Correct ONE factual error in the DRAFT below. "
-            "Return ONLY one JSON object with fields tag, old, new, where tag is the "
-            "same tag, old is an EXACT substring of DRAFT and new is a short replacement "
-            "(under 480 characters). No new products, stations, prices or claims. "
-            "Do not replace the entire draft. If evidence is missing, state that "
-            "it remains unverified; never invent proof. "
-        )
-        if attempt:
+        if attempt == 0:
             prefix = (
-                "Your previous response could not be safely parsed or applied. "
-                "Respond ONLY with a valid JSON object with fields tag, old, new; "
-                "old must exactly match the draft and new must not invent claims. "
+                "Check the review criticism and correct ONLY the exact OLD text. "
+                "Return ONE JSON object with tag, old, new; copy old verbatim, "
+                "new <= 280 characters. Keep all original constraints. "
+                "If a technical claim lacks proof, state uncertainty instead "
+                "of adding invented specifications, offers or prices. "
+                "No markdown. "
             )
-        query = None
-        for excerpt_length in (850, 650, 450, 250, 100):
-            packet = dict(base, draft_excerpt=data["draft"][:excerpt_length])
-            candidate = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
-            if len(candidate.encode()) <= 2000:
-                query = candidate
-                break
-        if query is None:
-            raise ValueError("Could not fit a complete bounded patch request")
+        else:
+            prefix = (
+                "Previous correction was unsafe or unparseable. Return ONLY "
+                "JSON with tag and new (<=280 characters). The program already "
+                "knows OLD. Replace ONLY OLD with a cautious evidence-based "
+                "correction, never new unverified facts. "
+            )
+        packet = dict(base)
+        if attempt:
+            packet.pop("old")
+            packet["old_exact_text"] = old
+        query = prefix + json.dumps(packet, ensure_ascii=False, separators=(",", ":"))
+        if len(query.encode()) > 2000:
+            raise ValueError("Patch request exceeds Google transport limit")
         page = ask(query)
         u = urlsplit(page.get("page", {}).get("url", ""))
         params = parse_qs(u.query)
@@ -242,16 +284,15 @@ def google_research(data, result, ask):
                 u.hostname != "www.google.com" or u.path != "/search" or
                 params.get("q") != [query] or params.get("udm") != ["50"]):
             raise ValueError("Research response did not match query")
-        proposal = tagged_json(page["page"].get("text", ""), tag)
+        proposal = parse_patch_response(page["page"].get("text", ""), tag, old)
         if proposal is None:
-            errors.append("No tagged structured JSON patch")
+            errors.append("No valid tagged short correction")
             continue
         try:
             patched = guarded_patch(data, proposal["old"], proposal["new"])
         except ValueError as exc:
             errors.append(str(exc))
             continue
-        # Never accept AI's proposed evidence as verified. Original checks stay.
         return dict(data, draft=patched, checks=[dict(c) for c in data["checks"]])
     raise ValueError("No safe patch accepted: " + "; ".join(errors)[:240])
 
