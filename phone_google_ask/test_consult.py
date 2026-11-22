@@ -602,6 +602,14 @@ class ConsultTests(unittest.TestCase):
             self.assertIn(title+" /2",waiter.evaluate(event)["reason"])
         with patch.object(waiter,"lookup",return_value=dict(title=title+" /3",review="DO POPRAWY",
                 status="NIEPOTWIERDZONE",reason="Napięcie",history=[{}])):
+            self.assertEqual(waiter.evaluate(event)["decision"],"block")
+        with patch.object(waiter,"lookup",return_value=dict(title=title+" /9",review="DO POPRAWY",
+                status="NIEPOTWIERDZONE",reason="Napięcie",history=[{}])):
+            self.assertEqual(waiter.evaluate(event)["decision"],"block")
+        with patch.object(waiter,"lookup",return_value=dict(title=title+" /4",review="DO POPRAWY",
+                resolution_status="physically_impossible",
+                exhaustion_evidence=["https://manufacturer.example/spec", "https://meteo.example/dataset"],
+                status="NIEPOTWIERDZONE",reason="Physical limit verified")):
             self.assertEqual(waiter.evaluate(event),{})
 
     def test_stop_hook_cannot_skip_github_when_unavailable(self):
