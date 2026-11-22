@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-21T21:44:02.515499Z",
+  "generated_at_utc": "2026-11-22T01:08:02.731029Z",
   "followers": 5,
-  "followers_checked_at_utc": "2026-11-21T21:44:02.515499Z",
+  "followers_checked_at_utc": "2026-11-22T01:08:02.731029Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -74,13 +74,28 @@
       "followers": 5
     }
   ],
-  "posted_confirmed": 22,
-  "posted_24h": 2,
-  "pending": 1,
+  "posted_confirmed": 23,
+  "posted_24h": 3,
+  "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-21T21:44:02.515499Z",
+  "posting_status_checked_at_utc": "2026-11-22T01:08:02.731029Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b021088d5eabfb8cc622bac",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7710743747142634785",
+      "sent_at_utc": "2026-11-21T21:44:24.619Z",
+      "concept": "new ai cat 20261121 s05 taking selfie",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 41,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-22T01:08:02.731029Z"
+    },
     {
       "id": "6b01c3618bd84d5966004744",
       "status": "sent",
@@ -91,10 +106,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 166,
+        "views": 181,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T21:44:02.515499Z"
+      "engagement_checked_at_utc": "2026-11-22T01:08:02.731029Z"
     },
     {
       "id": "6b01b6ec8bd84d5966faa2d7",
@@ -109,7 +124,7 @@
         "views": 230,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T21:44:02.515499Z"
+      "engagement_checked_at_utc": "2026-11-22T01:08:02.731029Z"
     },
     {
       "id": "6b007d38c9797a176531220c",
@@ -124,7 +139,7 @@
         "views": 215,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T21:44:02.515499Z"
+      "engagement_checked_at_utc": "2026-11-22T01:08:02.731029Z"
     },
     {
       "id": "6aff316d7218d2f8fc1e6016",
@@ -139,7 +154,7 @@
         "views": 601,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-21T21:44:02.515499Z"
+      "engagement_checked_at_utc": "2026-11-22T01:08:02.731029Z"
     },
     {
       "id": "6afea6dbb7fe0c41dda6bdf8",
@@ -410,15 +425,6 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
-    },
-    {
-      "id": "6b021088d5eabfb8cc622bac",
-      "status": "sending",
-      "url": null,
-      "sent_at_utc": null,
-      "concept": "new ai cat 20261121 s05 taking selfie",
-      "engagement": null,
-      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -428,14 +434,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 7,
+    "likes": 5,
     "comments": 0,
     "shares": 0,
-    "views": 1816,
+    "views": 1268,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-21T21:44:02.515499Z",
+    "last_checked_at_utc": "2026-11-22T01:08:02.731029Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
