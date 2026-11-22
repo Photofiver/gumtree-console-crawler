@@ -165,7 +165,8 @@
       "source": "social_videos/new-ai-cat-20261122-s00-ironing-shirt.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261122-s00-ironing-shirt.mp4",
       "attempted_at": "2026-11-22T16:21:33.653098+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6b03168fcc364169c169eff9"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
