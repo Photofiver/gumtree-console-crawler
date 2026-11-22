@@ -258,6 +258,9 @@ class ConsultTests(unittest.TestCase):
                 obj = dict(tag=tag, new="The 48-hour outcome remains unverified in winter.")
                 return dict(question=query,page=dict(url="https://www.google.com/search?" +
                             urlencode({"q":query,"udm":"50"}),text=json.dumps(obj)))
+            if "Find ONE actual" in query:
+                return dict(question=query, page=dict(url="https://www.google.com/search?" +
+                            urlencode({"q":query, "udm":"50"}), text="No independently verifiable source."))
             return vote(query, "REVISE" if "guaranteed" in query else "PASS")
         r = solve(packet, ask, lambda _: "", google_research)
         self.assertEqual(len(r["history"]), 2)
