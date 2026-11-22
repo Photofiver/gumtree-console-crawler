@@ -153,7 +153,7 @@ def run_once(issue, ask, api, read=source_text, now=None):
                        for c in comments):
                 archive = ARCHIVE_PREFIX + stamp + " " + json.dumps(
                     {"issue": issue["number"], "sha256": checksum(issue),
-                     "offset": count+start, "sources": batch},
+                     "offset": count, "sources": batch},
                     ensure_ascii=False, separators=(",", ":"))
                 api("POST", "/issues/" + str(issue["number"]) + "/comments",
                     {"body": archive})
