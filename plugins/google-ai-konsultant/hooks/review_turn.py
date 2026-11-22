@@ -68,6 +68,9 @@ def evaluate(event, read=fetch):
                    "GitHub tylko przesiewa konfiguracje, wysyła pytania do Google AI i "
                    "oddaje uwagi. Dla bieżącej tury utwórz issue o tytule " + title +
                    " z aktualnym pytaniem, szkicem i checklistą dowodów. "
+                   "Po utworzeniu issue NATYCHMIAST odczytuj status tego samego " +
+                   "issue w tej samej aktywnej turze; jeśli workflow jeszcze trwa, " +
+                   "polluj ponownie, nie kończ tury na samym linku do GitHub. " +
                    "Odczytaj faktyczne Google AI feedback; w przypadku DO POPRAWY "
                    "lub NIEPOTWIERDZONE SAMODZIELNIE sprawdź źródła, zmień szkic "
                    "i wyślij nowe issue z parent_issue. Nie proś GitHub o pisanie "
@@ -92,7 +95,20 @@ def evaluate(event, read=fetch):
             if current:
                 attempt = int(current[1] or "1")
                 if "pending" in receipt:
-                    return {"decision":"block","reason":f"Trwa workflow issue #{match}. Oczekuj na to samo zgłoszenie przez --wait {match}."}
+                    # Give the already-running Google workflow time to post its
+                    # authenticated answer before ChatGPT is allowed to stop.
+                    # Stay below the 40-second host Stop-hook limit.
+                    if read is fetch and getattr(lookup, "__name__", None) == "lookup":
+                        receipt = wait(int(match), timeout=16)
+                    if "pending" in receipt or receipt.get("reason", "").startswith("Timeout:"):
+                        return {"decision":"block","reason":(
+                            f"Google AI dla issue #{match} nadal pracuje. TO NIE JEST "
+                            "ODPOWIEDŹ KOŃCOWA. Kontynuuj TĘ SAMĄ turę ChatGPT: "
+                            f"odczytaj GitHub issue #{match} i komentarze Konsultant/2, "
+                            "ponawiaj sprawdzanie do otrzymania uwierzytelnionego "
+                            "wyniku albo jawnej awarii workflow. Nie kończ tury "
+                            "tylko dlatego, że Google jeszcze nie odpowiedziało. "
+                            f"Dostępna funkcja oczekiwania: --wait {match}.")}
                 correction_needed = (receipt.get("review") == "DO POPRAWY" or
                                      receipt.get("next_action") == "chatgpt_research_revise_and_resubmit")
                 if correction_needed and attempt < 3:
@@ -100,6 +116,7 @@ def evaluate(event, read=fetch):
                     missing = ", ".join(receipt.get("blocked", [])[:10])
                     return {"decision":"block","reason":(
                         "TO CHATGPT MUSI WYKONAĆ KOREKTĘ, NIE GITHUB. "
+                        "Nie kończ teraz odpowiedzi — zrób to w tej samej turze. "
                         "Odczytaj uwagi Google AI: " + feedback +
                         ". Niespełnione wymagania: " + missing +
                         ". Samodzielnie wyszukaj brakujące dane w wiarygodnych "
