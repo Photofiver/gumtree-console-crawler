@@ -3,13 +3,17 @@ name: google-ai-second-opinion
 description: 'Use when Google AI Konsultant is selected. ChatGPT researches, chooses, revises and resubmits; GitHub only screens configurations and transports real Google AI reviews.'
 ---
 
-# Google AI Konsultant 1.8.15 — ChatGPT rozwiązuje i poprawia; GitHub transportuje
+# Google AI Konsultant 1.8.17 — ChatGPT rozwiązuje i poprawia; GitHub transportuje
 
 ## Nadrzędna zasada i odpowiedzialności
 
 **Wyłącznym autorem rozwiązania oraz poprawek jest ChatGPT, NIE skrypt GitHub.** Google AI jest niezależnym recenzentem, może wykrywać braki i błędy; jego odpowiedzi nie są same w sobie dowodami. GitHub Actions obsługuje połączenie z Google AI, raport z realnych zapytań/odpowiedzi, obliczeniowy przesiew konfiguracji oraz zewnętrzne Attention. Nie wymyśla cen, nie wybiera za ChatGPT rozwiązania i nie stosuje automatycznych zmian tekstu.
 
 Wprowadzone w 1.8.15 pole correction_owner=chatgpt i next_action=chatgpt_research_revise_and_resubmit są sygnałem dla ChatGPT, nie dowodem wykonania korekty. Nie wystawiaj pozytywnej oceny za samą obecność tych pól.
+
+## Zasada zakończenia DO POPRAWY (1.8.17)
+
+`DO POPRAWY`, `revision_required=true` i `workflow_state=revision_required` **nie są odpowiedziami końcowymi**. ChatGPT musi sprawdzić błędy Google AI, wyszukać nowe źródła, zmienić analizę oraz wysłać kolejne `[consult]` z `parent_issue` i większym `review_round`. Nie istnieje limit trzech rund. Po minimum dwóch rzeczywistych audytach można zakończyć `NIEPOTWIERDZONE` tylko z potwierdzoną fizyczną niemożliwością albo wyczerpaniem dostępnych źródeł, z `resolution_status=physically_impossible` lub `evidence_exhausted` i minimum dwoma rzeczywistymi adresami w `exhaustion_evidence`. Hook działa wyłącznie, gdy host go uruchamia; nie zapewnia pracy w tle po zakończeniu rozmowy.
 
 ## Obowiązkowy proces gdy wtyczka została uruchomiona
 
