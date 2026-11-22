@@ -1,8 +1,16 @@
 name: Google AI consultation continuity controller
 on:
-  schedule:
-    - cron: '11,26,41,56 * * * *'
+  # The cold Google AI review finished (success or failure).
+  workflow_run:
+    workflows: ["Google AI Mode ask (isolated)"]
+    types: [completed]
+  # The warm worker dispatches this as soon as its Google AI result is posted.
   workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to check immediately (optional)"
+        required: false
+        type: string
 
 permissions:
   actions: write
@@ -27,29 +35,50 @@ jobs:
             const repo = context.repo.repo;
             const marker = '<!-- google-ai-continuity-controller-v1 -->';
             const workflow_id = 'google-ai-ask.yml';
+            const eventRun = context.payload.workflow_run;
+            const matchedRun = /Google AI issue #(\\d+)/.exec(eventRun?.display_title || '');
+            const targetNumber = Number(
+              context.payload.inputs?.issue_number || matchedRun?.[1] || 0
+            );
+            if (eventRun && eventRun.event !== 'issues') {
+              core.info('Ignoring non-issue workflow completion.');
+              return;
+            }
 
             // Inspect the newest open consultations, without reposting a draft
             // or treating an unresolved Google AI verdict as completed work.
             const issuePages = [];
-            for (let page = 1; page <= 3; page++) {
-              const response = await github.rest.issues.listForRepo({
-                owner, repo, state: 'open', sort: 'updated', direction: 'desc',
-                per_page: 100, page
+            if (targetNumber) {
+              const response = await github.rest.issues.get({
+                owner, repo, issue_number: targetNumber
               });
-              issuePages.push(...response.data);
-              if (response.data.length < 100) break;
+              issuePages.push(response.data);
+            } else {
+              for (let page = 1; page <= 3; page++) {
+                const response = await github.rest.issues.listForRepo({
+                  owner, repo, state: 'open', sort: 'updated', direction: 'desc',
+                  per_page: 100, page
+                });
+                issuePages.push(...response.data);
+                if (response.data.length < 100) break;
+              }
             }
             const issues = issuePages.filter(i =>
               !i.pull_request && i.title.startsWith('[consult]') &&
-              i.user?.login === owner).slice(0, 60);
+              i.user?.login === owner &&
+              (!targetNumber || i.number === targetNumber)).slice(0, 60);
 
             const runs = [];
-            for (let page = 1; page <= 5; page++) {
-              const response = await github.rest.actions.listWorkflowRuns({
-                owner, repo, workflow_id, event: 'issues', per_page: 100, page
-              });
-              runs.push(...response.data.workflow_runs);
-              if (response.data.workflow_runs.length < 100) break;
+            if (eventRun) {
+              runs.push(eventRun);
+            } else {
+              for (let page = 1; page <= 5; page++) {
+                const response = await github.rest.actions.listWorkflowRuns({
+                  owner, repo, workflow_id, event: 'issues', per_page: 100, page
+                });
+                runs.push(...response.data.workflow_runs);
+                if (response.data.workflow_runs.length < 100) break;
+              }
             }
 
             for (const issue of issues) {
@@ -61,10 +90,8 @@ jobs:
                     ' has no visible workflow run; an issue-triggered run must be investigated.');
                   continue;
                 }
-                if (run.status !== 'completed') {
-                  core.info('Consultation #' + issue.number + ' still ' + run.status);
-                  continue;
-                }
+                // A warm Google AI receipt can arrive before the cold worker finishes.
+                // Read it immediately rather than waiting for the cold workflow.
                 const comments = await github.paginate(
                   github.rest.issues.listComments,
                   {owner, repo, issue_number: issue.number, per_page: 100}
@@ -95,12 +122,17 @@ jobs:
                   continue;
                 }
 
+                if (run.status !== 'completed' && !receipt) {
+                  core.info('Consultation #' + issue.number +
+                    ' pending, with no authenticated warm receipt yet.');
+                  continue;
+                }
                 const transportMissing = !receipt ||
                   (receipt.google_ai_responses_received || 0) === 0;
                 // A successful GitHub job is not proof that Google AI answered.
                 // Retry missing or zero-response receipts, regardless of job conclusion.
                 const shouldRetry = transportMissing;
-                if (shouldRetry && (run.run_attempt || 1) < 3) {
+                if (shouldRetry && run.status === 'completed' && (run.run_attempt || 1) < 3) {
                   await github.rest.actions.reRunWorkflow({
                     owner, repo, run_id: run.id
                   });
