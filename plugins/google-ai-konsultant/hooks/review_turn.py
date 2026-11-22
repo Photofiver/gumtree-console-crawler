@@ -76,7 +76,17 @@ def evaluate(event, read=fetch):
                    "lub NIEPOTWIERDZONE SAMODZIELNIE sprawdź źródła, zmień szkic "
                    "i wyślij nowe issue z parent_issue. Nie proś GitHub o pisanie "
                    "lub wymyślanie poprawek. Nie deklaruj POTWIERDZONE bez "
-                   "pozytywnego audytu Google AI i prawdziwych dowodów.")
+                   "pozytywnego audytu Google AI i prawdziwych dowodów. "
+                   "NOWY AGENT JEST TYLKO DODATKIEM: sprawdź odpowiednie issue "
+                   "[auto-research] oraz komentarze AutoResearch/1 i "
+                   "AutoResearchArchive/1; samodzielnie OTWÓRZ i zweryfikuj "
+                   "wszystkie podane tam oferty oraz cytaty. Dla S700 użyj "
+                   "https://github.com/Photofiver/gumtree-console-crawler/issues/277 "
+                   "ale nie bierz AutoResearch/1 ani propozycji Google AI za "
+                   "autentyczną weryfikację przez ChatGPT. Oryginalny proces "
+                   "pozostaje: ChatGPT bada i poprawia, Google AI osobno recenzuje "
+                   "KAŻDY nowy szkic przez nowe [consult]. Jeśli agent nic "
+                   "jeszcze nie znalazł, ChatGPT nadal prowadzi badanie.")
     if event.get("hook_event_name") == "UserPromptSubmit":
         try:
             with stamp.open("x") as handle:
