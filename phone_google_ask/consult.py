@@ -604,9 +604,20 @@ def review_for_chatgpt(data, ask, read=source_text):
     status = ("POTWIERDZONE" if verdict.get("review") == "SPRAWDZONE"
               and verdict.get("status") == "POTWIERDZONE"
               else "NIEPOTWIERDZONE")
-    next_action = ("report_verified_evidence" if status == "POTWIERDZONE"
+    # A critical review is a workflow transition, NOT a final answer.
+    # The active ChatGPT turn must research the specific deficiencies, build
+    # a materially different draft and submit its own follow-up [consult].
+    # GitHub remains transport-only: it must not invent product evidence.
+    needs_revision = status != "POTWIERDZONE"
+    next_action = ("report_verified_evidence" if not needs_revision
                    else "chatgpt_research_revise_and_resubmit")
-    return dict(verdict, status=status, draft=data["draft"],
+    return dict(verdict, status=status,
+                workflow_state=("revision_required" if needs_revision else "verified"),
+                terminal=not needs_revision,
+                revision_required=needs_revision,
+                revision_round=int(data.get("review_round", 1)),
+                correction_evidence_required=needs_revision,
+                draft=data["draft"],
                 checks=[dict(c) for c in data["checks"]],
                 correction_owner="chatgpt",
                 github_role="google_ai_transport_and_computational_screening",
@@ -617,7 +628,11 @@ def review_for_chatgpt(data, ask, read=source_text):
                     "recheck_claims_with_real_sources": True,
                     "update_draft_and_check_evidence_in_chatgpt": True,
                     "create_new_consult_issue_with_parent_issue": True,
-                    "do_not_fake_google_pass": True
+                    "do_not_fake_google_pass": True,
+                    "do_not_stop_on_do_poprawy": True,
+                    "check_all_failed_and_unreadable_parts": True,
+                    "continue_search_before_reporting_no_solution": True,
+                    "record_new_sources_or_hard_impossibility": True
                 },
                 history=[dict(round=1, draft=data["draft"], **verdict)],
                 google_ai_queries_sent=len(audit),
