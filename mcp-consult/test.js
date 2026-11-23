@@ -1,0 +1,13 @@
+import {test} from 'node:test';
+import {strict as assert} from 'node:assert';
+import {createHash} from 'node:crypto';
+import {validateReceipt} from './validate.js';
+const issue={number:293,body:'test'};
+const sha256=createHash('sha256').update('test').digest('hex');
+const receipt={issue:293,sha256,status:'DO POPRAWY',review:'DO POPRAWY',google_ai_responses_received:2};
+const comment=(r,id=1)=>({id,user:{login:'github-actions[bot]'},body:'Konsultant/2 '+JSON.stringify(r)});
+test('valid revision',()=>{const r=validateReceipt(issue,[comment(receipt)]);assert.equal(r.valid,true);assert.equal(r.approved,false)});
+test('approved',()=>assert.equal(validateReceipt(issue,[comment({...receipt,status:'POTWIERDZONE',review:'SPRAWDZONE'})]).approved,true));
+test('reject wrong sha',()=>assert.equal(validateReceipt(issue,[comment({...receipt,sha256:'bad'})]).valid,false));
+test('reject wrong issue',()=>assert.equal(validateReceipt(issue,[comment({...receipt,issue:999})]).valid,false));
+test('reject spoofed user',()=>assert.equal(validateReceipt(issue,[{...comment(receipt),user:{login:'attacker'}}]).valid,false));
