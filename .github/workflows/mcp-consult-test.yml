@@ -1,0 +1,21 @@
+name: MCP consultation prototype tests
+on:
+  pull_request:
+    paths: ['mcp-consult/**','.github/workflows/mcp-consult-test.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+        working-directory: mcp-consult
+      - run: npm test
+        working-directory: mcp-consult
+      - run: node --check server.js
+        working-directory: mcp-consult
