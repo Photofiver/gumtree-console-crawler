@@ -105,17 +105,27 @@ jobs:
                   (c.body || '').startsWith('Konsultant/2 ')
                 ).reverse();
                 let receipt = null;
+                let receiptId;
                 for (const comment of receipts) {
                   try {
                     const parsed = JSON.parse(comment.body.substring('Konsultant/2 '.length));
                     if (parsed.issue === issue.number && parsed.sha256 === digest &&
                         (parsed.run === undefined || parsed.run === run.id)) {
                       receipt = parsed;
+                      receiptId = comment.id;
                       break;
                     }
                   } catch (err) {
                     core.warning('Unreadable receipt for #' + issue.number);
                   }
+                }
+                if (receiptId && receipt.google_ai_responses_received > 0 &&
+                    !comments.some(c => c.user?.login === 'github-actions[bot]' &&
+                      c.body?.includes('<!-- wake:chatgpt:' + receiptId + ' -->'))) {
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner, repo, workflow_id: 'wake-bridge.yml', ref: context.payload.repository.default_branch,
+                    inputs: { issue: String(issue.number), comment: String(receiptId) }
+                  });
                 }
                 if (receipt?.status === 'POTWIERDZONE' &&
                     receipt.review === 'SPRAWDZONE' &&
