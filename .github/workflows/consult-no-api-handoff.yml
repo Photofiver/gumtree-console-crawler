@@ -1,0 +1,85 @@
+name: Consultation handoff (no API)
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Consultation issue number
+        required: true
+        type: string
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: consultation-handoff-${{ github.event.issue.number || inputs.issue_number || github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  handoff:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' &&
+       !github.event.issue.pull_request &&
+       github.event.comment.user.login == 'github-actions[bot]' &&
+       startsWith(github.event.comment.body, 'Konsultant/2 '))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify receipt and record honest handoff status
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number }}
+        with:
+          script: |
+            const crypto = require('crypto');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            if (!Number.isSafeInteger(issue_number) || issue_number < 1) {
+              core.setFailed('Invalid issue number');
+              return;
+            }
+            const issue = (await github.rest.issues.get({owner, repo, issue_number})).data;
+            if (!issue.title.startsWith('[consult]')) {
+              core.setFailed('Not a consultation issue');
+              return;
+            }
+            const digest = crypto.createHash('sha256').update(issue.body || '', 'utf8').digest('hex');
+            const comments = await github.paginate(github.rest.issues.listComments, {owner, repo, issue_number, per_page:100});
+            const valid = comments.filter(c => c.user?.login === 'github-actions[bot]')
+              .map(c => {
+                if (!c.body?.startsWith('Konsultant/2 ')) return null;
+                try {
+                  const x = JSON.parse(c.body.slice('Konsultant/2 '.length));
+                  return x.issue === issue_number && x.sha256 === digest ? {comment:c,receipt:x} : null;
+                } catch { return null; }
+              }).filter(Boolean);
+            if (!valid.length) {
+              core.setFailed('No authenticated, matching Google AI receipt');
+              return;
+            }
+            const latest = valid.at(-1);
+            const marker = '<!-- consultation-handoff:' + latest.comment.id + ' -->';
+            if (comments.some(c => c.body?.includes(marker))) {
+              core.info('Already recorded');
+              return;
+            }
+            const r = latest.receipt;
+            const approved = r.status === 'POTWIERDZONE' &&
+              r.review === 'SPRAWDZONE' &&
+              Number(r.google_ai_responses_received) > 0;
+            const body = [
+              marker,
+              approved ? 'Google AI consultation verified.' : 'Google AI consultation requires revision.',
+              'Status: ' + String(r.status || 'unknown') + '; review: ' + String(r.review || 'unknown'),
+              'This GitHub workflow cannot resume an ordinary ChatGPT conversation.',
+              'No OpenAI API key, browser automation, or paid model is used.',
+              'A new ChatGPT turn must be initiated by a supported ChatGPT mechanism or by the user.'
+            ].join('\n');
+            await github.rest.issues.createComment({owner, repo, issue_number, body});
+            core.summary.addHeading('Consultation handoff')
+              .addRaw('Issue #' + issue_number + ': ' + (approved ? 'verified' : 'revision needed') + '\n')
+              .addRaw('Ordinary ChatGPT conversation resumed: NO\n')
+              .write();
