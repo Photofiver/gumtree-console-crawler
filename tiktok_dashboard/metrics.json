@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-23T07:53:09.158883Z",
+  "generated_at_utc": "2026-11-23T10:38:02.476578Z",
   "followers": 5,
-  "followers_checked_at_utc": "2026-11-23T07:53:09.158883Z",
+  "followers_checked_at_utc": "2026-11-23T10:38:02.476578Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -84,15 +84,34 @@
     {
       "utc": "2026-11-23T02:01:39.271203Z",
       "followers": 5
+    },
+    {
+      "utc": "2026-11-23T10:38:02.476578Z",
+      "followers": 5
     }
   ],
-  "posted_confirmed": 25,
-  "posted_24h": 2,
-  "pending": 1,
+  "posted_confirmed": 26,
+  "posted_24h": 3,
+  "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-23T07:53:09.158883Z",
+  "posting_status_checked_at_utc": "2026-11-23T10:38:02.476578Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b03f0c39c207fed95839b85",
+      "status": "sent",
+      "url": "https://www.tiktok.com/@photofiver.photof/video/7711271755179920673?utm_campaign=tt4d_open_api&utm_source=7103819247981182978",
+      "sent_at_utc": "2026-11-23T07:54:18.066Z",
+      "concept": "new ai cat 20261123 s00 wiping window",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 68,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-23T10:38:02.476578Z"
+    },
     {
       "id": "6b03653dd5eabfb8cce1971c",
       "status": "sent",
@@ -103,10 +122,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 77,
+        "views": 98,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T07:53:09.158883Z"
+      "engagement_checked_at_utc": "2026-11-23T10:38:02.476578Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -118,10 +137,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 140,
+        "views": 176,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T07:53:09.158883Z"
+      "engagement_checked_at_utc": "2026-11-23T10:38:02.476578Z"
     },
     {
       "id": "6b021088d5eabfb8cc622bac",
@@ -136,7 +155,7 @@
         "views": 229,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T07:53:09.158883Z"
+      "engagement_checked_at_utc": "2026-11-23T10:38:02.476578Z"
     },
     {
       "id": "6b01c3618bd84d5966004744",
@@ -151,7 +170,7 @@
         "views": 184,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T07:53:09.158883Z"
+      "engagement_checked_at_utc": "2026-11-23T10:38:02.476578Z"
     },
     {
       "id": "6b01b6ec8bd84d5966faa2d7",
@@ -467,15 +486,6 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
-    },
-    {
-      "id": "6b03f0c39c207fed95839b85",
-      "status": "sending",
-      "url": null,
-      "sent_at_utc": null,
-      "concept": "new ai cat 20261123 s00 wiping window",
-      "engagement": null,
-      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -485,14 +495,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 6,
+    "likes": 4,
     "comments": 0,
     "shares": 0,
-    "views": 861,
+    "views": 755,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-23T07:53:09.158883Z",
+    "last_checked_at_utc": "2026-11-23T10:38:02.476578Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
