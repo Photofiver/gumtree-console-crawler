@@ -1,0 +1,50 @@
+name: Work PR Signal (no model API)
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Existing consultation issue number
+        required: true
+        type: string
+permissions:
+  contents: write
+  pull-requests: write
+  issues: read
+jobs:
+  signal:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify consultation and create PR signal
+        uses: actions/github-script@v7
+        env:
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const {owner, repo} = context.repo;
+            const issue_number = Number(process.env.ISSUE_NUMBER);
+            if (!Number.isSafeInteger(issue_number) || issue_number < 1) throw new Error('Invalid issue number');
+            const {data: issue} = await github.rest.issues.get({owner, repo, issue_number});
+            if (issue.pull_request || !issue.title.startsWith('[consult]')) throw new Error('Not a consultation issue');
+            const comments = await github.paginate(github.rest.issues.listComments, {owner, repo, issue_number, per_page:100});
+            const response = comments.slice().reverse().find(c => c.user.login === 'github-actions[bot]' && c.body.startsWith('Konsultant/2 '));
+            if (!response) throw new Error('No verified consultation response');
+            let payload;
+            try { payload = JSON.parse(response.body.slice('Konsultant/2 '.length)); } catch { throw new Error('Invalid response JSON'); }
+            if (payload.issue !== issue_number || !(payload.google_ai_responses_received > 0)) throw new Error('Unverified response');
+            const {data: repository} = await github.rest.repos.get({owner, repo});
+            const base = repository.default_branch;
+            const ref = await github.rest.git.getRef({owner, repo, ref: 'heads/' + base});
+            const branch = 'work-signal/issue-' + issue_number + '-comment-' + response.id;
+            try { await github.rest.git.createRef({owner, repo, ref:'refs/heads/' + branch, sha:ref.data.object.sha}); }
+            catch(e) { if(e.status !== 422) throw e; }
+            const path = '.work-signals/issue-' + issue_number + '-comment-' + response.id + '.json';
+            const data = {issue_number, source_comment_id:response.id, source_url:response.html_url, verdict:payload.verdict || null, revision_required:payload.revision_required ?? null};
+            const body = Buffer.from(JSON.stringify(data,null,2)+'\n').toString('base64');
+            let exists = false;
+            try { await github.rest.repos.getContent({owner, repo, path, ref:branch}); exists=true; } catch(e) { if(e.status !== 404) throw e; }
+            if (!exists) await github.rest.repos.createOrUpdateFileContents({owner, repo, path, branch, message:'Signal Work consultation issue '+issue_number, content:body});
+            const prs = await github.paginate(github.rest.pulls.list,{owner,repo,state:'open',head:owner+':'+branch});
+            if(prs.length) { core.info('Existing signal PR: '+prs[0].html_url); return; }
+            const pr = await github.rest.pulls.create({owner,repo,head:branch,base,title:'[work-signal] Consultation #'+issue_number+' requires review',body:'GitHub event signal only. Work must be configured separately to monitor new pull requests.\n\nSource: '+response.html_url+'\n\nNo OpenAI model API or browser automation is used by this workflow.',draft:true});
+            core.info('Created signal PR: '+pr.data.html_url);
