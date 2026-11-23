@@ -21,6 +21,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const {hasAuthenticatedGoogleAnswer} = require(process.env.GITHUB_WORKSPACE + '/phone_google_ask/google_ai_receipt_guard.js');
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const {data} = await github.rest.actions.listWorkflowRuns({
@@ -39,14 +40,9 @@ jobs:
               const {data: comments} = await github.rest.issues.listComments({
                 owner, repo, issue_number: context.issue.number, per_page: 100
               });
-              if (comments.some(c => c.user?.login === 'github-actions[bot]' &&
-                  (c.body?.startsWith('Konsultant/2 ') ||
-                   c.body?.startsWith('Google AI: SPRAWDZONE') ||
-                   c.body?.startsWith('Google AI: DO POPRAWY') ||
-                   (c.body?.startsWith('Google AI Mode answer') &&
-                    /AI RESPONSE READY: (True|true)/.test(c.body))))) {
+              if (hasAuthenticatedGoogleAnswer(comments, context.payload.issue)) {
                 core.setOutput('served', 'true');
-                core.info('Warm browser answered issue; skipped cold Android startup.');
+                core.info('Authenticated Google AI review received; skipped cold Android startup.');
                 return;
               }
               await new Promise(resolve => setTimeout(resolve, 6500));
