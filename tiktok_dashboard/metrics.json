@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-23T20:21:07.219556Z",
+  "generated_at_utc": "2026-11-23T22:12:56.263549Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-23T20:21:07.219556Z",
+  "followers_checked_at_utc": "2026-11-23T22:12:56.263549Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -94,13 +94,28 @@
       "followers": 6
     }
   ],
-  "posted_confirmed": 26,
+  "posted_confirmed": 27,
   "posted_24h": 2,
-  "pending": 1,
+  "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-23T20:21:07.219556Z",
+  "posting_status_checked_at_utc": "2026-11-23T22:12:56.263549Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b04a01aac07df385d51aac3",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7711464563597708576",
+      "sent_at_utc": "2026-11-23T20:22:25.712Z",
+      "concept": "new ai cat 20261123 s05 practicing tai chi",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 1,
+        "views": 69,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+    },
     {
       "id": "6b03f0c39c207fed95839b85",
       "status": "sent",
@@ -114,7 +129,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T20:21:07.219556Z"
+      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -129,7 +144,7 @@
         "views": 172,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T20:21:07.219556Z"
+      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -141,10 +156,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 211,
+        "views": 212,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T20:21:07.219556Z"
+      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
     },
     {
       "id": "6b021088d5eabfb8cc622bac",
@@ -159,7 +174,7 @@
         "views": 229,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T20:21:07.219556Z"
+      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
     },
     {
       "id": "6b01c3618bd84d5966004744",
@@ -490,15 +505,6 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
-    },
-    {
-      "id": "6b04a01aac07df385d51aac3",
-      "status": "sending",
-      "url": null,
-      "sent_at_utc": null,
-      "concept": "new ai cat 20261123 s05 practicing tai chi",
-      "engagement": null,
-      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -508,14 +514,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 4,
+    "likes": 2,
     "comments": 0,
-    "shares": 0,
-    "views": 987,
+    "shares": 1,
+    "views": 872,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-23T20:21:07.219556Z",
+    "last_checked_at_utc": "2026-11-23T22:12:56.263549Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
