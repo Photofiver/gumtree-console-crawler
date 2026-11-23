@@ -26,4 +26,25 @@ function hasAuthenticatedGoogleAnswer(comments, issue) {
             /AI RESPONSE READY: (True|true)/.test(body));
   });
 }
-module.exports = { hasAuthenticatedGoogleAnswer };
+
+// Report actual received Google feedback rather than claiming that no reply
+// arrived merely because Google found insufficient evidence.
+function describeUnresolvedReceipt(receipt) {
+  const answers = Number(receipt?.google_ai_responses_received || 0);
+  if (!receipt || !Number.isFinite(answers) || answers <= 0) {
+    return String(receipt?.reason ||
+      'No authenticated Google AI receipt after the available retries.');
+  }
+  if (typeof receipt.reason === 'string' && receipt.reason.trim()) {
+    return receipt.reason.trim();
+  }
+  const blocked = Array.isArray(receipt.blocked)
+    ? receipt.blocked.filter(s => typeof s === 'string' && s.trim())
+    : [];
+  return blocked.length
+    ? 'Google AI responded, but requirements remain unverified: ' +
+      blocked.join('; ')
+    : 'Google AI responded, but the solution remains unconfirmed.';
+}
+
+module.exports = { hasAuthenticatedGoogleAnswer, describeUnresolvedReceipt };

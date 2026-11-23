@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/google-ai-ask.yml'
+      - '.github/workflows/google-ai-consult-continuity.yml'
       - '.github/workflows/test-google-ai-receipts.yml'
       - 'phone_google_ask/warm_worker.py'
       - 'phone_google_ask/test_warm_worker.py'
