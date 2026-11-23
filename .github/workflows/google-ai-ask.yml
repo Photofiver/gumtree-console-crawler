@@ -1,22 +1,39 @@
 name: Google AI Mode ask (isolated)
-run-name: "Google AI issue #${{ github.event.issue.number }}"
+run-name: "Google AI issue #${{ github.event.issue.number || inputs.issue_number }}"
 on:
+  workflow_dispatch:
+    inputs:
+      issue_number: {required: true, type: number}
   issues:
     types: [opened]
 
 permissions:
   contents: read
   issues: write
-  actions: read
+  actions: write
 
 jobs:
   ask:
-    if: ${{ (startsWith(github.event.issue.title, '[google-ask]') || startsWith(github.event.issue.title, '[consult]')) && github.event.issue.user.login == github.repository_owner }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (startsWith(github.event.issue.title, '[google-ask]') || startsWith(github.event.issue.title, '[consult]')) && github.event.issue.user.login == github.repository_owner }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+      - name: Load the canonical revision issue for dispatched reviews
+        id: hydrate
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const issue_number = Number(context.payload.inputs.issue_number);
+            const {data: issue} = await github.rest.issues.get({owner, repo, issue_number});
+            if (issue.pull_request || issue.user.login !== 'github-actions[bot]' ||
+                !issue.title.startsWith('[consult] follow-up ')) throw Error('Expected bridge revision');
+            const fs = require('fs');
+            fs.writeFileSync(process.env.GITHUB_EVENT_PATH, JSON.stringify({...context.payload, issue}));
       - name: Prefer already running Google AI warm worker
+        if: github.event_name != 'workflow_dispatch'
         id: warm
         uses: actions/github-script@v7
         with:
@@ -49,13 +66,13 @@ jobs:
             }
             core.setOutput('served', 'false');
       - name: Regression checks for consultation and idea exploration
-        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[consult]')) && steps.warm.outputs.served != 'true' }}
         run: |
           python3 -m unittest discover -s phone_google_ask -p test_consult.py -v
           python3 -m unittest discover -s phone_google_ask -p test_explore.py -v
           python3 -m unittest discover -s phone_google_ask -p test_attention_guard.py -v
       - name: Load trained transformer and calculate actual attention weights
-        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[consult]')) && steps.warm.outputs.served != 'true' }}
         shell: bash
         run: |
           if python3 -m pip install --user --disable-pip-version-check 'sentence-transformers==4.1.0'; then
@@ -64,7 +81,7 @@ jobs:
             echo '{"status":"unavailable","reason":"dependency_install_failed"}' > attention-report.json
           fi
       - name: Screen 100 or 1000 source-listed configurations before AI review
-        if: ${{ startsWith(github.event.issue.title, '[consult]') && steps.warm.outputs.served != 'true' }}
+        if: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.event.issue.title, '[consult]')) && steps.warm.outputs.served != 'true' }}
         shell: bash
         run: |
           python3 - <<'PY'
@@ -134,7 +151,7 @@ jobs:
             adb install -r android_browser/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
             if jq -e '.issue.title | startswith("[consult]")' "$GITHUB_EVENT_PATH" >/dev/null; then python3 phone_google_ask/consult.py; else bash phone_google_ask/cold_ask.sh; fi
       - name: Upload Google AI answer
-        if: always() && steps.warm.outputs.served != 'true'
+        if: always() && steps.hydrate.outcome != 'failure' && steps.warm.outputs.served != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: google-ai-ask-result
@@ -148,7 +165,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
       - name: Post Google AI result to issue
-        if: always() && steps.warm.outputs.served != 'true'
+        if: always() && steps.hydrate.outcome != 'failure' && steps.warm.outputs.served != 'true'
         env:
           REVIEW_RUN_OK: ${{ job.status }}
         uses: actions/github-script@v7
@@ -166,8 +183,13 @@ jobs:
                 receipt = {issue:result.issue,sha256:result.sha256,run:context.runId,review:result.review,
                   status:'NIEPOTWIERDZONE',reason:'Full review exceeds comment limit. Read artifact google-ai-ask-result/consult-result.json.'};
               }
-              await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:issue.number,
+              const posted = await github.rest.issues.createComment({owner:context.repo.owner,repo:context.repo.repo,issue_number:issue.number,
                 body:'Konsultant/2 '+JSON.stringify(receipt)});
+              if (context.eventName === 'workflow_dispatch' && receipt.google_ai_responses_received > 0) {
+                await github.rest.actions.createWorkflowDispatch({...context.repo, workflow_id:'wake-bridge.yml',
+                  ref:context.payload.repository.default_branch,
+                  inputs:{issue:String(issue.number), comment:String(posted.data.id)}});
+              }
               return;
             }
             const existing = await github.rest.issues.listComments({owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, per_page: 100});

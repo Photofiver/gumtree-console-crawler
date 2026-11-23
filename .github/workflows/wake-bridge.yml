@@ -12,6 +12,7 @@ on:
 
 permissions:
   issues: write
+  actions: write
 
 jobs:
   wake:
@@ -34,7 +35,7 @@ jobs:
             const issue_number = Number(p.issue?.number || p.inputs?.issue || 293);
             const args = {owner, repo, issue_number};
             const {data: issue} = await github.rest.issues.get(args);
-            if (issue.pull_request || issue.user.login !== owner || !issue.title.startsWith('[consult]')) return;
+            if (issue.pull_request || ![owner, 'github-actions[bot]'].includes(issue.user.login) || !issue.title.startsWith('[consult]')) return;
             const comments = await github.paginate(github.rest.issues.listComments, {...args, per_page: 100});
             const hash = require('crypto').createHash('sha256').update(issue.body || '').digest('hex');
             function classify(c) {
@@ -52,6 +53,10 @@ jobs:
             if (!side) {
               if (context.eventName !== 'issue_comment') core.setFailed('No matching source comment');
               return;
+            }
+            if (side === 'chatgpt') {
+              await github.rest.actions.createWorkflowDispatch({owner, repo, workflow_id: 'consult-bridge.yml',
+                ref: p.repository.default_branch, inputs: {issue_number: String(issue_number)}});
             }
             const marker = '<!-- wake:' + side + ':' + source.id + ' -->';
             if (comments.some(c => c.user.login === 'github-actions[bot]' && c.body.includes(marker))) return;

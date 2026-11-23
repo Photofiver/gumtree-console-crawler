@@ -1,0 +1,41 @@
+name: Consult Bridge
+on:
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      issue_number: {description: Numer zgłoszenia, required: true, type: number}
+  push:
+    branches: [main]
+    paths: ['.github/workflows/consult-bridge.yml']
+permissions:
+  contents: read
+  issues: write
+  actions: write
+jobs:
+  process:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' && github.event.head_commit.message == 'Enable API consultation revisions and test issue 293') ||
+      (github.event_name == 'issue_comment' && !github.event.issue.pull_request &&
+       (github.event.comment.user.login == 'github-actions[bot]' || github.event.comment.user.login == github.repository_owner) &&
+       (startsWith(github.event.comment.body, 'Konsultant/2 ') || contains(github.event.comment.body, '<!-- wake:chatgpt')))
+    concurrency:
+      group: consult-revision-${{ inputs.issue_number || github.event.issue.number || '293' }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python -m pip install 'openai>=1.68,<3' 'requests>=2.32,<3'
+      - name: Revise consultation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ISSUE_NUMBER: ${{ inputs.issue_number || github.event.issue.number || '293' }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: python .github/scripts/consult_bridge.py
