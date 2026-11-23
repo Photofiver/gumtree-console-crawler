@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const crypto = require('node:crypto');
-const {hasAuthenticatedGoogleAnswer: ok} = require('./google_ai_receipt_guard.js');
+const {hasAuthenticatedGoogleAnswer: ok, describeUnresolvedReceipt: describe} = require('./google_ai_receipt_guard.js');
 const issue = { number: 288, title: '[consult] sample', body: '{"question":"test"}' };
 const sha256 = crypto.createHash('sha256').update(issue.body).digest('hex');
 const comment = (data, user='github-actions[bot]') => ({user:{login:user},body:'Konsultant/2 '+JSON.stringify(data)});
@@ -33,4 +33,20 @@ test('ordinary Google ask still works', () => {
   const generic={number:5,title:'[google-ask] review',body:'question'};
   assert.equal(ok([{user:{login:'github-actions[bot]'},body:'Google AI: DO POPRAWY'}],generic),true);
   assert.equal(ok([{user:{login:'github-actions[bot]'},body:'Google AI: NIEPOTWIERDZONE'}],generic),false);
+});
+
+test('Google AI response with blocked checklist is not described as transport failure (#293)', () => {
+  const response = {review:'SPRAWDZONE',status:'NIEPOTWIERDZONE',
+    google_ai_responses_received:2, blocked:['check A','check B']};
+  assert.match(describe(response), /Google AI responded/);
+  assert.match(describe(response), /check A; check B/);
+  assert.doesNotMatch(describe(response), /No authenticated/);
+});
+test('Google AI DO POPRAWY retains actual feedback', () => {
+  assert.equal(describe({review:'DO POPRAWY',status:'NIEPOTWIERDZONE',
+    google_ai_responses_received:1,reason:'Voc 25 V > 24 V'}), 'Voc 25 V > 24 V');
+});
+test('unanswered and zero-response cases remain transport failures', () => {
+  assert.match(describe(null), /No authenticated/);
+  assert.equal(describe({google_ai_responses_received:0, reason:'Android timeout'}),'Android timeout');
 });
