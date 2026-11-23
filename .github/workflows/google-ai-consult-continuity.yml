@@ -26,11 +26,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
+      - uses: actions/checkout@v4
       - name: Recover failed consultations and preserve unfinished work
         uses: actions/github-script@v7
         with:
           script: |
             const crypto = require('crypto');
+            const {describeUnresolvedReceipt} = require(process.env.GITHUB_WORKSPACE + '/phone_google_ask/google_ai_receipt_guard.js');
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const marker = '<!-- google-ai-continuity-controller-v1 -->';
@@ -148,9 +150,7 @@ jobs:
                 }
                 const status = receipt?.status || 'NIEPOTWIERDZONE';
                 const review = receipt?.review || 'BRAK WERYFIKACJI';
-                const reason = String(receipt?.reason ||
-                  'No authenticated Google AI receipt after the available retries.')
-                  .slice(0, 1600);
+                const reason = describeUnresolvedReceipt(receipt).slice(0, 1600);
                 const body = [
                   marker,
                   '**Kontroler ciągłości: zadanie nie jest potwierdzone.**',
