@@ -1,0 +1,24 @@
+name: Test consultation handoff
+on:
+  push:
+    paths:
+      - '.github/workflows/consult-no-api-handoff.yml'
+      - '.github/workflows/test-consult-handoff.yml'
+      - '.github/scripts/test-consult-handoff.js'
+  pull_request:
+    paths:
+      - '.github/workflows/consult-no-api-handoff.yml'
+      - '.github/workflows/test-consult-handoff.yml'
+      - '.github/scripts/test-consult-handoff.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node .github/scripts/test-consult-handoff.js
