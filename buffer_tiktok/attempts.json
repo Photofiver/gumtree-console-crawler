@@ -174,6 +174,12 @@
       "attempted_at": "2026-11-22T21:57:16.265479+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b03653dd5eabfb8cce1971c"
+    },
+    "25bb21ded7c9a02d5c0ee063f9d64ce840d1a2b24069298d10028fd291060459": {
+      "source": "social_videos/new-ai-cat-20261123-s00-wiping-window.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261123-s00-wiping-window.mp4",
+      "attempted_at": "2026-11-23T07:52:33.265188+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
