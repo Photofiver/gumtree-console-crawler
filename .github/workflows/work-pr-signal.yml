@@ -1,5 +1,8 @@
 name: Work PR Signal (no model API)
 on:
+  workflow_run:
+    workflows: ['Google AI consultation continuity controller']
+    types: [completed]
   workflow_dispatch:
     inputs:
       issue_number:
@@ -17,12 +20,34 @@ jobs:
       - name: Verify consultation and create PR signal
         uses: actions/github-script@v7
         env:
-          ISSUE_NUMBER: ${{ inputs.issue_number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number || '' }}
         with:
           github-token: ${{ github.token }}
           script: |
             const {owner, repo} = context.repo;
-            const issue_number = Number(process.env.ISSUE_NUMBER);
+            let issue_number = Number(process.env.ISSUE_NUMBER);
+            if (context.eventName === 'workflow_run') {
+              const run = context.payload.workflow_run;
+              if (run?.conclusion !== 'success') { core.info('Continuity controller not successful; skip'); return; }
+              const {data: found} = await github.rest.issues.listForRepo({
+                owner, repo, state:'open', sort:'updated', direction:'desc', per_page:20
+              });
+              issue_number = 0;
+              for (const candidate of found) {
+                if (candidate.pull_request || !candidate.title.startsWith('[consult]')) continue;
+                const cs = await github.paginate(github.rest.issues.listComments, {
+                  owner,repo,issue_number:candidate.number,per_page:100
+                });
+                const anchor = new Date(run.created_at).getTime() - 120000;
+                if (cs.some(c => c.user.login === 'github-actions[bot]' &&
+                  c.body.startsWith('Konsultant/2 ') &&
+                  new Date(c.created_at).getTime() >= anchor)) {
+                  issue_number = candidate.number;
+                  break;
+                }
+              }
+              if (!issue_number) {core.info('No recent consultation receipt; skip'); return;}
+            }
             if (!Number.isSafeInteger(issue_number) || issue_number < 1) throw new Error('Invalid issue number');
             const {data: issue} = await github.rest.issues.get({owner, repo, issue_number});
             if (issue.pull_request || !issue.title.startsWith('[consult]')) throw new Error('Not a consultation issue');
@@ -31,7 +56,9 @@ jobs:
             if (!response) throw new Error('No verified consultation response');
             let payload;
             try { payload = JSON.parse(response.body.slice('Konsultant/2 '.length)); } catch { throw new Error('Invalid response JSON'); }
-            if (payload.issue !== issue_number || !(payload.google_ai_responses_received > 0)) throw new Error('Unverified response');
+            const digest = require('crypto').createHash('sha256').update(issue.body || '', 'utf8').digest('hex');
+            if (payload.issue !== issue_number || payload.sha256 !== digest ||
+                !(payload.google_ai_responses_received > 0)) throw new Error('Unverified response');
             const {data: repository} = await github.rest.repos.get({owner, repo});
             const base = repository.default_branch;
             const ref = await github.rest.git.getRef({owner, repo, ref: 'heads/' + base});
