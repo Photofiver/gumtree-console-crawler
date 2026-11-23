@@ -57,10 +57,37 @@ def is_ours(issue, test_mode):
     return title.startswith("[google-warm-test]") if test_mode else title.startswith(("[google-ask]", "[consult]", "[auto-research]"))
 
 
-def is_answered(number):
-    comments = api("GET", "/issues/" + str(number) + "/comments?per_page=100")
-    return any(c.get("user", {}).get("login") == "github-actions[bot]" for c in comments)
+def is_answered(issue):
+    """Only an authenticated Google AI verdict for this exact issue counts.
 
+    Transport errors and continuity-controller comments must not suppress the
+    cold fallback review. A negative Google verdict is still a real review.
+    """
+    comments = api("GET", "/issues/" + str(issue["number"]) + "/comments?per_page=100")
+    is_consult = issue.get("title", "").startswith("[consult]")
+    digest = hashlib.sha256((issue.get("body") or "").encode("utf-8")).hexdigest()
+    for comment in comments:
+        if comment.get("user", {}).get("login") != "github-actions[bot]":
+            continue
+        body = comment.get("body") or ""
+        if is_consult:
+            if not body.startswith("Konsultant/2 "):
+                continue
+            try:
+                receipt = json.loads(body[len("Konsultant/2 "):])
+                responses = int(receipt.get("google_ai_responses_received") or 0)
+            except (ValueError, TypeError, AttributeError):
+                continue
+            if (receipt.get("issue") == issue["number"] and
+                    receipt.get("sha256") == digest and responses > 0 and
+                    receipt.get("review") in ("SPRAWDZONE", "DO POPRAWY")):
+                return True
+            continue
+        if (body.startswith(("Google AI: SPRAWDZONE", "Google AI: DO POPRAWY")) or
+                (body.startswith("Google AI Mode answer") and
+                 "AI RESPONSE READY: True" in body)):
+            return True
+    return False
 
 def format_question(issue):
     title, body = issue["title"], issue.get("body") or ""
@@ -288,7 +315,7 @@ def review_consult(issue):
 
 def handle(issue):
     number = issue["number"]
-    if is_answered(number):
+    if is_answered(issue):
         return False
     if issue["title"].startswith("[consult]"):
         try:
@@ -299,7 +326,7 @@ def handle(issue):
             return False
         if text is None:
             return False
-        if is_answered(number):
+        if is_answered(issue):
             return True
         api("POST", "/issues/" + str(number) + "/comments", {"body": text})
         print("Posted warm Google AI consultation for issue #", number, flush=True)
@@ -346,7 +373,7 @@ def handle(issue):
               "; withholding provisional comment and leaving cold fallback active", flush=True)
         return False
     # Recheck to avoid duplicating a reply while the original per-issue workflow runs.
-    if is_answered(number):
+    if is_answered(issue):
         return True
     api("POST", "/issues/" + str(number) + "/comments", {"body": text[:58000]})
     print("Posted Google AI result to issue #", number, flush=True)
@@ -390,7 +417,7 @@ def main():
                 if created < cutoff:
                     continue
                 # Check comments before the expensive browser call.
-                if is_answered(number):
+                if is_answered(issue):
                     seen.add(number)
                     continue
                 if time.monotonic() + 150 >= deadline:

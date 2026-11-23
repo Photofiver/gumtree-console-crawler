@@ -97,5 +97,55 @@ class WarmWorkerRoutingTests(unittest.TestCase):
         reviewer.assert_called_once()
 
 
+
+class WarmWorkerReceiptTests(unittest.TestCase):
+    def setUp(self):
+        import hashlib
+        self.issue = issue("[consult] sample", '{"question":"test"}')
+        self.sha256 = hashlib.sha256(self.issue["body"].encode()).hexdigest()
+
+    def receipt(self, **overrides):
+        payload = {
+            "issue": self.issue["number"], "sha256": self.sha256,
+            "status": "POTWIERDZONE", "review": "SPRAWDZONE",
+            "google_ai_responses_received": 1,
+        }
+        payload.update(overrides)
+        return {"user": {"login": "github-actions[bot]"},
+                "body": "Konsultant/2 " + json.dumps(payload)}
+
+    def check(self, comments, expected):
+        with patch.object(warm_worker, "api", return_value=comments):
+            self.assertEqual(warm_worker.is_answered(self.issue), expected)
+
+    def test_real_google_verdict(self):
+        self.check([self.receipt()], True)
+
+    def test_google_do_poprawy(self):
+        self.check([self.receipt(review="DO POPRAWY", status="NIEPOTWIERDZONE")], True)
+
+    def test_transport_error_is_not_review(self):
+        self.check([self.receipt(google_ai_responses_received=0, review="NIEPOTWIERDZONE")], False)
+
+    def test_controller_comment_is_not_review(self):
+        self.check([{"user": {"login": "github-actions[bot]"},
+                     "body": "<!-- google-ai-continuity-controller-v1 --> failure"}], False)
+
+    def test_wrong_issue_and_sha_rejected(self):
+        self.check([self.receipt(issue=33), self.receipt(sha256="wrong")], False)
+
+    def test_malformed_comment_rejected(self):
+        self.check([{"user": {"login": "github-actions[bot]"}, "body": "Konsultant/2 {bad"}], False)
+
+    def test_non_bot_comment_rejected(self):
+        entry = self.receipt()
+        entry["user"]["login"] = "unknown"
+        self.check([entry], False)
+
+    def test_ordinary_google_ask_still_supported(self):
+        self.issue["title"] = "[google-ask] question"
+        self.check([{"user": {"login": "github-actions[bot]"}, "body": "Google AI: DO POPRAWY"}], True)
+
+
 if __name__ == "__main__":
     unittest.main()
