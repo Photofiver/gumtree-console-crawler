@@ -1,5 +1,8 @@
 name: Google AI consultation continuity controller
 on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/google-ai-consult-continuity.yml']
   # The cold Google AI review finished (success or failure).
   workflow_run:
     workflows: ["Google AI Mode ask (isolated)"]
@@ -23,11 +26,15 @@ concurrency:
 
 jobs:
   monitor:
+    if: github.event_name != 'push'
+    outputs:
+      bridge_issue: ${{ steps.receipt.outputs.bridge_issue }}
     runs-on: ubuntu-latest
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
       - name: Recover failed consultations and preserve unfinished work
+        id: receipt
         uses: actions/github-script@v7
         with:
           script: |
@@ -117,6 +124,9 @@ jobs:
                     core.warning('Unreadable receipt for #' + issue.number);
                   }
                 }
+                if (targetNumber && receipt?.google_ai_responses_received > 0) {
+                  core.setOutput('bridge_issue', String(issue.number));
+                }
                 if (receipt?.status === 'POTWIERDZONE' &&
                     receipt.review === 'SPRAWDZONE' &&
                     receipt.google_ai_responses_received > 0) {
@@ -171,3 +181,33 @@ jobs:
                   ': ' + String(err.message || err).slice(0, 300));
               }
             }
+
+  ordinary-chat:
+    needs: monitor
+    if: >-
+      always() && !cancelled() &&
+      ((needs.monitor.result == 'success' && needs.monitor.outputs.bridge_issue != '') ||
+       (github.event_name == 'push' && github.event.head_commit.message == 'Enable ordinary chat bridge and run consultation 293'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ROOT_ISSUE: ${{ needs.monitor.outputs.bridge_issue || '293' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install pinned chatgpt-web client
+        run: |
+          git clone --quiet https://github.com/tritao/chatgpt-web.git "$RUNNER_TEMP/chatgpt-web"
+          git -C "$RUNNER_TEMP/chatgpt-web" checkout --quiet 0024d5a7d1a4cb2005cada92c8c6ee983c2cb9c3
+          python3 -m venv "$RUNNER_TEMP/chat-python"
+          "$RUNNER_TEMP/chat-python/bin/pip" install -q -r "$RUNNER_TEMP/chatgpt-web/requirements.txt"
+          echo "$RUNNER_TEMP/chat-python/bin" >> "$GITHUB_PATH"
+      - name: Start ordinary chat bridge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 plugins/google-ai-konsultant/local_chat_continuity.py --once --root-issue "$ROOT_ISSUE" --chatgpt-web "$RUNNER_TEMP/chatgpt-web/chatgpt-web"
