@@ -187,7 +187,7 @@ jobs:
     if: >-
       always() && !cancelled() &&
       ((needs.monitor.result == 'success' && needs.monitor.outputs.bridge_issue != '') ||
-       (github.event_name == 'push' && github.event.head_commit.message == 'Enable ordinary chat bridge and run consultation 293'))
+       (github.event_name == 'push' && github.event.head_commit.message == 'Run ordinary chat bridge for consultation 293 with diagnostics'))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -207,7 +207,20 @@ jobs:
           "$RUNNER_TEMP/chat-python/bin/pip" install -q -r "$RUNNER_TEMP/chatgpt-web/requirements.txt"
           echo "$RUNNER_TEMP/chat-python/bin" >> "$GITHUB_PATH"
       - name: Start ordinary chat bridge
+        id: bridge
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 plugins/google-ai-konsultant/local_chat_continuity.py --once --root-issue "$ROOT_ISSUE" --chatgpt-web "$RUNNER_TEMP/chatgpt-web/chatgpt-web"
+      - name: Diagnose browser connection after a failed start
+        if: failure() && steps.bridge.outcome == 'failure'
+        run: |
+          if curl --silent --fail --max-time 3 --output /dev/null http://127.0.0.1:9222/json/version; then
+            echo "Chrome debugging endpoint reachable on port 9222"
+          else
+            echo "Chrome debugging endpoint unavailable on port 9222"
+          fi
+          "$RUNNER_TEMP/chatgpt-web/chatgpt-web" status > "$RUNNER_TEMP/ordinary-status.log" 2>&1 || true
+          if grep -Fq "daemon failed to start" "$RUNNER_TEMP/ordinary-status.log"; then
+            echo "chatgpt-web reports that its daemon failed to start"
+          fi
