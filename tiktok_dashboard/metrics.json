@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-24T06:06:25.375357Z",
+  "generated_at_utc": "2026-11-24T10:03:21.057014Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-24T06:06:25.375357Z",
+  "followers_checked_at_utc": "2026-11-24T10:03:21.057014Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -99,10 +99,10 @@
     }
   ],
   "posted_confirmed": 27,
-  "posted_24h": 2,
-  "pending": 0,
+  "posted_24h": 1,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-23T22:12:56.263549Z",
+  "posting_status_checked_at_utc": "2026-11-24T10:03:21.057014Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -115,10 +115,10 @@
         "likes": 1,
         "comments": 0,
         "shares": 1,
-        "views": 96,
+        "views": 145,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
+      "engagement_checked_at_utc": "2026-11-24T10:03:21.057014Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -133,7 +133,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
+      "engagement_checked_at_utc": "2026-11-24T10:03:21.057014Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -148,7 +148,7 @@
         "views": 172,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
+      "engagement_checked_at_utc": "2026-11-24T10:03:21.057014Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -160,10 +160,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 212,
+        "views": 213,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
+      "engagement_checked_at_utc": "2026-11-24T10:03:21.057014Z"
     },
     {
       "id": "6b021088d5eabfb8cc622bac",
@@ -175,10 +175,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 229,
+        "views": 230,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
+      "engagement_checked_at_utc": "2026-11-24T10:03:21.057014Z"
     },
     {
       "id": "6b01c3618bd84d5966004744",
@@ -509,6 +509,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b0560ce52e902c2ad681bf0",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261124 s00 mopping floor",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -521,11 +530,11 @@
     "likes": 3,
     "comments": 0,
     "shares": 1,
-    "views": 899,
+    "views": 950,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-24T06:06:25.375357Z",
+    "last_checked_at_utc": "2026-11-24T10:03:21.057014Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
