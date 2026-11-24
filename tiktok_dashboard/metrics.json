@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-23T22:12:56.263549Z",
+  "generated_at_utc": "2026-11-24T06:06:25.375357Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-23T22:12:56.263549Z",
+  "followers_checked_at_utc": "2026-11-24T06:06:25.375357Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -92,6 +92,10 @@
     {
       "utc": "2026-11-23T20:21:07.219556Z",
       "followers": 6
+    },
+    {
+      "utc": "2026-11-24T06:06:25.375357Z",
+      "followers": 6
     }
   ],
   "posted_confirmed": 27,
@@ -108,13 +112,13 @@
       "sent_at_utc": "2026-11-23T20:22:25.712Z",
       "concept": "new ai cat 20261123 s05 practicing tai chi",
       "engagement": {
-        "likes": 0,
+        "likes": 1,
         "comments": 0,
         "shares": 1,
-        "views": 69,
+        "views": 96,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -129,7 +133,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -144,7 +148,7 @@
         "views": 172,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -159,7 +163,7 @@
         "views": 212,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
     },
     {
       "id": "6b021088d5eabfb8cc622bac",
@@ -174,7 +178,7 @@
         "views": 229,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-23T22:12:56.263549Z"
+      "engagement_checked_at_utc": "2026-11-24T06:06:25.375357Z"
     },
     {
       "id": "6b01c3618bd84d5966004744",
@@ -514,14 +518,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 2,
+    "likes": 3,
     "comments": 0,
     "shares": 1,
-    "views": 872,
+    "views": 899,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-23T22:12:56.263549Z",
+    "last_checked_at_utc": "2026-11-24T06:06:25.375357Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
