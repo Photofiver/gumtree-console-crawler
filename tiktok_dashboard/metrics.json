@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-25T18:43:40.139367Z",
+  "generated_at_utc": "2026-11-25T19:58:45.543747Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-25T18:43:40.139367Z",
+  "followers_checked_at_utc": "2026-11-25T19:58:45.543747Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -114,13 +114,28 @@
       "followers": 6
     }
   ],
-  "posted_confirmed": 29,
-  "posted_24h": 1,
-  "pending": 1,
+  "posted_confirmed": 30,
+  "posted_24h": 2,
+  "pending": 0,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-25T18:43:40.139367Z",
+  "posting_status_checked_at_utc": "2026-11-25T19:58:45.543747Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
+    {
+      "id": "6b072c43f5be12bac95ea52a",
+      "status": "sent",
+      "url": "https://tiktok.com/@photofiver.photof/video/7712181622216461601",
+      "sent_at_utc": "2026-11-25T18:44:03.031Z",
+      "concept": "new ai cat 20261125 s05 opening tiny umbrella",
+      "engagement": {
+        "likes": 0,
+        "comments": 0,
+        "shares": 0,
+        "views": 86,
+        "saves": null
+      },
+      "engagement_checked_at_utc": "2026-11-25T19:58:45.543747Z"
+    },
     {
       "id": "6b06316ac4ff71faa8213eaa",
       "status": "sent",
@@ -134,7 +149,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T18:43:40.139367Z"
+      "engagement_checked_at_utc": "2026-11-25T19:58:45.543747Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -149,7 +164,7 @@
         "views": 211,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T18:43:40.139367Z"
+      "engagement_checked_at_utc": "2026-11-25T19:58:45.543747Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -164,7 +179,7 @@
         "views": 203,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T18:43:40.139367Z"
+      "engagement_checked_at_utc": "2026-11-25T19:58:45.543747Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -179,7 +194,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T18:43:40.139367Z"
+      "engagement_checked_at_utc": "2026-11-25T19:58:45.543747Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -555,15 +570,6 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
-    },
-    {
-      "id": "6b072c43f5be12bac95ea52a",
-      "status": "sending",
-      "url": null,
-      "sent_at_utc": null,
-      "concept": "new ai cat 20261125 s05 opening tiny umbrella",
-      "engagement": null,
-      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -576,11 +582,11 @@
     "likes": 6,
     "comments": 0,
     "shares": 1,
-    "views": 938,
+    "views": 852,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-25T18:43:40.139367Z",
+    "last_checked_at_utc": "2026-11-25T19:58:45.543747Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
