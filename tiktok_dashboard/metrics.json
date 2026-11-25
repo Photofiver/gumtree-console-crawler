@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-24T17:31:35.686515Z",
+  "generated_at_utc": "2026-11-25T00:53:32.010826Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-24T17:31:35.686515Z",
+  "followers_checked_at_utc": "2026-11-25T00:53:32.010826Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -100,13 +100,17 @@
     {
       "utc": "2026-11-24T17:31:35.686515Z",
       "followers": 6
+    },
+    {
+      "utc": "2026-11-25T00:53:32.010826Z",
+      "followers": 6
     }
   ],
   "posted_confirmed": 28,
-  "posted_24h": 2,
-  "pending": 0,
+  "posted_24h": 1,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-24T17:31:35.686515Z",
+  "posting_status_checked_at_utc": "2026-11-25T00:53:32.010826Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -119,10 +123,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 166,
+        "views": 208,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T17:31:35.686515Z"
+      "engagement_checked_at_utc": "2026-11-25T00:53:32.010826Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -137,7 +141,7 @@
         "views": 201,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T17:31:35.686515Z"
+      "engagement_checked_at_utc": "2026-11-25T00:53:32.010826Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -152,7 +156,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T17:31:35.686515Z"
+      "engagement_checked_at_utc": "2026-11-25T00:53:32.010826Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -167,7 +171,7 @@
         "views": 172,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T17:31:35.686515Z"
+      "engagement_checked_at_utc": "2026-11-25T00:53:32.010826Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -182,7 +186,7 @@
         "views": 213,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-24T17:31:35.686515Z"
+      "engagement_checked_at_utc": "2026-11-25T00:53:32.010826Z"
     },
     {
       "id": "6b021088d5eabfb8cc622bac",
@@ -528,6 +532,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b06316ac4ff71faa8213eaa",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261125 s00 spinning globe",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -540,11 +553,11 @@
     "likes": 6,
     "comments": 0,
     "shares": 1,
-    "views": 942,
+    "views": 984,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-24T17:31:35.686515Z",
+    "last_checked_at_utc": "2026-11-25T00:53:32.010826Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
