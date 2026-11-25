@@ -195,6 +195,12 @@
       "attempted_at": "2026-11-24T10:02:52.073607+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b0560ce52e902c2ad681bf0"
+    },
+    "1b74c9b44c3ab8bc49696d5c1839d68a629f859b32426cda19b9a8165c545ec5": {
+      "source": "social_videos/new-ai-cat-20261125-s00-spinning-globe.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261125-s00-spinning-globe.mp4",
+      "attempted_at": "2026-11-25T00:52:56.304404+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
