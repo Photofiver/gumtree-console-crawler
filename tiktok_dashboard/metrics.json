@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-25T01:32:11.758328Z",
+  "generated_at_utc": "2026-11-25T10:21:38.829468Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-25T01:32:11.758328Z",
+  "followers_checked_at_utc": "2026-11-25T10:21:38.829468Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -104,10 +104,14 @@
     {
       "utc": "2026-11-25T00:53:32.010826Z",
       "followers": 6
+    },
+    {
+      "utc": "2026-11-25T10:21:38.829468Z",
+      "followers": 6
     }
   ],
   "posted_confirmed": 29,
-  "posted_24h": 2,
+  "posted_24h": 1,
   "pending": 0,
   "failed": 0,
   "posting_status_checked_at_utc": "2026-11-25T01:32:11.758328Z",
@@ -120,13 +124,13 @@
       "sent_at_utc": "2026-11-25T00:54:42.214Z",
       "concept": "new ai cat 20261125 s00 spinning globe",
       "engagement": {
-        "likes": 0,
+        "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 3,
+        "views": 64,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T01:32:11.758328Z"
+      "engagement_checked_at_utc": "2026-11-25T10:21:38.829468Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -138,10 +142,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 0,
-        "views": 208,
+        "views": 210,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T01:32:11.758328Z"
+      "engagement_checked_at_utc": "2026-11-25T10:21:38.829468Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -156,7 +160,7 @@
         "views": 201,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T01:32:11.758328Z"
+      "engagement_checked_at_utc": "2026-11-25T10:21:38.829468Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -171,7 +175,7 @@
         "views": 190,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T01:32:11.758328Z"
+      "engagement_checked_at_utc": "2026-11-25T10:21:38.829468Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -186,7 +190,7 @@
         "views": 172,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-25T01:32:11.758328Z"
+      "engagement_checked_at_utc": "2026-11-25T10:21:38.829468Z"
     },
     {
       "id": "6b03168fcc364169c169eff9",
@@ -556,14 +560,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 4,
+    "likes": 5,
     "comments": 0,
     "shares": 1,
-    "views": 774,
+    "views": 837,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-25T01:32:11.758328Z",
+    "last_checked_at_utc": "2026-11-25T10:21:38.829468Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
