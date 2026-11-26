@@ -209,6 +209,12 @@
       "attempted_at": "2026-11-25T18:43:12.791081+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b072c43f5be12bac95ea52a"
+    },
+    "52ec2a06231f83a9f4fd2b5152a97da136a1c661df88bf7dd31f11fe083a5951": {
+      "source": "social_videos/new-ai-cat-20261126-s00-hanging-laundry.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261126-s00-hanging-laundry.mp4",
+      "attempted_at": "2026-11-26T08:33:01.064744+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
