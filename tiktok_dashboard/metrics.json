@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-26T02:44:10.446959Z",
+  "generated_at_utc": "2026-11-26T08:33:26.356291Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-26T02:44:10.446959Z",
+  "followers_checked_at_utc": "2026-11-26T08:33:26.356291Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -120,9 +120,9 @@
   ],
   "posted_confirmed": 30,
   "posted_24h": 1,
-  "pending": 0,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-25T19:58:45.543747Z",
+  "posting_status_checked_at_utc": "2026-11-26T08:33:26.356291Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -132,13 +132,13 @@
       "sent_at_utc": "2026-11-25T18:44:03.031Z",
       "concept": "new ai cat 20261125 s05 opening tiny umbrella",
       "engagement": {
-        "likes": 0,
+        "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 146,
+        "views": 208,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T02:44:10.446959Z"
+      "engagement_checked_at_utc": "2026-11-26T08:33:26.356291Z"
     },
     {
       "id": "6b06316ac4ff71faa8213eaa",
@@ -153,7 +153,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T02:44:10.446959Z"
+      "engagement_checked_at_utc": "2026-11-26T08:33:26.356291Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -168,7 +168,7 @@
         "views": 211,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T02:44:10.446959Z"
+      "engagement_checked_at_utc": "2026-11-26T08:33:26.356291Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -180,10 +180,10 @@
         "likes": 2,
         "comments": 0,
         "shares": 1,
-        "views": 203,
+        "views": 204,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T02:44:10.446959Z"
+      "engagement_checked_at_utc": "2026-11-26T08:33:26.356291Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -195,10 +195,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 190,
+        "views": 191,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T02:44:10.446959Z"
+      "engagement_checked_at_utc": "2026-11-26T08:33:26.356291Z"
     },
     {
       "id": "6b03653dd5eabfb8cce1971c",
@@ -574,6 +574,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b07eebe63939e1d00862f50",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261126 s00 hanging laundry",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -583,14 +592,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 6,
+    "likes": 7,
     "comments": 0,
     "shares": 1,
-    "views": 912,
+    "views": 976,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-26T02:44:10.446959Z",
+    "last_checked_at_utc": "2026-11-26T08:33:26.356291Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
