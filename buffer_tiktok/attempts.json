@@ -216,6 +216,12 @@
       "attempted_at": "2026-11-26T08:33:01.064744+00:00",
       "status": "submitted_to_buffer",
       "buffer_post_id": "6b07eebe63939e1d00862f50"
+    },
+    "de0b3ae48dfd27830fda21ab2ab1613901ddb723e700bc2a4dca84461a049997": {
+      "source": "social_videos/new-ai-cat-20261126-s05-sorting-boardgames.mp4",
+      "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261126-s05-sorting-boardgames.mp4",
+      "attempted_at": "2026-11-26T18:39:41.070514+00:00",
+      "status": "attempt_reserved_before_network_call"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
