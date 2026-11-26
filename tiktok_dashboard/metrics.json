@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-26T11:31:50.173108Z",
+  "generated_at_utc": "2026-11-26T18:40:05.373850Z",
   "followers": 6,
-  "followers_checked_at_utc": "2026-11-26T11:31:50.173108Z",
+  "followers_checked_at_utc": "2026-11-26T18:40:05.373850Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -120,13 +120,17 @@
     {
       "utc": "2026-11-26T11:31:50.173108Z",
       "followers": 6
+    },
+    {
+      "utc": "2026-11-26T18:40:05.373850Z",
+      "followers": 6
     }
   ],
   "posted_confirmed": 31,
   "posted_24h": 2,
-  "pending": 0,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-26T11:31:50.173108Z",
+  "posting_status_checked_at_utc": "2026-11-26T18:40:05.373850Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -139,10 +143,10 @@
         "likes": 0,
         "comments": 0,
         "shares": 0,
-        "views": 101,
+        "views": 194,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T11:31:50.173108Z"
+      "engagement_checked_at_utc": "2026-11-26T18:40:05.373850Z"
     },
     {
       "id": "6b072c43f5be12bac95ea52a",
@@ -154,10 +158,10 @@
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 208,
+        "views": 210,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T11:31:50.173108Z"
+      "engagement_checked_at_utc": "2026-11-26T18:40:05.373850Z"
     },
     {
       "id": "6b06316ac4ff71faa8213eaa",
@@ -172,7 +176,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T11:31:50.173108Z"
+      "engagement_checked_at_utc": "2026-11-26T18:40:05.373850Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -187,7 +191,7 @@
         "views": 211,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T11:31:50.173108Z"
+      "engagement_checked_at_utc": "2026-11-26T18:40:05.373850Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -202,7 +206,7 @@
         "views": 204,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T11:31:50.173108Z"
+      "engagement_checked_at_utc": "2026-11-26T18:40:05.373850Z"
     },
     {
       "id": "6b03f0c39c207fed95839b85",
@@ -593,6 +597,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b087ceef0a96d0f217f61b4",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261126 s05 sorting boardgames",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -605,11 +618,11 @@
     "likes": 7,
     "comments": 0,
     "shares": 1,
-    "views": 886,
+    "views": 981,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-26T11:31:50.173108Z",
+    "last_checked_at_utc": "2026-11-26T18:40:05.373850Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
