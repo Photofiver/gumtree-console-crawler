@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-27T03:09:34.848324Z",
+  "generated_at_utc": "2026-11-27T08:47:18.448094Z",
   "followers": 7,
-  "followers_checked_at_utc": "2026-11-27T03:09:34.848324Z",
+  "followers_checked_at_utc": "2026-11-27T08:47:18.448094Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -135,10 +135,10 @@
     }
   ],
   "posted_confirmed": 32,
-  "posted_24h": 2,
-  "pending": 0,
+  "posted_24h": 1,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-26T20:28:13.343109Z",
+  "posting_status_checked_at_utc": "2026-11-27T08:47:18.448094Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -151,10 +151,10 @@
         "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 216,
+        "views": 223,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
+      "engagement_checked_at_utc": "2026-11-27T08:47:18.448094Z"
     },
     {
       "id": "6b07eebe63939e1d00862f50",
@@ -169,7 +169,7 @@
         "views": 195,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
+      "engagement_checked_at_utc": "2026-11-27T08:47:18.448094Z"
     },
     {
       "id": "6b072c43f5be12bac95ea52a",
@@ -184,7 +184,7 @@
         "views": 210,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
+      "engagement_checked_at_utc": "2026-11-27T08:47:18.448094Z"
     },
     {
       "id": "6b06316ac4ff71faa8213eaa",
@@ -199,7 +199,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
+      "engagement_checked_at_utc": "2026-11-27T08:47:18.448094Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -214,7 +214,7 @@
         "views": 211,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
+      "engagement_checked_at_utc": "2026-11-27T08:47:18.448094Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -620,6 +620,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b09437f658222306cf8b6a1",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261127 s00 doing yoga",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -632,11 +641,11 @@
     "likes": 6,
     "comments": 0,
     "shares": 0,
-    "views": 994,
+    "views": 1001,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-27T03:09:34.848324Z",
+    "last_checked_at_utc": "2026-11-27T08:47:18.448094Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
