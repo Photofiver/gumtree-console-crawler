@@ -1,0 +1,30 @@
+{
+  "generated_with": [
+    "saved_original_zeroGPU_AI_video",
+    "FFmpeg_motion_interpolation"
+  ],
+  "unique_original_shots": 1,
+  "quota_rescue_slow_motion": true,
+  "source_original_video_seconds": 3.08,
+  "source_original_sha256": "6d65d2ff087acb7df61822f03016d8467f08360fa09dc523dd221f63c149371f",
+  "no_repeated_or_looped_footage": true,
+  "original_text_to_video": true,
+  "no_stock_footage": true,
+  "no_added_text_or_subtitles": true,
+  "no_audio_verified": true,
+  "concept": "does a gentle yoga stretch on a miniature yoga mat, then settles into a proud pose",
+  "cat_appearance": "white Persian with soft long fur and blue eyes",
+  "environment_style": "calm pastel mint-green surroundings",
+  "caption": "The yoga instructor accepts payment in treats. Give this little worker a rating out of ten! #AICat #CatYoga #Wellness #AIGenerated",
+  "prompt": "Create an entirely original AI-generated moving video of ONE highly photorealistic living white Persian with soft long fur and blue eyes CAT, with accurate real feline eyes, fur, whiskers and paws. The cat behaves like a cheerful little human in a delightfully absurd but safe way: it does a gentle yoga stretch on a miniature yoga mat, then settles into a proud pose. The cat's action and moving paws are clearly visible, with physical movement throughout the shot. ONE stable continuously moving cinematic shot, detailed realistic environment naturally suited to the action, styled with calm pastel mint-green surroundings, natural-looking lighting, centered subject and action so it can be cropped into a vertical 9:16 TikTok video. Wholesome, friendly, funny, charming, non-offensive, family-friendly, no human actors, no cruelty, no distress, no dangerous behavior, no politics, no brand names. COMPLETELY SILENT: absolutely no soundtrack, music, voice, speech or sound effects. Absolutely NO text, letters, numbers, subtitles, captions, speech bubbles, signs, logo, watermark, interface or written words anywhere in the frames. NO cartoon, NO anime, NO 3D stylization, NO slides, NO still images. Real lifelike physical cat motion only.",
+  "utc_day": "20261127",
+  "scheduled_slot": 0,
+  "validation": {
+    "seconds": 9.48,
+    "fps": 25.0,
+    "width": 720,
+    "height": 1280,
+    "audio_streams": 0,
+    "bytes": 762254
+  }
+}
