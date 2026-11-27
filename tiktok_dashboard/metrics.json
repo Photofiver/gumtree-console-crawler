@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-26T20:28:13.343109Z",
+  "generated_at_utc": "2026-11-27T03:09:34.848324Z",
   "followers": 7,
-  "followers_checked_at_utc": "2026-11-26T20:28:13.343109Z",
+  "followers_checked_at_utc": "2026-11-27T03:09:34.848324Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -128,6 +128,10 @@
     {
       "utc": "2026-11-26T20:28:13.343109Z",
       "followers": 7
+    },
+    {
+      "utc": "2026-11-27T03:09:34.848324Z",
+      "followers": 7
     }
   ],
   "posted_confirmed": 32,
@@ -144,13 +148,13 @@
       "sent_at_utc": "2026-11-26T18:40:25.640Z",
       "concept": "new ai cat 20261126 s05 sorting boardgames",
       "engagement": {
-        "likes": 0,
+        "likes": 1,
         "comments": 0,
         "shares": 0,
-        "views": 103,
+        "views": 216,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T20:28:13.343109Z"
+      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
     },
     {
       "id": "6b07eebe63939e1d00862f50",
@@ -165,7 +169,7 @@
         "views": 195,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T20:28:13.343109Z"
+      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
     },
     {
       "id": "6b072c43f5be12bac95ea52a",
@@ -180,7 +184,7 @@
         "views": 210,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T20:28:13.343109Z"
+      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
     },
     {
       "id": "6b06316ac4ff71faa8213eaa",
@@ -195,7 +199,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T20:28:13.343109Z"
+      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -210,7 +214,7 @@
         "views": 211,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-26T20:28:13.343109Z"
+      "engagement_checked_at_utc": "2026-11-27T03:09:34.848324Z"
     },
     {
       "id": "6b04a01aac07df385d51aac3",
@@ -625,14 +629,14 @@
   "views_30d": null,
   "notes": "Only actual Buffer status=sent counts as published. Follower numbers are public-profile snapshots; missing data is shown as stale, not invented.",
   "engagement": {
-    "likes": 5,
+    "likes": 6,
     "comments": 0,
     "shares": 0,
-    "views": 881,
+    "views": 994,
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-26T20:28:13.343109Z",
+    "last_checked_at_utc": "2026-11-27T03:09:34.848324Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
