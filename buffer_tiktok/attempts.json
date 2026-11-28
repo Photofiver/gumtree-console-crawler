@@ -235,7 +235,8 @@
       "source": "social_videos/new-ai-cat-20261128-s00-taking-selfie.mp4",
       "ready_url": "https://raw.githubusercontent.com/Photofiver/gumtree-console-crawler/main/social_videos/new-ai-cat-20261128-s00-taking-selfie.mp4",
       "attempted_at": "2026-11-28T00:08:00.691434+00:00",
-      "status": "attempt_reserved_before_network_call"
+      "status": "submitted_to_buffer",
+      "buffer_post_id": "6b0a1b6223fb5b7700036fe7"
     }
   },
   "buffer_channel_id": "6afab1b2ece6dfde5fe0ac41",
