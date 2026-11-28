@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-27T21:35:28.227852Z",
+  "generated_at_utc": "2026-11-28T00:08:27.912446Z",
   "followers": 7,
-  "followers_checked_at_utc": "2026-11-27T21:35:28.227852Z",
+  "followers_checked_at_utc": "2026-11-28T00:08:27.912446Z",
   "followers_source": "public_tiktok_profile",
   "follower_history": [
     {
@@ -144,9 +144,9 @@
   ],
   "posted_confirmed": 33,
   "posted_24h": 1,
-  "pending": 0,
+  "pending": 1,
   "failed": 0,
-  "posting_status_checked_at_utc": "2026-11-27T12:34:21.378579Z",
+  "posting_status_checked_at_utc": "2026-11-28T00:08:27.912446Z",
   "platform_data_quality": "verified_latest_available",
   "videos": [
     {
@@ -162,7 +162,7 @@
         "views": 203,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T21:35:28.227852Z"
+      "engagement_checked_at_utc": "2026-11-28T00:08:27.912446Z"
     },
     {
       "id": "6b087ceef0a96d0f217f61b4",
@@ -177,7 +177,7 @@
         "views": 226,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T21:35:28.227852Z"
+      "engagement_checked_at_utc": "2026-11-28T00:08:27.912446Z"
     },
     {
       "id": "6b07eebe63939e1d00862f50",
@@ -192,7 +192,7 @@
         "views": 195,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T21:35:28.227852Z"
+      "engagement_checked_at_utc": "2026-11-28T00:08:27.912446Z"
     },
     {
       "id": "6b072c43f5be12bac95ea52a",
@@ -207,7 +207,7 @@
         "views": 210,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T21:35:28.227852Z"
+      "engagement_checked_at_utc": "2026-11-28T00:08:27.912446Z"
     },
     {
       "id": "6b06316ac4ff71faa8213eaa",
@@ -222,7 +222,7 @@
         "views": 162,
         "saves": null
       },
-      "engagement_checked_at_utc": "2026-11-27T21:35:28.227852Z"
+      "engagement_checked_at_utc": "2026-11-28T00:08:27.912446Z"
     },
     {
       "id": "6b0560ce52e902c2ad681bf0",
@@ -643,6 +643,15 @@
         "saves": null
       },
       "engagement_checked_at_utc": "2026-11-17T00:08:39.220316Z"
+    },
+    {
+      "id": "6b0a1b6223fb5b7700036fe7",
+      "status": "sending",
+      "url": null,
+      "sent_at_utc": null,
+      "concept": "new ai cat 20261128 s00 taking selfie",
+      "engagement": null,
+      "engagement_checked_at_utc": null
     }
   ],
   "planned_slots_per_day": 15,
@@ -659,7 +668,7 @@
     "saves": null,
     "videos_monitored": 5,
     "videos_recent_confirmed": 5,
-    "last_checked_at_utc": "2026-11-27T21:35:28.227852Z",
+    "last_checked_at_utc": "2026-11-28T00:08:27.912446Z",
     "source": "public_tiktok_video_html",
     "can_identify_likers_or_commenters": false
   }
